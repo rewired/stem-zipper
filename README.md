@@ -31,8 +31,8 @@ Supported formats:
 ### 1. Clone or extract the repository
 
 ```bash
-git clone https://github.com/<dein-repo>/audio-stem-zipper.git
-cd audio-stem-zipper
+git clone https://github.com/rewired/stem-zipper.git
+cd stem-zipper
 ```
 
 or extract the ZIP and change into the project directory.
@@ -85,11 +85,11 @@ Result:
 #### macOS (.app)
 
 ```bash
-pyinstaller --noconfirm --onefile --windowed --name "AudioStemZipper" stem-zipper.py
+pyinstaller --noconfirm --onefile --windowed --name "StemZipper" stem-zipper.py
 ```
 
 Result:
-`dist/AudioStemZipper.app`
+`dist/StemZipper.app`
 
 > On first launch under macOS you may need to right-click → Open (due to Gatekeeper).
 
