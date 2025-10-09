@@ -1,45 +1,45 @@
 # Audio Stem Splitter & ZIPper
 
-Dieses Tool ermöglicht das automatische Aufteilen und Packen großer Audio-Dateisammlungen in ZIP-Archive mit maximal 50 MB pro Archiv.  
-Die Dateien werden dabei optimal verteilt, sodass der Speicherplatz bestmöglich ausgenutzt wird.
+This tool enables the automatic splitting and packing of large audio file collections into ZIP archives with a maximum of 50 MB per archive.
+The files are distributed optimally so that the available space is utilized as efficiently as possible.
 
-Unterstützte Formate:
+Supported formats:
 `.wav`, `.flac`, `.mp3`, `.aiff`, `.ogg`, `.aac`, `.wma`
 
 ---
 
-## Funktionen
+## Features
 
-- Drag & Drop GUI (oder manuelle Ordnerauswahl)
-- Automatisches Packen in `stems-XX.zip` (max. 50 MB)
-- Intelligente Verteilung (Best-Fit-Decreasing)
-- Plattformübergreifend (Windows / macOS / Linux)
-- Optional: Erstellung einer ausführbaren App (.exe / .app / Binärdatei)
+* Drag & Drop GUI (or manual folder selection)
+* Automatic packing into `stems-XX.zip` (max. 50 MB)
+* Intelligent distribution (Best-Fit-Decreasing)
+* Cross-platform (Windows / macOS / Linux)
+* Optional: Create a standalone app (.exe / .app / binary)
 
 ---
 
-## Voraussetzungen
+## Requirements
 
-- **Python 3.9+**
-- Internetverbindung (für das erste `pip install`)
-- `tkinter` (meist vorinstalliert; nur Linux-Minimal-Installationen benötigen Nachinstallation)
+* **Python 3.9+**
+* Internet connection (for the initial `pip install`)
+* `tkinter` (usually preinstalled; only minimal Linux installations require additional setup)
 
 ---
 
 ## Installation
 
-### 1. Repository klonen oder entpacken
+### 1. Clone or extract the repository
 
 ```bash
 git clone https://github.com/<dein-repo>/audio-stem-zipper.git
 cd audio-stem-zipper
 ```
 
-oder ZIP entpacken und ins Projektverzeichnis wechseln.
+or extract the ZIP and change into the project directory.
 
-### 2. Virtuelle Umgebung erstellen
+### 2. Create a virtual environment
 
-Windows (PowerShell oder CMD)
+Windows (PowerShell or CMD)
 
 ```bash
 python -m venv venv
@@ -53,25 +53,25 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-### 3. Abhängigkeiten installieren
+### 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Verwendung
+## Usage
 
-### Variante A
+### Option A
 
-Direkt ausführen (empfohlen während der Entwicklung)
+Run directly (recommended during development)
 
 ```bash
 python stems_gui.py
 ```
 
-### Variante B
+### Option B
 
-Erstellung einer ausführbaren App
+Create a standalone app
 
 #### Windows (.exe)
 
@@ -79,7 +79,7 @@ Erstellung einer ausführbaren App
 pyinstaller --noconfirm --onefile --windowed stems_gui.py
 ```
 
-Ergebnis:
+Result:
 `dist/stems_gui.exe`
 
 #### macOS (.app)
@@ -88,27 +88,27 @@ Ergebnis:
 pyinstaller --noconfirm --onefile --windowed --name "AudioStemZipper" stems_gui.py
 ```
 
-Ergebnis:
+Result:
 `dist/AudioStemZipper.app`
 
-> Beim ersten Start unter macOS ggf. Rechtsklick → Öffnen (wegen Gatekeeper).
+> On first launch under macOS you may need to right-click → Open (due to Gatekeeper).
 
-#### Linux (Binärdatei)
+#### Linux (binary)
 
 ```bash
 pyinstaller --noconfirm --onefile stems_gui.py
 ```
 
-Ergebnis:
+Result:
 `dist/stems_gui`
 
-Ausführen der Datei mit:
+Run the file with:
 
 ```bash
 ./dist/stems_gui
 ```
 
-## Lizenz
+## License
 
 MIT License
 © 2025 Björn Ahlers
