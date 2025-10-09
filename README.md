@@ -1,6 +1,6 @@
 # Audio Stem Splitter & ZIPper
 
-This tool enables the automatic splitting and packing of large audio file collections into ZIP archives with a maximum of 50 MB per archive.
+This tool enables the automatic splitting and packing of large audio file collections into ZIP archives with a maximum of 50 MB (which is the maximum filesize for ccmixter.org) per archive.
 The files are distributed optimally so that the available space is utilized as efficiently as possible.
 
 Supported formats:
