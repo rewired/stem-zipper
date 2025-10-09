@@ -38,6 +38,7 @@ cd audio-stem-zipper
 oder ZIP entpacken und ins Projektverzeichnis wechseln.
 
 ### 2. Virtuelle Umgebung erstellen
+
 Windows (PowerShell oder CMD)
 
 ```bash
@@ -107,7 +108,7 @@ Ausführen der Datei mit:
 ./dist/stems_gui
 ```
 
-# Lizenz
+## Lizenz
 
 MIT License
 © 2025 Björn Ahlers
