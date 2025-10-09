@@ -15,6 +15,10 @@ Supported formats:
 * Intelligent distribution (Best-Fit-Decreasing)
 * Cross-platform (Windows / macOS / Linux)
 * Optional: Create a standalone app (.exe / .app / binary)
+* I18N for EN, DE, FR, IT, ES & PT (automatically choosen by your OS language)
+* Flags:
+  * `--dev` (adds a button for creating binary trash-files to test the program)
+  * `--lang` [EN, DE, FR, IT, ES, PT]
 
 ---
 
