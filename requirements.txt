@@ -1,0 +1,11 @@
+# GUI & Drag-and-Drop
+tkinterdnd2==0.3.0
+
+# Optionaler Fallback für Linux-Minimalinstallationen
+tk==0.1.0
+
+# Packaging als ausführbare Desktop-App
+pyinstaller==6.10.0
+
+# Hilfreich für spätere Erweiterungen (z. B. Fortschrittsbalken, Logging, Threads)
+tqdm==4.66.5
