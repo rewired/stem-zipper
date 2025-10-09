@@ -66,7 +66,7 @@ pip install -r requirements.txt
 Run directly (recommended during development)
 
 ```bash
-python stems_gui.py
+python stem-zipper.py
 ```
 
 ### Option B
@@ -76,16 +76,16 @@ Create a standalone app
 #### Windows (.exe)
 
 ```bash
-pyinstaller --noconfirm --onefile --windowed stems_gui.py
+pyinstaller --noconfirm --onefile --windowed stem-zipper.py
 ```
 
 Result:
-`dist/stems_gui.exe`
+`dist/stem-zipper.exe`
 
 #### macOS (.app)
 
 ```bash
-pyinstaller --noconfirm --onefile --windowed --name "AudioStemZipper" stems_gui.py
+pyinstaller --noconfirm --onefile --windowed --name "AudioStemZipper" stem-zipper.py
 ```
 
 Result:
@@ -96,16 +96,16 @@ Result:
 #### Linux (binary)
 
 ```bash
-pyinstaller --noconfirm --onefile stems_gui.py
+pyinstaller --noconfirm --onefile stem-zipper.py
 ```
 
 Result:
-`dist/stems_gui`
+`dist/stem-zipper`
 
 Run the file with:
 
 ```bash
-./dist/stems_gui
+./dist/stem-zipper
 ```
 
 ## License
