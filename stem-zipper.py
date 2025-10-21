@@ -347,7 +347,7 @@ class StemZipperGUI:
 # ============================================================
 def main():
     parser = argparse.ArgumentParser(
-        description=STEM_ZIPPER_STAMP,
+        description=STEM_ZIPPER_LOGO,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--dev", action="store_true", help="Enable developer mode (test data button)")
