@@ -6,7 +6,7 @@ import { Header } from './components/Header';
 import { FileTable } from './components/FileTable';
 import { ProgressPanel } from './components/ProgressPanel';
 import { ActionBar } from './components/ActionBar';
-import { detectLocale, formatMessage, translations, type LocaleKey } from './lib/i18n';
+import { formatMessage, resolveLocale, translations, type LocaleKey } from '@common/i18n';
 
 const initialProgress: PackProgress = {
   state: 'idle',
@@ -16,8 +16,13 @@ const initialProgress: PackProgress = {
   message: 'ready'
 };
 
+function detectInitialLocale(): LocaleKey {
+  const languages = Array.isArray(navigator.languages) ? navigator.languages : [];
+  return resolveLocale(window.runtimeConfig.locale, languages, navigator.language);
+}
+
 export default function App() {
-  const [locale] = useState<LocaleKey>(detectLocale());
+  const [locale] = useState<LocaleKey>(() => detectInitialLocale());
   const [maxSize, setMaxSize] = useState<number | ''>(DEFAULT_MAX_SIZE_MB);
   const [folderPath, setFolderPath] = useState<string | null>(null);
   const [files, setFiles] = useState<FileEntry[]>([]);
@@ -191,7 +196,7 @@ export default function App() {
   };
 
   const canPack = Boolean(folderPath && files.length > 0 && !isPacking && typeof maxSize === 'number');
-  const isDevMode = import.meta.env.DEV;
+  const isDevMode = window.runtimeConfig.devMode || import.meta.env.DEV;
 
   return (
     <div

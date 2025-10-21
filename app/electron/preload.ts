@@ -6,8 +6,18 @@ import type {
   TestDataResponse
 } from '@common/ipc';
 import { IPC_CHANNELS } from '@common/ipc';
+import type { RuntimeConfig } from '@common/runtime';
+import { resolveLocale } from '@common/i18n';
 
 type ProgressListener = (progress: PackProgress) => void;
+
+const runtimeConfig: RuntimeConfig = {
+  locale: resolveLocale(process.env.STEM_ZIPPER_LANG, process.env.LC_ALL, process.env.LANG),
+  devMode:
+    process.env.STEM_ZIPPER_DEV_MODE === '1' || Boolean(process.env.VITE_DEV_SERVER_URL)
+};
+
+contextBridge.exposeInMainWorld('runtimeConfig', runtimeConfig);
 
 contextBridge.exposeInMainWorld('electronAPI', {
   async selectFolder(): Promise<string | null> {
