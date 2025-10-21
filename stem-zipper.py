@@ -336,7 +336,7 @@ class StemZipperGUI:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dev", action="store_true", help="Enable developer mode (test data button)")
-    parser.add_argument("--lang", type=str, help="Force specific language (en, de, fr, it, es, pt)")
+    parser.add_argument("--lang", type=str, help="Force specific language (currently supported: en, de, fr, it, es, pt)")
     args = parser.parse_args()
 
     # Sprache setzen
