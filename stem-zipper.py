@@ -6,10 +6,11 @@ import wave
 import random
 import argparse
 import locale
-import ttkbootstrap as tk
-from ttkbootstrap.constants import *
-from tkinter import filedialog, messagebox
+import tkinter as tk
+from tkinter import filedialog, messagebox, ttk
 
+# ============================================================
+# 🌍 I18N / LANGUAGES
 # ============================================================
 LANGS = {
     "en": {"app_title": "STEM ZIPPER","select_folder": "Select Folder","now_packing": "Packing...","ready": "Ready",
@@ -95,11 +96,16 @@ def split_stereo_wav(filepath):
     except Exception:
         return [filepath]
 
+STEM_ZIPPER_STAMP = "Packed with stem-zipper - get it here: https://github.com/rewired/stem-zipper"
+STAMP_FILENAME = "stem-zipper.txt"
+
+
 def create_zip(name, files, outdir):
     zp = os.path.join(outdir, f"{name}.zip")
     with zipfile.ZipFile(zp, 'w', zipfile.ZIP_DEFLATED) as z:
         for f in files:
             z.write(f, arcname=os.path.basename(f))
+        z.writestr(STAMP_FILENAME, STEM_ZIPPER_STAMP)
     return zp
 
 def best_fit_pack(files):
@@ -178,70 +184,57 @@ def process_folder(folder, label, bar):
 # ============================================================
 class StemZipperGUI:
     def __init__(self, dev=False):
-        self.dev = dev
-        self.folder = None
-        self.root = tk.Window(themename="darkly")
+        self.dev=dev; self.folder=None
+        self.root=tk.Tk()
         self.root.title(_("app_title"))
-        self.root.geometry("850x750")
-        self.root.resizable(False, False)
+        self.root.geometry("850x650")
+        self.root.configure(bg="#f5f6f8"); self.root.resizable(False,False)
 
-        # Styles
-        style = self.root.style
-        spot_blue = "#2d69ff"
-        spot_blue_active = "#5886ff"
-
-        style.configure('TButton', font=("Noto Sans", 10), padding=6)
-        style.configure('spot-blue.TButton', background=spot_blue, foreground='#FFFFFF', font=("Noto Sans", 10, 'bold'))
-        style.map('spot-blue.TButton', background=[('active', spot_blue_active)])
-
-        style.configure('Treeview', font=("Noto Sans", 10), rowheight=28)
-        style.configure('Treeview.Heading', font=("Noto Sans", 11, 'bold'))
-        style.configure('info.TLabel', font=("Noto Sans", 10))
-        style.configure('header.TLabel', font=("Noto Sans", 14, 'bold'))
-        style.configure('blue.Horizontal.TProgressbar', background=spot_blue)
+        s=ttk.Style()
+        s.theme_use("clam")
+        base=("Segoe UI",10)
+        s.configure("TFrame",background="#f5f6f8")
+        s.configure("TLabel",background="#f5f6f8",font=base)
+        s.configure("TButton",font=base,foreground="#fff",padding=6,background="#2563eb")
+        s.map("TButton",background=[("active","#3b82f6")])
+        s.configure("Treeview",font=base,background="#fff",rowheight=26,fieldbackground="#fff")
+        s.configure("Treeview.Heading",font=("Segoe UI Semibold",10),background="#f3f4f6")
+        s.configure("Horizontal.TProgressbar",troughcolor="#e5e7eb",background="#3b82f6")
 
         # Header
-        h = tk.Frame(self.root, padding=(20, 15, 20, 5))
-        h.pack(fill=X)
-        tk.Label(h, text=_("app_title"), style='header.TLabel').pack(anchor=W, pady=(0, 5))
-        tk.Label(h, text=_("header_label"), style='info.TLabel').pack(side=LEFT, padx=(0, 10))
-        tk.Button(h, text=_("select_folder"), command=self.select_folder, style='spot-blue.TButton').pack(side=LEFT)
+        h=ttk.Frame(self.root,padding=(20,15,20,5)); h.pack(fill="x")
+        ttk.Label(h,text="🎧 "+_("app_title"),font=("Segoe UI Semibold",14)).pack(anchor="w",pady=(0,5))
+        ttk.Label(h,text=_("header_label")).pack(side="left",padx=(0,10))
+        ttk.Button(h,text=_("select_folder"),command=self.select_folder).pack(side="left")
 
         # Table
-        t = tk.Frame(self.root, padding=(20, 10, 20, 10))
-        t.pack(fill=BOTH, expand=True)
-        cols = ("name", "size", "action")
-        self.tree = tk.Treeview(t, columns=cols, show="headings", height=15, style='Treeview')
-        self.tree.heading("name", text=_("table_file"))
-        self.tree.heading("size", text=_("table_size"))
-        self.tree.heading("action", text=_("table_action"))
-        self.tree.column("name", width=500, anchor=W)
-        self.tree.column("size", width=120, anchor=CENTER)
-        self.tree.column("action", width=150, anchor=CENTER)
-
-        sb = tk.Scrollbar(t, orient=VERTICAL, command=self.tree.yview)
-        # FIX: correct option is yscrollcommand (not yscroll)
-        self.tree.configure(yscrollcommand=sb.set)
-        self.tree.grid(row=0, column=0, sticky="nsew")
-        sb.grid(row=0, column=1, sticky="ns")
-        t.grid_columnconfigure(0, weight=1)
+        t=ttk.Frame(self.root,padding=(20,10,20,10)); t.pack(fill="both",expand=True)
+        cols=("name","size","action")
+        self.tree=ttk.Treeview(t,columns=cols,show="headings",height=15)
+        self.tree.heading("name",text=_("table_file"))
+        self.tree.heading("size",text=_("table_size"))
+        self.tree.heading("action",text=_("table_action"))
+        self.tree.column("name",width=500,anchor="w")
+        self.tree.column("size",width=120,anchor="center")
+        self.tree.column("action",width=150,anchor="center")
+        self.tree.tag_configure("evenrow",background="#f9fafb")
+        self.tree.tag_configure("oddrow",background="#fff")
+        sb=ttk.Scrollbar(t,orient="vertical",command=self.tree.yview)
+        self.tree.configure(yscroll=sb.set)
+        self.tree.grid(row=0,column=0,sticky="nsew"); sb.grid(row=0,column=1,sticky="ns")
+        t.grid_columnconfigure(0,weight=1)
 
         # Status
-        st = tk.Frame(self.root, padding=(20, 5))
-        st.pack(fill=X)
-        self.bar = tk.Progressbar(st, length=600, mode="determinate", style='blue.Horizontal.TProgressbar')
-        self.bar.pack(side=LEFT, padx=(0, 10), fill=X, expand=True)
-        self.label = tk.Label(st, text=_("ready"), style='info.TLabel')
-        self.label.pack(side=LEFT)
+        st=ttk.Frame(self.root,padding=(20,5)); st.pack(fill="x")
+        self.bar=ttk.Progressbar(st,length=600,mode="determinate")
+        self.bar.pack(side="left",padx=(0,10),fill="x",expand=True)
+        self.label=ttk.Label(st,text=_("ready")); self.label.pack(side="left")
 
         # Buttons
-        bf = tk.Frame(self.root, padding=(20, 10))
-        bf.pack(fill=X)
-        self.start = tk.Button(bf, text=_("pack_now"), command=self.start_pack, state="disabled", style='spot-blue.TButton')
-        self.start.pack(side=LEFT, padx=(0, 10))
-        if self.dev:
-            tk.Button(bf, text=_("create_testdata"), command=self.create_testdata, style='spot-blue.TButton').pack(side=LEFT)
-        tk.Button(bf, text=_("exit"), command=self.root.destroy).pack(side=RIGHT)
+        bf=ttk.Frame(self.root,padding=(20,10)); bf.pack(fill="x")
+        self.start=ttk.Button(bf,text=_("pack_now"),command=self.start_pack,state="disabled"); self.start.pack(side="left",padx=(0,10))
+        if self.dev: ttk.Button(bf,text=_("create_testdata"),command=self.create_testdata).pack(side="left")
+        ttk.Button(bf,text=_("exit"),command=self.root.destroy).pack(side="right")
         self.root.mainloop()
 
     def select_folder(self):
@@ -252,16 +245,13 @@ class StemZipperGUI:
         self.populate()
 
     def populate(self):
-        for i in self.tree.get_children():
-            self.tree.delete(i)
-        files = analyze_folder(self.folder)
-        for i, (n, s, a) in enumerate(files):
-            self.tree.insert("", "end", values=(n, s, a))
+        for i in self.tree.get_children(): self.tree.delete(i)
+        files=analyze_folder(self.folder)
+        for i,(n,s,a) in enumerate(files):
+            tag="evenrow" if i%2==0 else "oddrow"
+            self.tree.insert("", "end", values=(n,s,a), tags=(tag,))
         self.label.config(text=_("found_files").format(len(files)))
-        if files:
-            self.start["state"] = "normal"
-        else:
-            self.start["state"] = "disabled"
+        if files: self.start["state"]="normal"
 
     def start_pack(self):
         process_folder(self.folder,self.label,self.bar)
