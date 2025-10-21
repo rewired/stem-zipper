@@ -220,28 +220,34 @@ export default function App() {
         onMaxSizeBlur={handleMaxSizeBlur}
         dropHelper={t('drop_helper')}
       />
-      <main className="flex flex-1 flex-col gap-6 px-8 py-6">
-        <FileTable
-          files={files}
-          fileLabel={t('table_file')}
-          sizeLabel={t('table_size')}
-          actionLabel={t('table_action')}
-          actionNames={actionNames}
-          emptyLabel={t('select_hint')}
-          helperLabel={t('drop_helper')}
-        />
-        <ProgressPanel progress={progress} statusText={statusText} />
-        <ActionBar
-          onPack={handlePack}
-          onExit={() => window.close()}
-          onCreateTestData={isDevMode ? handleCreateTestData : undefined}
-          canPack={canPack}
-          isPacking={isPacking}
-          packLabel={t('pack_now')}
-          exitLabel={t('exit')}
-          createTestDataLabel={t('create_testdata')}
-          devMode={isDevMode}
-        />
+      <main className="flex flex-1 min-h-0 flex-col">
+        <div className="flex-1 min-h-0 overflow-y-auto px-8 py-6">
+          <FileTable
+            files={files}
+            fileLabel={t('table_file')}
+            sizeLabel={t('table_size')}
+            actionLabel={t('table_action')}
+            actionNames={actionNames}
+            emptyLabel={t('select_hint')}
+            helperLabel={t('drop_helper')}
+          />
+        </div>
+        <div className="sticky bottom-0 z-30 border-t border-slate-800 bg-slate-950/90 px-8 py-4 backdrop-blur">
+          <div className="space-y-4">
+            <ProgressPanel progress={progress} statusText={statusText} />
+            <ActionBar
+              onPack={handlePack}
+              onExit={() => window.close()}
+              onCreateTestData={isDevMode ? handleCreateTestData : undefined}
+              canPack={canPack}
+              isPacking={isPacking}
+              packLabel={t('pack_now')}
+              exitLabel={t('exit')}
+              createTestDataLabel={t('create_testdata')}
+              devMode={isDevMode}
+            />
+          </div>
+        </div>
       </main>
       {isDragActive ? (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-blue-500/10 backdrop-blur-sm">

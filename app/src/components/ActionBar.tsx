@@ -24,7 +24,7 @@ export function ActionBar({
   devMode
 }: ActionBarProps) {
   return (
-    <div className="mt-6 flex flex-col justify-between gap-4 border-t border-slate-800 pt-4 sm:flex-row">
+    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-3">
         <button
           type="button"
