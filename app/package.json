@@ -2,7 +2,7 @@
   "name": "stem-zipper-electron",
   "version": "0.1.0",
   "private": true,
-  "main": "dist-electron/main/main.js",
+  "main": "dist-electron/main/electron/main.js",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "dev": "concurrently -k \"pnpm:dev:main\" \"pnpm:dev:preload\" \"pnpm:dev:renderer\" \"pnpm:electron\"",
