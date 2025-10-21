@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
 import { analyzeFolder, createTestData, packFolder } from './services/packaging';
@@ -12,6 +13,47 @@ import type { RuntimeConfig } from '../common/runtime';
 let mainWindow: BrowserWindow | null = null;
 let packInProgress = false;
 let runtimeConfig: RuntimeConfig | null = null;
+let preloadPath: string | null = null;
+
+function getCandidatePreloadPaths(): string[] {
+  const appPath = app.getAppPath();
+  return [
+    path.join(appPath, 'dist-electron', 'preload', 'electron', 'preload.js'),
+    path.join(__dirname, '../../preload/electron/preload.js')
+  ];
+}
+
+async function resolvePreloadPath(): Promise<string> {
+  if (preloadPath) {
+    return preloadPath;
+  }
+
+  const candidates = getCandidatePreloadPaths();
+  const found = candidates.find((candidate) => fs.existsSync(candidate));
+  if (found) {
+    preloadPath = found;
+    return preloadPath;
+  }
+
+  const timeoutMs = 10000;
+  const pollIntervalMs = 100;
+  const start = Date.now();
+
+  while (Date.now() - start < timeoutMs) {
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+    const resolved = candidates.find((candidate) => fs.existsSync(candidate));
+    if (resolved) {
+      preloadPath = resolved;
+      return preloadPath;
+    }
+  }
+
+  throw new Error(
+    `Preload script is missing. Looked for ${candidates
+      .map((candidate) => `"${candidate}"`)
+      .join(', ')}.`
+  );
+}
 
 function computeRuntimeConfig(): RuntimeConfig {
   const preferredLanguages =
@@ -45,6 +87,7 @@ function getRuntimeConfig(): RuntimeConfig {
 
 async function createWindow(): Promise<void> {
   const config = getRuntimeConfig();
+  const preload = await resolvePreloadPath();
   mainWindow = new BrowserWindow({
     width: 1120,
     height: 720,
@@ -52,7 +95,7 @@ async function createWindow(): Promise<void> {
     minHeight: 640,
     backgroundColor: '#0f172a',
     webPreferences: {
-      preload: path.join(__dirname, '../../preload/electron/preload.js'),
+      preload,
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: false
