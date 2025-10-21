@@ -10,7 +10,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 # ============================================================
-# 🌍 I18N / LANGUAGES
+# I18N / LANGUAGES
 # ============================================================
 LANGS = {
     "en": {"app_title": "Stem ZIPper","select_folder": "Select Folder","now_packing": "Packing...","ready": "Ready",
@@ -78,6 +78,13 @@ LANG = LANGS.get(user_lang, LANGS["en"])
 def _(key): return LANG.get(key, key)
 
 # ============================================================
+# STAMP TEXT
+# ============================================================
+VERSION = "0.8"
+STEM_ZIPPER_STAMP = "░█▀▀░▀█▀░█▀▀░█▄█░░░▀▀█░▀█▀░█▀█░█▀█░█▀▀░█▀▄\n░▀▀█░░█░░█▀▀░█░█░░░▄▀░░░█░░█▀▀░█▀▀░█▀▀░█▀▄\n░▀▀▀░░▀░░▀▀▀░▀░▀░░░▀▀▀░▀▀▀░▀░░░▀░░░▀▀▀░▀░▀ v{VERSION}\n\nPacked with Stem ZIPper v{VERSION}\nGet it here: https://github.com/rewired/stem-zipper\nIt's free and open source!"
+STAMP_FILENAME = "_stem-zipper.txt"
+
+# ============================================================
 # CORE LOGIC
 # ============================================================
 DEFAULT_MAX_SIZE_MB = 48  # default size limit per ZIP file (kept below common 50 MB upload limits)
@@ -107,10 +114,6 @@ def split_stereo_wav(filepath):
             return [lp, rp]
     except Exception:
         return [filepath]
-
-STEM_ZIPPER_STAMP = "░█▀▀░▀█▀░█▀▀░█▄█░░░▀▀█░▀█▀░█▀█░█▀█░█▀▀░█▀▄\n░▀▀█░░█░░█▀▀░█░█░░░▄▀░░░█░░█▀▀░█▀▀░█▀▀░█▀▄\n░▀▀▀░░▀░░▀▀▀░▀░▀░░░▀▀▀░▀▀▀░▀░░░▀░░░▀▀▀░▀░▀ V0.8\n\nPacked with Stem ZIPper V0.8\nGet it here: https://github.com/rewired/stem-zipper\nIt's free and open source!"
-STAMP_FILENAME = "_stem-zipper.txt"
-
 
 class Tooltip:
     def __init__(self, widget, text):
