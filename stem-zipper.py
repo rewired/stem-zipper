@@ -68,7 +68,7 @@ def _(key): return LANG.get(key, key)
 # ============================================================
 # CORE LOGIC
 # ============================================================
-MAX_SIZE_MB = 48
+MAX_SIZE_MB = 48 # set size limit per ZIP file (here: 48 MB for safety with max. 50 MB upload limits)
 MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
 SUPPORTED_EXTENSIONS = ('.wav', '.flac', '.mp3', '.aiff', '.ogg', '.aac', '.wma')
 
@@ -97,7 +97,7 @@ def split_stereo_wav(filepath):
         return [filepath]
 
 STEM_ZIPPER_STAMP = "Packed with stem-zipper - get it here: https://github.com/rewired/stem-zipper"
-STAMP_FILENAME = "stem-zipper.txt"
+STAMP_FILENAME = "_stem-zipper.txt"
 
 
 def create_zip(name, files, outdir):
@@ -180,7 +180,7 @@ def process_folder(folder, label, bar):
     bar.update_idletasks()
 
 # ============================================================
-# MODERN GUI
+# MODERN GUI (kind of)
 # ============================================================
 class StemZipperGUI:
     def __init__(self, dev=False):
