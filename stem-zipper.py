@@ -81,11 +81,14 @@ def _(key): return LANG.get(key, key)
 # STAMP TEXT
 # ============================================================
 VERSION = "0.8"
-STEM_ZIPPER_STAMP = f"""░█▀▀░▀█▀░█▀▀░█▄█░░░▀▀█░▀█▀░█▀█░█▀█░█▀▀░█▀▄
+STEM_ZIPPER_LOGO = f"""
+░█▀▀░▀█▀░█▀▀░█▄█░░░▀▀█░▀█▀░█▀█░█▀█░█▀▀░█▀▄
 ░▀▀█░░█░░█▀▀░█░█░░░▄▀░░░█░░█▀▀░█▀▀░█▀▀░█▀▄
-░▀▀▀░░▀░░▀▀▀░▀░▀░░░▀▀▀░▀▀▀░▀░░░▀░░░▀▀▀░▀░▀ v{VERSION}
+░▀▀▀░░▀░░▀▀▀░▀░▀░░░▀▀▀░▀▀▀░▀░░░▀░░░▀▀▀░▀░▀ v{VERSION}"""
+STEM_ZIPPER_STAMP = f"""{STEM_ZIPPER_LOGO}
 
 Packed with Stem ZIPper v{VERSION}
+
 Get it here: https://github.com/rewired/stem-zipper
 It's free and open source!"""
 STAMP_FILENAME = "_stem-zipper.txt"
@@ -343,7 +346,7 @@ class StemZipperGUI:
 
 # ============================================================
 def main():
-    parser = argparse.ArgumentParser(description=f"Stem ZIPper v{VERSION}")
+    parser = argparse.ArgumentParser(description=f"{STEM_ZIPPER_LOGO}\nStem ZIPper v{VERSION}")
     parser.add_argument("--dev", action="store_true", help="Enable developer mode (test data button)")
     supported_languages = ", ".join(LANGS)
     parser.add_argument("--lang", type=str, help=f"Force specific language (currently supported: {supported_languages})")
