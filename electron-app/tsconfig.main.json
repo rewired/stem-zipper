@@ -2,10 +2,10 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "module": "CommonJS",
-    "outDir": "dist/main",
-    "rootDir": "src/main",
+    "outDir": "dist",
+    "rootDir": "src",
     "types": ["node"],
     "declaration": false
   },
-  "include": ["src/main/**/*"]
+  "include": ["src/main/**/*", "src/common/**/*"]
 }

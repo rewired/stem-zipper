@@ -3,6 +3,9 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Fixed
+- Adjusted the Electron TypeScript configs so the main and preload builds can consume shared modules under `src/common/` without triggering `rootDir` violations, emitting both outputs under a unified `dist/` tree.
+
 ### Changed
 - Switched the Electron workspace tooling from npm to pnpm, updating scripts and documentation to reflect the new workflow.
 
