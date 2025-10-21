@@ -52,7 +52,7 @@ async function createWindow(): Promise<void> {
     minHeight: 640,
     backgroundColor: '#0f172a',
     webPreferences: {
-      preload: path.join(__dirname, '../preload/preload.js'),
+      preload: path.join(__dirname, '../../preload/electron/preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: false
@@ -67,7 +67,7 @@ async function createWindow(): Promise<void> {
     }
   } else {
     const pageUrl = url.format({
-      pathname: path.join(__dirname, '../../dist-renderer/index.html'),
+      pathname: path.join(__dirname, '../../../dist-renderer/index.html'),
       protocol: 'file:',
       slashes: true
     });
