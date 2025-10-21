@@ -90,10 +90,16 @@ def split_stereo_wav(filepath):
             return [lp, rp]
     except Exception: return [filepath]
 
+STEM_ZIPPER_STAMP = "Packed with stem-zipper - get it here: https://github.com/rewired/stem-zipper"
+STAMP_FILENAME = "stem-zipper.txt"
+
+
 def create_zip(name, files, outdir):
     zp = os.path.join(outdir, f"{name}.zip")
     with zipfile.ZipFile(zp, 'w', zipfile.ZIP_DEFLATED) as z:
-        for f in files: z.write(f, arcname=os.path.basename(f))
+        for f in files:
+            z.write(f, arcname=os.path.basename(f))
+        z.writestr(STAMP_FILENAME, STEM_ZIPPER_STAMP)
     return zp
 
 def best_fit_pack(files):
