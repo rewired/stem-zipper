@@ -3,9 +3,10 @@
   "version": "0.9.0",
   "description": "Electron client for Stem ZIPper using TypeScript, React, Vite, and Tailwind CSS.",
   "private": true,
+  "packageManager": "pnpm@10.13.1",
   "main": "dist/main/index.js",
   "scripts": {
-    "dev": "concurrently \"npm:dev:renderer\" \"npm:dev:main\"",
+    "dev": "concurrently \"pnpm run dev:renderer\" \"pnpm run dev:main\"",
     "dev:renderer": "vite --config vite.renderer.config.ts",
     "dev:main": "npm-run-all --parallel watch:main watch:preload start:electron",
     "start:electron": "wait-on tcp:5173 && electron . --dev",
@@ -17,7 +18,7 @@
     "build:preload": "tsc -p tsconfig.preload.json",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "preview": "electron .",
-    "package": "npm run build && electron-builder"
+    "package": "pnpm run build && electron-builder"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
