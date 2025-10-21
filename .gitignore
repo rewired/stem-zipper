@@ -1,44 +1,4 @@
 # -----------------------------------------------------------------------------
-# Python Build & Virtual Environment
-# -----------------------------------------------------------------------------
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual Environments
-venv/
-env/
-ENV/
-.venv/
-.pyenv/
-pip-wheel-metadata/
-pip-log.txt
-
-# -----------------------------------------------------------------------------
-# Distribution / Packaging
-# -----------------------------------------------------------------------------
-build/
-dist/
-*.egg-info/
-*.egg
-*.manifest
-*.spec
-*.so
-*.dll
-*.dylib
-
-# -----------------------------------------------------------------------------
-# PyInstaller Output
-# -----------------------------------------------------------------------------
-# When building executables with pyinstaller, these folders/files are generated
-*.spec
-dist/
-build/
-*.exe
-*.app
-*.bin
-
-# -----------------------------------------------------------------------------
 # OS / System Files
 # -----------------------------------------------------------------------------
 .DS_Store
@@ -46,20 +6,14 @@ Thumbs.db
 ehthumbs.db
 Icon?
 desktop.ini
-
-# macOS metadata
 .AppleDouble
 .LSOverride
-
-# Linux temp / cache
 .cache/
-.trash-*
-
-# Windows-specific
+.trash-*/
 $RECYCLE.BIN/
 
 # -----------------------------------------------------------------------------
-# IDE / Editor Configs
+# Editor & Tooling Artifacts
 # -----------------------------------------------------------------------------
 .vscode/
 .idea/
@@ -67,6 +21,33 @@ $RECYCLE.BIN/
 .spyproject
 *.sublime-project
 *.sublime-workspace
+*.swp
+*.swo
+
+# -----------------------------------------------------------------------------
+# JavaScript / TypeScript Dependencies & Reports
+# -----------------------------------------------------------------------------
+node_modules/
+**/node_modules/
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+*.tsbuildinfo
+coverage/
+
+# -----------------------------------------------------------------------------
+# Build & Distribution Artifacts
+# -----------------------------------------------------------------------------
+dist/
+dist-*/
+build/
+out/
+app/.vite/
+app/dist/
+app/dist-*/
+app/node_modules/
 
 # -----------------------------------------------------------------------------
 # Logs, Reports & Temp Files
@@ -74,25 +55,17 @@ $RECYCLE.BIN/
 *.log
 *.tmp
 *.bak
-*.swp
-*.swo
 *.orig
 *.out
 *.err
 *.pid
 
 # -----------------------------------------------------------------------------
-# Node / Frontend Build
+# Source Maps
 # -----------------------------------------------------------------------------
-node_modules/
-**/node_modules/
-dist/
-dist-*/
-*.log
-app/.vite/
-app/dist/
-app/dist-*/
-app/node_modules/
+*.map
 
-# Legacy audio input folder
+# -----------------------------------------------------------------------------
+# Project-specific
+# -----------------------------------------------------------------------------
 audio_input
