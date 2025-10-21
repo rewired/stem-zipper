@@ -60,12 +60,13 @@ function computeRuntimeConfig(): RuntimeConfig {
     typeof app.getPreferredSystemLanguages === 'function'
       ? app.getPreferredSystemLanguages()
       : [];
+  const systemLocale = typeof app.getLocale === 'function' ? app.getLocale() : undefined;
   const locale = resolveLocale(
     process.env.STEM_ZIPPER_LANG,
     process.env.LC_ALL,
     process.env.LANG,
-    preferredLanguages,
-    app.getLocale()
+    systemLocale,
+    preferredLanguages
   );
   const devMode =
     process.env.STEM_ZIPPER_DEV_MODE === '1' || Boolean(process.env.VITE_DEV_SERVER_URL);
