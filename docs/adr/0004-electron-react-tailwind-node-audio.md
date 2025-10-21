@@ -19,7 +19,7 @@ The renderer and main process share constants, validation helpers and localisati
 
 ## Consequences
 
-- Developers can rely on npm workflows (`npm run dev`, `npm run build`, `npm run test`) for end-to-end work, eliminating Python runtime dependencies on the main branch.
+- Developers can rely on pnpm workflows (`pnpm dev`, `pnpm build`, `pnpm test`) for end-to-end work, eliminating Python runtime dependencies on the main branch.
 - Tailwind CSS accelerates UI prototyping while keeping styling colocated with React components.
 - Node-based packing logic benefits from the existing Vitest coverage and can be extended with additional audio formats without bridging two languages.
 - Desktop distribution now depends on Electron-focused tooling (Forge/Builder) rather than PyInstaller; legacy guidance is archived under `docs/archive/python-legacy.md` for reference.

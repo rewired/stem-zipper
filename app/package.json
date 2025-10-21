@@ -5,17 +5,17 @@
   "main": "dist-electron/main/main.js",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "dev": "concurrently -k \"npm:dev:main\" \"npm:dev:preload\" \"npm:dev:renderer\" \"npm:electron\"",
+    "dev": "concurrently -k \"pnpm:dev:main\" \"pnpm:dev:preload\" \"pnpm:dev:renderer\" \"pnpm:electron\"",
     "dev:renderer": "vite",
     "dev:main": "tsc --watch --project electron/tsconfig.main.json",
     "dev:preload": "tsc --watch --project electron/tsconfig.preload.json",
     "electron": "wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
-    "build": "npm run build:renderer && npm run build:main && npm run build:preload",
+    "build": "pnpm run build:renderer && pnpm run build:main && pnpm run build:preload",
     "build:renderer": "vite build",
     "build:main": "tsc --project electron/tsconfig.main.json",
     "build:preload": "tsc --project electron/tsconfig.preload.json",
     "lint": "eslint \"{src,electron}/**/*.{ts,tsx}\"",
-    "preview": "npm run build && electron .",
+    "preview": "pnpm run build && electron .",
     "test": "vitest run"
   },
   "dependencies": {
@@ -47,5 +47,6 @@
     "vite": "^5.0.11",
     "vitest": "^1.4.0",
     "wait-on": "^7.0.1"
-  }
+  },
+  "packageManager": "pnpm@10.13.1"
 }
