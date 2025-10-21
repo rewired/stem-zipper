@@ -108,7 +108,7 @@ def split_stereo_wav(filepath):
     except Exception:
         return [filepath]
 
-STEM_ZIPPER_STAMP = "Packed with stem-zipper - get it here: https://github.com/rewired/stem-zipper"
+STEM_ZIPPER_STAMP = "░█▀▀░▀█▀░█▀▀░█▄█░░░▀▀█░▀█▀░█▀█░█▀█░█▀▀░█▀▄\n░▀▀█░░█░░█▀▀░█░█░░░▄▀░░░█░░█▀▀░█▀▀░█▀▀░█▀▄\n░▀▀▀░░▀░░▀▀▀░▀░▀░░░▀▀▀░▀▀▀░▀░░░▀░░░▀▀▀░▀░▀ V0.8\n\nPacked with Stem ZIPper V0.8\nGet it here: https://github.com/rewired/stem-zipper\nIt's free and open source!"
 STAMP_FILENAME = "_stem-zipper.txt"
 
 
