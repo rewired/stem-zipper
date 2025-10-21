@@ -1,120 +1,95 @@
 # Stem ZIPper
 
-This tool enables the automatic splitting and packing of large audio file collections into ZIP archives with a maximum of 50 MB (which is currently the maximum filesize for [ccmixter.org](https://ccmixter.org)) per archive.
-The files are distributed optimally so that the available space is utilized as efficiently as possible.
-
-Supported formats:
-`.wav`, `.flac`, `.mp3`, `.aiff`, `.ogg`, `.aac`, `.wma`
-
----
+Stem ZIPper analyses folders of audio stems, splits over-sized stereo WAV files, and packs the results into optimised ZIP archives that stay under a configurable size limit. The project now ships with a full Electron + TypeScript client powered by Vite, React, and Tailwind while keeping the original Python/Tkinter implementation as a reference.
 
 ## Features
 
-* Drag & Drop GUI (or manual folder selection)
-* Automatic packing into `stems-XX.zip` (default max. 48 MB, adjustable in the GUI)
-* Intelligent distribution (Best-Fit-Decreasing)
-* Cross-platform (Windows / macOS / Linux)
-* Optional: Create a standalone app (.exe / .app / binary)
-* I18N for EN, DE, FR, IT, ES & PT (automatically choosen by your OS language)
-* Flags:
-  * `--dev` (adds a button for creating binary trash-files to test the program)
-  * `--lang` [EN, DE, FR, IT, ES, PT]
-
----
+- Modern Electron desktop UI with Tailwind styling and Headless UI components.
+- Intelligent best-fit packing into `stems-XX.zip` archives with an adjustable size target (default 48 MB, cap 500 MB).
+- Automatic stereo WAV channel splitting, `_stem-zipper.txt` archive stamp, and optional dummy test data generator.
+- Built-in localisation for English, German, French, Italian, Spanish, and Portuguese with CLI overrides (`--lang`).
+- Developer mode toggle (`--dev`) that exposes the test-data generator button in the UI.
+- Cross-platform packaging workflows for Windows, macOS, and Linux via `electron-builder`.
 
 ## Requirements
 
-* **Python 3.9+**
-* Internet connection (for the initial `pip install`)
-* `tkinter` (usually preinstalled; only minimal Linux installations require additional setup)
+| Component | Requirements |
+|-----------|--------------|
+| Electron app | Node.js 18+ and npm |
+| Legacy Python client | Python 3.9+, Tkinter, `pip install -r requirements.txt` |
 
----
+## Repository Layout
 
-## Installation
+- `electron-app/` – Electron workspace containing main, preload, renderer, and build tooling.
+- `stem-zipper.py` – Original Python/Tkinter GUI (kept for reference and parity testing).
+- `docs/adr/` – Architectural decision records (see ADR 0001 for the Electron migration).
+- `CHANGELOG.md` – Versioned summary of notable changes.
 
-### 1. Clone or extract the repository
+## Electron App Quickstart
 
 ```bash
-git clone https://github.com/rewired/stem-zipper.git
-cd stem-zipper
+cd electron-app
+npm install
+npm run dev
 ```
 
-or extract the ZIP and change into the project directory.
+The dev server launches Vite (renderer) and recompiles the main/preload processes. Electron opens automatically once the renderer is ready.
 
-### 2. Create a virtual environment
+### Available npm Scripts
 
-Windows (PowerShell or CMD)
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start Vite, watch the main/preload processes, and launch Electron with `--dev`. |
+| `npm run build` | Produce production builds in `dist/` for main, preload, and renderer bundles. |
+| `npm run preview` | Launch Electron against the already-built bundles in `dist/`. |
+| `npm run package` | Build and package installers via `electron-builder` into `release/`. |
+| `npm run lint` | Run ESLint across the TypeScript sources. |
+
+### Packaging Targets
+
+`npm run package` executes `electron-builder` with presets for all major platforms:
+
+- **Windows:** NSIS installer and ZIP archive in `release/`. Run with PowerShell/CMD or CI on Windows.
+- **macOS:** Universal DMG and ZIP bundles in `release/`. Requires running on macOS (codesigning optional).
+- **Linux:** AppImage and `tar.gz` archives in `release/`. Execute on Linux runners.
+
+Place platform-specific icons or resources inside `electron-app/build/` before packaging.
+
+### Language & Developer Flags
+
+Electron forwards the original CLI switches:
+
+- `--dev` – Enables developer mode (test data button).
+- `--lang <code>` – Forces a specific language (`en`, `de`, `fr`, `it`, `es`, `pt`).
+
+Examples:
+
+```bash
+# Run the packaged app in German
+electron . --lang=de
+
+# Launch dev mode with the generator button visible
+npm run dev -- --dev
+```
+
+## Legacy Python Client
+
+The Tkinter application is still available for compatibility checks.
 
 ```bash
 python -m venv venv
-venv\Scripts\activate
-```
-
-macOS / Linux
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Install dependencies
-
-```bash
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+python stem-zipper.py [--dev] [--lang=de]
 ```
 
-## Usage
+Feature parity with the Electron client is maintained by sharing translations and mirroring the packing algorithms.
 
-Use the **Max ZIP size (MB)** control in the application header to change the target archive size before scanning or packing files.
+## Documentation
 
-### Option A
-
-Run directly (recommended during development)
-
-```bash
-python stem-zipper.py
-```
-
-### Option B
-
-Create a standalone app
-
-#### Windows (.exe)
-
-```bash
-pyinstaller --noconfirm --onefile --windowed stem-zipper.py
-```
-
-Result:
-`dist/stem-zipper.exe`
-
-#### macOS (.app)
-
-```bash
-pyinstaller --noconfirm --onefile --windowed --name "StemZipper" stem-zipper.py
-```
-
-Result:
-`dist/StemZipper.app`
-
-> On first launch under macOS you may need to right-click → Open (due to Gatekeeper).
-
-#### Linux (binary)
-
-```bash
-pyinstaller --noconfirm --onefile stem-zipper.py
-```
-
-Result:
-`dist/stem-zipper`
-
-Run the file with:
-
-```bash
-./dist/stem-zipper
-```
+- [CHANGELOG](CHANGELOG.md) – Track notable updates and releases.
+- [ADR 0001](docs/adr/0001-electron-migration.md) – Decision record for the Electron migration.
 
 ## License
 
-MIT License
-© 2025 Björn Ahlers
+MIT License © 2025 Björn Ahlers
