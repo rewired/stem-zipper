@@ -63,6 +63,14 @@ npm run lint
 npm run typecheck
 ```
 
+### Unit tests
+
+```bash
+npm run test
+```
+
+The Vitest suite exercises the Node-based packaging service, covering the best-fit-decreasing algorithm and branded ZIP output.
+
 ### Production build
 
 ```bash
