@@ -11,7 +11,7 @@ Supported formats:
 ## Features
 
 * Drag & Drop GUI (or manual folder selection)
-* Automatic packing into `stems-XX.zip` (max. 50 MB)
+* Automatic packing into `stems-XX.zip` (default max. 48 MB, adjustable in the GUI)
 * Intelligent distribution (Best-Fit-Decreasing)
 * Cross-platform (Windows / macOS / Linux)
 * Optional: Create a standalone app (.exe / .app / binary)
@@ -64,6 +64,8 @@ pip install -r requirements.txt
 ```
 
 ## Usage
+
+Use the **Max ZIP size (MB)** control in the application header to change the target archive size before scanning or packing files.
 
 ### Option A
 
