@@ -9,6 +9,7 @@ import locale
 import ttkbootstrap as tk
 from ttkbootstrap.constants import *
 from tkinter import filedialog, messagebox
+
 # ============================================================
 LANGS = {
     "en": {"app_title": "STEM ZIPPER","select_folder": "Select Folder","now_packing": "Packing...","ready": "Ready",
@@ -56,7 +57,7 @@ LANGS = {
 }
 
 try:
-    user_lang = locale.getdefaultlocale()[0][:2].lower()
+    user_lang = (locale.getdefaultlocale() or ("en",))[0][:2].lower()
 except Exception:
     user_lang = "en"
 LANG = LANGS.get(user_lang, LANGS["en"])
@@ -66,32 +67,39 @@ def _(key): return LANG.get(key, key)
 # ============================================================
 # CORE LOGIC
 # ============================================================
-MAX_SIZE_MB = 50
+MAX_SIZE_MB = 48
 MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
 SUPPORTED_EXTENSIONS = ('.wav', '.flac', '.mp3', '.aiff', '.ogg', '.aac', '.wma')
 
 def split_stereo_wav(filepath):
     try:
         with wave.open(filepath, 'rb') as s:
-            if s.getnchannels() != 2: return [filepath]
+            if s.getnchannels() != 2:
+                return [filepath]
             sw, fr, nf = s.getsampwidth(), s.getframerate(), s.getnframes()
             f = s.readframes(nf)
             l, r = bytearray(), bytearray()
             for i in range(0, len(f), sw*2):
-                l += f[i:i+sw]; r += f[i+sw:i+2*sw]
+                l += f[i:i+sw]
+                r += f[i+sw:i+2*sw]
             base, ext = os.path.splitext(filepath)
             lp, rp = f"{base}_L{ext}", f"{base}_R{ext}"
             for p, d in [(lp, l), (rp, r)]:
                 with wave.open(p, 'wb') as c:
-                    c.setnchannels(1); c.setsampwidth(sw); c.setframerate(fr); c.writeframes(d)
+                    c.setnchannels(1)
+                    c.setsampwidth(sw)
+                    c.setframerate(fr)
+                    c.writeframes(d)
             os.remove(filepath)
             return [lp, rp]
-    except Exception: return [filepath]
+    except Exception:
+        return [filepath]
 
 def create_zip(name, files, outdir):
     zp = os.path.join(outdir, f"{name}.zip")
     with zipfile.ZipFile(zp, 'w', zipfile.ZIP_DEFLATED) as z:
-        for f in files: z.write(f, arcname=os.path.basename(f))
+        for f in files:
+            z.write(f, arcname=os.path.basename(f))
     return zp
 
 def best_fit_pack(files):
@@ -101,14 +109,20 @@ def best_fit_pack(files):
         best=None; minr=MAX_SIZE_BYTES+1
         for b in bins:
             r=MAX_SIZE_BYTES-sum(f[1] for f in b)
-            if s<=r<minr: best,minr=b,r
-        (bins.append([(p,s)]) if not best else best.append((p,s)))
+            if s<=r<minr:
+                best,minr=b,r
+        if not best:
+            bins.append([(p,s)])
+        else:
+            best.append((p,s))
     return bins
 
 def create_dummy_file(path, mb):
     b=int(mb*1024*1024)
     with open(path,"wb") as f:
-        f.write(b"FAKEAUDIO"); f.write(os.urandom(b-9))
+        f.write(b"FAKEAUDIO")
+        if b > 9:
+            f.write(os.urandom(b-9))
 
 def create_test_files(out, n=20, min_s=2, max_s=20):
     os.makedirs(out, exist_ok=True)
@@ -123,7 +137,8 @@ def analyze_folder(path):
     fl=[]
     for f in os.listdir(path):
         e=os.path.splitext(f)[1].lower()
-        if e not in SUPPORTED_EXTENSIONS: continue
+        if e not in SUPPORTED_EXTENSIONS:
+            continue
         fp=os.path.join(path,f); sz=os.path.getsize(fp)
         act=_("normal")
         if sz>MAX_SIZE_BYTES:
@@ -140,18 +155,23 @@ def process_folder(folder, label, bar):
     for f in allf:
         s=os.path.getsize(f)
         if s>MAX_SIZE_BYTES and f.lower().endswith(".wav"):
-            for nf in split_stereo_wav(f): expanded.append((nf, os.path.getsize(nf)))
-        else: expanded.append((f,s))
+            for nf in split_stereo_wav(f):
+                expanded.append((nf, os.path.getsize(nf)))
+        else:
+            expanded.append((f,s))
     groups=best_fit_pack(expanded)
     total=len(groups); bar["maximum"]=total
     for i,g in enumerate(groups,1):
         zn=f"stems-{i:02}"
-        zp=create_zip(zn,[f for f,_ in g],folder)
-        bar["value"]=i; percent=int(i/total*100)
+        create_zip(zn,[f for f,_ in g],folder)
+        bar["value"]=i
+        percent=int(i/total*100)
         label.config(text=_("status_packing").format(zn)+f" ({percent}%)")
-        bar.update()
+        label.update_idletasks()
+        bar.update_idletasks()
     messagebox.showinfo(_("app_title"), _("msg_finished").format(total))
     label.config(text=_("status_done")); bar["value"]=0
+    bar.update_idletasks()
 
 # ============================================================
 # MODERN GUI
@@ -162,26 +182,23 @@ class StemZipperGUI:
         self.folder = None
         self.root = tk.Window(themename="darkly")
         self.root.title(_("app_title"))
-        self.root.geometry("850x650")
+        self.root.geometry("850x750")
         self.root.resizable(False, False)
 
-        # Custom 'Spotify Blue' Style
+        # Styles
         style = self.root.style
+        spot_blue = "#2d69ff"
+        spot_blue_active = "#5886ff"
+
         style.configure('TButton', font=("Noto Sans", 10), padding=6)
-        style.configure('primary.TButton', background='#1DB954', foreground='#FFFFFF')
-        style.map('primary.TButton', background=[('active', '#1ED760')])
-
-        # Let's define our 'Spotify Blue'
-        style.colors.add('spot-blue', '#2d69ff') # A nice blue
-
-        style.configure('spot-blue.TButton', background=style.colors.get('spot-blue'), foreground='#FFFFFF', font=("Noto Sans", 10, 'bold'))
-        style.map('spot-blue.TButton', background=[('active', '#5886ff')])
+        style.configure('spot-blue.TButton', background=spot_blue, foreground='#FFFFFF', font=("Noto Sans", 10, 'bold'))
+        style.map('spot-blue.TButton', background=[('active', spot_blue_active)])
 
         style.configure('Treeview', font=("Noto Sans", 10), rowheight=28)
         style.configure('Treeview.Heading', font=("Noto Sans", 11, 'bold'))
         style.configure('info.TLabel', font=("Noto Sans", 10))
         style.configure('header.TLabel', font=("Noto Sans", 14, 'bold'))
-        style.configure('blue.Horizontal.TProgressbar', background=style.colors.get('spot-blue'))
+        style.configure('blue.Horizontal.TProgressbar', background=spot_blue)
 
         # Header
         h = tk.Frame(self.root, padding=(20, 15, 20, 5))
@@ -203,7 +220,8 @@ class StemZipperGUI:
         self.tree.column("action", width=150, anchor=CENTER)
 
         sb = tk.Scrollbar(t, orient=VERTICAL, command=self.tree.yview)
-        self.tree.configure(yscroll=sb.set)
+        # FIX: correct option is yscrollcommand (not yscroll)
+        self.tree.configure(yscrollcommand=sb.set)
         self.tree.grid(row=0, column=0, sticky="nsew")
         sb.grid(row=0, column=1, sticky="ns")
         t.grid_columnconfigure(0, weight=1)
@@ -228,23 +246,30 @@ class StemZipperGUI:
 
     def select_folder(self):
         f=filedialog.askdirectory(title=_("choose_folder"))
-        if not f: return
-        self.folder=f; self.populate()
+        if not f:
+            return
+        self.folder=f
+        self.populate()
 
     def populate(self):
-        for i in self.tree.get_children(): self.tree.delete(i)
+        for i in self.tree.get_children():
+            self.tree.delete(i)
         files = analyze_folder(self.folder)
         for i, (n, s, a) in enumerate(files):
             self.tree.insert("", "end", values=(n, s, a))
         self.label.config(text=_("found_files").format(len(files)))
-        if files: self.start["state"] = "normal"
+        if files:
+            self.start["state"] = "normal"
+        else:
+            self.start["state"] = "disabled"
 
     def start_pack(self):
         process_folder(self.folder,self.label,self.bar)
 
     def create_testdata(self):
         f=filedialog.askdirectory(title=_("choose_folder"))
-        if f: create_test_files(f)
+        if f:
+            create_test_files(f)
 
 # ============================================================
 def main():
@@ -258,7 +283,7 @@ def main():
         lang_code = args.lang.lower()
     else:
         try:
-            lang_code = locale.getdefaultlocale()[0][:2].lower()
+            lang_code = (locale.getdefaultlocale() or ("en",))[0][:2].lower()
         except Exception:
             lang_code = "en"
 
