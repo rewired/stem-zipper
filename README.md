@@ -1,120 +1,104 @@
 # Stem ZIPper
 
-This tool enables the automatic splitting and packing of large audio file collections into ZIP archives with a maximum of 50 MB (which is currently the maximum filesize for [ccmixter.org](https://ccmixter.org)) per archive.
-The files are distributed optimally so that the available space is utilized as efficiently as possible.
-
-Supported formats:
-`.wav`, `.flac`, `.mp3`, `.aiff`, `.ogg`, `.aac`, `.wma`
+Stem ZIPper is now delivered as an Electron application that combines a Vite powered React + TypeScript renderer with a modern desktop runtime. The tool keeps the original mission of preparing sample packs for platforms such as [ccmixter.org](https://ccmixter.org) by analysing folders full of audio files, splitting stereo WAV files if necessary and producing optimally filled ZIP archives.
 
 ---
 
-## Features
+## Highlights
 
-* Drag & Drop GUI (or manual folder selection)
-* Automatic packing into `stems-XX.zip` (default max. 48 MB, adjustable in the GUI)
-* Intelligent distribution (Best-Fit-Decreasing)
-* Cross-platform (Windows / macOS / Linux)
-* Optional: Create a standalone app (.exe / .app / binary)
-* I18N for EN, DE, FR, IT, ES & PT (automatically choosen by your OS language)
-* Flags:
-  * `--dev` (adds a button for creating binary trash-files to test the program)
-  * `--lang` [EN, DE, FR, IT, ES, PT]
+- 🎛️ **Modern desktop UI** built with React, Tailwind CSS and Electron.
+- 🗂️ **Drag & drop** or manual folder selection with live validation of the configured ZIP size target.
+- 📦 **Best-fit packing** into `stems-XX.zip` archives including the classic Stem ZIPper stamp file.
+- 🪄 **Automatic mono-splitting** for stereo WAV files that exceed the configured limit.
+- 🌍 **Multilingual interface** (EN, DE, FR, IT, ES, PT) that adapts to the operating system locale.
+- 🧪 **Developer utilities** (available in dev mode) to generate dummy audio files for testing the packing workflow.
 
----
-
-## Requirements
-
-* **Python 3.9+**
-* Internet connection (for the initial `pip install`)
-* `tkinter` (usually preinstalled; only minimal Linux installations require additional setup)
+Supported formats remain: `.wav`, `.flac`, `.mp3`, `.aiff`, `.ogg`, `.aac`, `.wma`.
 
 ---
 
-## Installation
+## Project layout
 
-### 1. Clone or extract the repository
-
-```bash
-git clone https://github.com/rewired/stem-zipper.git
-cd stem-zipper
+```
+app/
+├── electron/        # Main & preload processes and packaging services
+├── src/             # React renderer (components, styling, localisation)
+├── common/          # Shared constants, IPC contracts and helpers
+├── index.html       # Vite entry point
+└── package.json     # Electron/Vite workspace configuration
 ```
 
-or extract the ZIP and change into the project directory.
+---
 
-### 2. Create a virtual environment
+## Prerequisites
 
-Windows (PowerShell or CMD)
+- [Node.js](https://nodejs.org/) **18.x or newer**
+- npm (bundled with Node.js)
 
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
+> The Python/Tkinter application has been removed in this branch. All functionality now lives in the Electron experience under `app/`.
 
-macOS / Linux
+---
 
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
+## Getting started
 
-### 3. Install dependencies
+From the repository root:
 
 ```bash
-pip install -r requirements.txt
+cd app
+npm install
 ```
 
-## Usage
-
-Use the **Max ZIP size (MB)** control in the application header to change the target archive size before scanning or packing files.
-
-### Option A
-
-Run directly (recommended during development)
+### Development mode
 
 ```bash
-python stem-zipper.py
+npm run dev
 ```
 
-### Option B
+This command starts the Vite dev server, compiles the Electron main & preload processes in watch mode and launches Electron once the renderer is ready. Any change in `src/` hot-reloads the UI, while updates to Electron code trigger a quick TypeScript rebuild.
 
-Create a standalone app
-
-#### Windows (.exe)
+### Linting & type checks
 
 ```bash
-pyinstaller --noconfirm --onefile --windowed stem-zipper.py
+npm run lint
+npm run typecheck
 ```
 
-Result:
-`dist/stem-zipper.exe`
-
-#### macOS (.app)
+### Production build
 
 ```bash
-pyinstaller --noconfirm --onefile --windowed --name "StemZipper" stem-zipper.py
+npm run build
 ```
 
-Result:
-`dist/StemZipper.app`
+The build pipeline produces:
 
-> On first launch under macOS you may need to right-click → Open (due to Gatekeeper).
+- `dist-renderer/` – the production React bundle.
+- `dist-electron/` – compiled Electron main & preload scripts.
 
-#### Linux (binary)
+Launch the packaged application locally via:
 
 ```bash
-pyinstaller --noconfirm --onefile stem-zipper.py
+npm run preview
 ```
 
-Result:
-`dist/stem-zipper`
+---
 
-Run the file with:
+## Usage tips
 
-```bash
-./dist/stem-zipper
-```
+1. Choose or drop a folder containing supported audio files.
+2. Adjust the **Max ZIP size (MB)** field if required (defaults to 48 MB, capped at 500 MB).
+3. Review the analysed files in the table – the action column highlights when mono splitting or multi-archive packaging will occur.
+4. Click **Pack Now** to create `stems-XX.zip` files in the source folder. Progress updates mirror the classic Tkinter interface.
+5. In development builds, a **Create Test Data (DEV)** button generates random dummy audio files in a chosen directory.
+
+---
+
+## Packaging & distribution
+
+Electron Builder or Forge are not yet wired into this branch. To distribute the application you can integrate your preferred packaging tool on top of the generated `dist-electron` and `dist-renderer` artefacts.
+
+---
 
 ## License
 
-MIT License
+MIT License  
 © 2025 Björn Ahlers

@@ -1,0 +1,7 @@
+{
+  "extends": "../tsconfig.node.json",
+  "compilerOptions": {
+    "outDir": "../dist-electron/main"
+  },
+  "include": ["main.ts", "services/**/*.ts", "types/**/*.ts"]
+}
