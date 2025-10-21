@@ -26,3 +26,5 @@ All notable changes to this project will be documented in this file.
 - Electron build pipelines now share a common root directory and reference the shared `app/common` sources explicitly, restoring watch/build success for the main and preload processes while keeping runtime module resolution intact.
 - Electron runtime now loads the rebuilt main/preload bundles from their new output locations, preventing `@common/*` resolution failures when launching the desktop shell.
 - Stereo splitting now tolerates the community `wavefile` type gaps, preventing `toMono` compile errors and enabling deterministic WAV channel extraction during packaging.
+- Electron window creation now waits for the compiled preload bundle and resolves it via the application root, eliminating `Unable to load preload script` crashes and keeping the renderer runtime configuration available.
+- The renderer template now ships with a strict content security policy, silencing the Electron CSP warning while keeping development hot reloading functional.
