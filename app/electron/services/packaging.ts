@@ -4,18 +4,17 @@ import crypto from 'node:crypto';
 import { WaveFile } from 'wavefile';
 import { ZipFile } from 'yazl';
 import type { FileEntry, PackProgress, RendererFileAction } from '@common/ipc';
-import { DEFAULT_MAX_SIZE_MB, MAX_SIZE_LIMIT_MB, SUPPORTED_EXTENSIONS } from '@common/constants';
-import { ensureValidMaxSize } from '@common/validation';
+import { SUPPORTED_EXTENSIONS } from '@common/constants';
 import { formatPathForDisplay } from '@common/paths';
 
 const VERSION = '0.8';
-const STAMP_FILENAME = '_stem-zipper.txt';
+export const STAMP_FILENAME = '_stem-zipper.txt';
 const STEM_ZIPPER_LOGO = `░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 ░█▀▀░▀█▀░█▀▀░█▄█░░░▀▀█░▀█▀░█▀█░█▀█░█▀▀░█▀▄░
 ░▀▀█░░█░░█▀▀░█░█░░░▄▀░░░█░░█▀▀░█▀▀░█▀▀░█▀▄░
 ░▀▀▀░░▀░░▀▀▀░▀░▀░░░▀▀▀░▀▀▀░▀░░░▀░░░▀▀▀░▀░▀░
 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ v${VERSION} ░`;
-const STEM_ZIPPER_STAMP = `${STEM_ZIPPER_LOGO}
+export const STEM_ZIPPER_STAMP = `${STEM_ZIPPER_LOGO}
 
 Packed with Stem ZIPper v${VERSION}
 
@@ -26,46 +25,151 @@ function toMb(bytes: number): number {
   return Math.round((bytes / 1024 / 1024) * 100) / 100;
 }
 
-function resolveAction(sizeBytes: number, extension: string, maxSizeBytes: number): RendererFileAction {
+type SupportedExtension = (typeof SUPPORTED_EXTENSIONS)[number];
+
+export interface SizedFile {
+  path: string;
+  size: number;
+  extension: SupportedExtension;
+}
+
+function isSupportedExtension(extension: string): extension is SupportedExtension {
+  return (SUPPORTED_EXTENSIONS as readonly string[]).includes(extension as SupportedExtension);
+}
+
+function resolveAction(sizeBytes: number, extension: SupportedExtension, maxSizeBytes: number): RendererFileAction {
   if (sizeBytes > maxSizeBytes) {
     return extension === '.wav' ? 'split_mono' : 'split_zip';
   }
   return 'normal';
 }
 
+function createSizedFile(filePath: string, stats: fs.Stats): SizedFile {
+  const extension = path.extname(filePath).toLowerCase();
+  if (!isSupportedExtension(extension)) {
+    throw new Error(`Unsupported extension: ${extension}`);
+  }
+  return {
+    path: filePath,
+    size: stats.size,
+    extension
+  };
+}
+
+export function scanTargetFolder(folderPath: string): SizedFile[] {
+  const entries = fs.readdirSync(folderPath, { withFileTypes: true });
+  const files: SizedFile[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    const extension = path.extname(entry.name).toLowerCase();
+    if (!isSupportedExtension(extension)) continue;
+    const absolutePath = path.join(folderPath, entry.name);
+    const stats = fs.statSync(absolutePath);
+    files.push(createSizedFile(absolutePath, stats));
+  }
+
+  return files;
+}
+
+export function groupFilesByExtension(files: SizedFile[]): Map<SupportedExtension, SizedFile[]> {
+  const groups = new Map<SupportedExtension, SizedFile[]>();
+  for (const file of files) {
+    const current = groups.get(file.extension) ?? [];
+    current.push(file);
+    groups.set(file.extension, current);
+  }
+  return groups;
+}
+
+function pseudoRandomForFile(file: SizedFile): number {
+  const hash = crypto.createHash('sha256').update(file.path).digest();
+  const value = hash.readUInt32BE(0);
+  return value / 0xffffffff;
+}
+
+export function sortFilesForBestFit(files: SizedFile[]): SizedFile[] {
+  return [...files].sort((a, b) => {
+    if (b.size !== a.size) {
+      return b.size - a.size;
+    }
+    if (a.extension !== b.extension) {
+      return a.extension.localeCompare(b.extension);
+    }
+    const diff = pseudoRandomForFile(b) - pseudoRandomForFile(a);
+    if (diff !== 0) {
+      return diff > 0 ? 1 : -1;
+    }
+    return a.path.localeCompare(b.path);
+  });
+}
+
+export function bestFitPack(files: SizedFile[], maxSizeBytes: number): SizedFile[][] {
+  if (files.length === 0) {
+    return [];
+  }
+
+  const sorted = sortFilesForBestFit(files);
+  const bins: { items: SizedFile[]; used: number }[] = [];
+
+  for (const file of sorted) {
+    const candidateIndices: number[] = [];
+    let bestRemaining = Number.POSITIVE_INFINITY;
+
+    for (let index = 0; index < bins.length; index += 1) {
+      const bin = bins[index];
+      const remaining = maxSizeBytes - bin.used;
+      if (file.size <= remaining) {
+        if (remaining < bestRemaining) {
+          bestRemaining = remaining;
+          candidateIndices.length = 0;
+          candidateIndices.push(index);
+        } else if (remaining === bestRemaining) {
+          candidateIndices.push(index);
+        }
+      }
+    }
+
+    if (candidateIndices.length === 0) {
+      bins.push({ items: [file], used: file.size });
+      continue;
+    }
+
+    const targetIndex =
+      candidateIndices.length === 1
+        ? candidateIndices[0]
+        : candidateIndices[Math.floor(pseudoRandomForFile(file) * candidateIndices.length)];
+    const targetBin = bins[targetIndex];
+    targetBin.items.push(file);
+    targetBin.used += file.size;
+  }
+
+  return bins.map((bin) => [...bin.items]);
+}
+
 export function analyzeFolder(folderPath: string, maxSizeMb: number): FileEntry[] {
   const maxSizeBytes = maxSizeMb * 1024 * 1024;
-  const entries: FileEntry[] = [];
-  const files = fs.readdirSync(folderPath, { withFileTypes: true });
-
-  for (const file of files) {
-    if (!file.isFile()) continue;
-    const extension = path.extname(file.name).toLowerCase();
-    if (!SUPPORTED_EXTENSIONS.includes(extension)) continue;
-    const absolutePath = path.join(folderPath, file.name);
-    const stats = fs.statSync(absolutePath);
-    const action = resolveAction(stats.size, extension, maxSizeBytes);
-    entries.push({
-      name: file.name,
-      sizeMb: toMb(stats.size),
-      action,
-      path: absolutePath
-    });
-  }
+  const sizedFiles = scanTargetFolder(folderPath);
+  const entries: FileEntry[] = sizedFiles.map((file) => ({
+    name: path.basename(file.path),
+    sizeMb: toMb(file.size),
+    action: resolveAction(file.size, file.extension, maxSizeBytes),
+    path: file.path
+  }));
 
   entries.sort((a, b) => a.name.localeCompare(b.name));
   return entries;
 }
 
-async function createZip(zipName: string, files: string[], outDir: string): Promise<string> {
+export async function createBrandedZip(zipName: string, files: SizedFile[], outDir: string): Promise<string> {
   await fs.promises.mkdir(outDir, { recursive: true });
   const zipPath = path.join(outDir, `${zipName}.zip`);
   const zip = new ZipFile();
 
   for (const file of files) {
-    zip.addFile(file, path.basename(file));
+    zip.addFile(file.path, path.basename(file.path));
   }
-  zip.addBuffer(Buffer.from(STEM_ZIPPER_STAMP, 'utf-8'), STAMP_FILENAME);
+  zip.addBuffer(Buffer.from(STEM_ZIPPER_STAMP, 'utf-8'), STAMP_FILENAME, { compress: false });
 
   return new Promise((resolve, reject) => {
     zip
@@ -76,43 +180,16 @@ async function createZip(zipName: string, files: string[], outDir: string): Prom
   });
 }
 
-interface SizedFile {
-  path: string;
-  size: number;
-}
-
-function bestFitPack(files: SizedFile[], maxSizeBytes: number): SizedFile[][] {
-  const sorted = [...files].sort((a, b) => b.size - a.size);
-  const bins: SizedFile[][] = [];
-
-  for (const file of sorted) {
-    let bestIndex = -1;
-    let minimalRemaining = maxSizeBytes + 1;
-    for (let index = 0; index < bins.length; index += 1) {
-      const bin = bins[index];
-      const used = bin.reduce((sum, entry) => sum + entry.size, 0);
-      const remaining = maxSizeBytes - used;
-      if (file.size <= remaining && remaining < minimalRemaining) {
-        bestIndex = index;
-        minimalRemaining = remaining;
-      }
-    }
-
-    if (bestIndex === -1) {
-      bins.push([file]);
-    } else {
-      bins[bestIndex].push(file);
-    }
-  }
-
-  return bins;
+async function getSizedFile(filePath: string): Promise<SizedFile> {
+  const stats = await fs.promises.stat(filePath);
+  return createSizedFile(filePath, stats);
 }
 
 async function splitStereoWav(filePath: string): Promise<SizedFile[]> {
   const buffer = await fs.promises.readFile(filePath);
   const wav = new WaveFile(buffer);
   if (wav.fmt?.numChannels !== 2) {
-    return [{ path: filePath, size: buffer.byteLength }];
+    return [await getSizedFile(filePath)];
   }
 
   const { dir, name, ext } = path.parse(filePath);
@@ -129,38 +206,20 @@ async function splitStereoWav(filePath: string): Promise<SizedFile[]> {
   await fs.promises.writeFile(rightPath, right.toBuffer());
   await fs.promises.unlink(filePath);
 
-  const leftStats = await fs.promises.stat(leftPath);
-  const rightStats = await fs.promises.stat(rightPath);
-  return [
-    { path: leftPath, size: leftStats.size },
-    { path: rightPath, size: rightStats.size }
-  ];
+  return Promise.all([getSizedFile(leftPath), getSizedFile(rightPath)]);
 }
 
-async function expandFiles(files: string[], maxSizeBytes: number): Promise<SizedFile[]> {
+async function expandFiles(files: SizedFile[], maxSizeBytes: number): Promise<SizedFile[]> {
   const expanded: SizedFile[] = [];
   for (const file of files) {
-    const stats = await fs.promises.stat(file);
-    if (stats.size > maxSizeBytes && file.toLowerCase().endsWith('.wav')) {
-      const split = await splitStereoWav(file);
+    if (file.size > maxSizeBytes && file.extension === '.wav') {
+      const split = await splitStereoWav(file.path);
       expanded.push(...split);
     } else {
-      expanded.push({ path: file, size: stats.size });
+      expanded.push(file);
     }
   }
   return expanded;
-}
-
-function gatherSupportedFiles(folderPath: string): string[] {
-  const files = fs.readdirSync(folderPath, { withFileTypes: true });
-  const supported: string[] = [];
-  for (const file of files) {
-    if (!file.isFile()) continue;
-    const extension = path.extname(file.name).toLowerCase();
-    if (!SUPPORTED_EXTENSIONS.includes(extension)) continue;
-    supported.push(path.join(folderPath, file.name));
-  }
-  return supported;
 }
 
 export async function packFolder(
@@ -169,8 +228,8 @@ export async function packFolder(
   onProgress: (progress: PackProgress) => void
 ): Promise<number> {
   const maxSizeBytes = maxSizeMb * 1024 * 1024;
-  const supportedFiles = gatherSupportedFiles(folderPath);
-  if (supportedFiles.length === 0) {
+  const sizedFiles = scanTargetFolder(folderPath);
+  if (sizedFiles.length === 0) {
     const error: PackProgress = {
       state: 'error',
       current: 0,
@@ -184,12 +243,22 @@ export async function packFolder(
   }
 
   onProgress({ state: 'analyzing', current: 0, total: 0, percent: 0, message: 'analyzing' });
-  const expanded = await expandFiles(supportedFiles, maxSizeBytes);
-  const groups = bestFitPack(expanded, maxSizeBytes);
-  const total = groups.length;
+  const groupedByExtension = groupFilesByExtension(sizedFiles);
+  const orderedExtensions = Array.from(groupedByExtension.keys()).sort();
+  const zipGroups: SizedFile[][] = [];
+
+  for (const extension of orderedExtensions) {
+    const filesForExtension = groupedByExtension.get(extension);
+    if (!filesForExtension || filesForExtension.length === 0) continue;
+    const expanded = await expandFiles(filesForExtension, maxSizeBytes);
+    const packed = bestFitPack(expanded, maxSizeBytes);
+    zipGroups.push(...packed);
+  }
+
+  const total = zipGroups.length;
 
   for (let index = 0; index < total; index += 1) {
-    const group = groups[index];
+    const group = zipGroups[index];
     const zipName = `stems-${String(index + 1).padStart(2, '0')}`;
     onProgress({
       state: 'packing',
@@ -199,7 +268,7 @@ export async function packFolder(
       message: 'packing',
       currentZip: zipName
     });
-    await createZip(zipName, group.map((file) => file.path), folderPath);
+    await createBrandedZip(zipName, group, folderPath);
     onProgress({
       state: 'packing',
       current: index + 1,
