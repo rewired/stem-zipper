@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Progress events, error reporting and packer actions now flow through typed IPC contracts shared between renderer and main processes.
 - Documentation refreshed to highlight Node/Electron prerequisites, feature parity with the Python release and the new packaging expectations.
 - Package management switched from npm to pnpm, updating scripts and documentation accordingly.
+- Repository ignore rules refocused on the Vite/TypeScript toolchain, removing stale Python artefacts and excluding generated source maps.
 
 ### Removed
 - Tkinter frontend, Python CLI switches and PyInstaller packaging instructions from the primary documentation set (archived under `docs/archive/python-legacy.md`).
