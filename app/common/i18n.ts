@@ -1,5 +1,7 @@
-export type LocaleKey = keyof typeof translations;
-export type TranslationKey = keyof typeof translations.en;
+export const SUPPORTED_LOCALES = ['en', 'de', 'fr', 'it', 'es', 'pt'] as const;
+export type LocaleKey = (typeof SUPPORTED_LOCALES)[number];
+
+export const DEFAULT_LOCALE: LocaleKey = 'en';
 
 export const translations = {
   en: {
@@ -33,7 +35,8 @@ export const translations = {
     pack_disabled: 'Pick a folder to enable packing',
     create_testdata_done: '{count} dummy files created in\n{folder}',
     error_title: 'Something went wrong',
-    browse: 'Browse'
+    browse: 'Browse',
+    testdata_dev_only: 'Test data generation is only available in developer mode.'
   },
   de: {
     app_title: 'Stem ZIPper',
@@ -66,7 +69,8 @@ export const translations = {
     pack_disabled: 'Ordner wählen, um Packen zu aktivieren',
     create_testdata_done: '{count} Dummy-Dateien erstellt in\n{folder}',
     error_title: 'Es ist ein Fehler aufgetreten',
-    browse: 'Durchsuchen'
+    browse: 'Durchsuchen',
+    testdata_dev_only: 'Das Erstellen von Testdaten ist nur im Entwicklermodus verfügbar.'
   },
   fr: {
     app_title: 'Stem ZIPper',
@@ -99,7 +103,8 @@ export const translations = {
     pack_disabled: 'Choisissez un dossier pour activer la compression',
     create_testdata_done: '{count} fichiers factices créés dans\n{folder}',
     error_title: 'Une erreur est survenue',
-    browse: 'Parcourir'
+    browse: 'Parcourir',
+    testdata_dev_only: 'La génération de données de test est uniquement disponible en mode développeur.'
   },
   it: {
     app_title: 'Stem ZIPper',
@@ -132,7 +137,8 @@ export const translations = {
     pack_disabled: 'Scegli una cartella per attivare la compressione',
     create_testdata_done: '{count} file fittizi creati in\n{folder}',
     error_title: 'Si è verificato un errore',
-    browse: 'Sfoglia'
+    browse: 'Sfoglia',
+    testdata_dev_only: 'La generazione di dati di test è disponibile solo in modalità sviluppatore.'
   },
   es: {
     app_title: 'Stem ZIPper',
@@ -165,7 +171,8 @@ export const translations = {
     pack_disabled: 'Elige una carpeta para habilitar el empaquetado',
     create_testdata_done: '{count} archivos falsos creados en\n{folder}',
     error_title: 'Algo salió mal',
-    browse: 'Examinar'
+    browse: 'Examinar',
+    testdata_dev_only: 'La generación de datos de prueba solo está disponible en modo desarrollador.'
   },
   pt: {
     app_title: 'Stem ZIPper',
@@ -198,21 +205,59 @@ export const translations = {
     pack_disabled: 'Escolha uma pasta para habilitar a compactação',
     create_testdata_done: '{count} arquivos falsos criados em\n{folder}',
     error_title: 'Algo deu errado',
-    browse: 'Procurar'
+    browse: 'Procurar',
+    testdata_dev_only: 'A geração de dados de teste está disponível apenas no modo desenvolvedor.'
   }
-};
+} as const;
 
-export function detectLocale(): LocaleKey {
-  const lang = navigator.language?.slice(0, 2).toLowerCase();
-  if (lang && lang in translations) {
-    return lang as LocaleKey;
+type TranslationMap = (typeof translations)[LocaleKey];
+
+export type TranslationKey = keyof TranslationMap;
+
+function matchLocale(locale: string | null | undefined): LocaleKey | undefined {
+  if (!locale) {
+    return undefined;
   }
-  return 'en';
+  const normalized = locale.toLowerCase();
+  if (normalized in translations) {
+    return normalized as LocaleKey;
+  }
+  const short = normalized.slice(0, 2);
+  if (short in translations) {
+    return short as LocaleKey;
+  }
+  return undefined;
 }
 
-export function formatMessage(locale: LocaleKey, key: TranslationKey, params: Record<string, string | number> = {}): string {
-  const template = translations[locale][key] ?? translations.en[key];
-  return Object.keys(params).reduce((msg, paramKey) => {
-    return msg.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(params[paramKey]));
+export function resolveLocale(
+  ...candidates: Array<string | null | undefined | readonly string[]>
+): LocaleKey {
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    if (Array.isArray(candidate)) {
+      for (const entry of candidate) {
+        const match = matchLocale(entry);
+        if (match) {
+          return match;
+        }
+      }
+      continue;
+    }
+    const match = matchLocale(candidate);
+    if (match) {
+      return match;
+    }
+  }
+  return DEFAULT_LOCALE;
+}
+
+export function formatMessage(
+  locale: LocaleKey,
+  key: TranslationKey,
+  params: Record<string, string | number> = {}
+): string {
+  const template = translations[locale]?.[key] ?? translations[DEFAULT_LOCALE][key];
+  return Object.keys(params).reduce((message, paramKey) => {
+    return message.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(params[paramKey]));
   }, template);
 }

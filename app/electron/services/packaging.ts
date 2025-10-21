@@ -6,6 +6,7 @@ import { ZipFile } from 'yazl';
 import type { FileEntry, PackProgress, RendererFileAction } from '@common/ipc';
 import { SUPPORTED_EXTENSIONS } from '@common/constants';
 import { formatPathForDisplay } from '@common/paths';
+import { formatMessage, type LocaleKey } from '@common/i18n';
 
 const VERSION = '0.8';
 export const STAMP_FILENAME = '_stem-zipper.txt';
@@ -225,21 +226,23 @@ async function expandFiles(files: SizedFile[], maxSizeBytes: number): Promise<Si
 export async function packFolder(
   folderPath: string,
   maxSizeMb: number,
+  locale: LocaleKey,
   onProgress: (progress: PackProgress) => void
 ): Promise<number> {
   const maxSizeBytes = maxSizeMb * 1024 * 1024;
   const sizedFiles = scanTargetFolder(folderPath);
   if (sizedFiles.length === 0) {
+    const noFilesMessage = formatMessage(locale, 'msg_no_files');
     const error: PackProgress = {
       state: 'error',
       current: 0,
       total: 0,
       percent: 0,
       message: 'no_files',
-      errorMessage: 'No supported files found.'
+      errorMessage: noFilesMessage
     };
     onProgress(error);
-    throw new Error('No supported files found');
+    throw new Error(noFilesMessage);
   }
 
   onProgress({ state: 'analyzing', current: 0, total: 0, percent: 0, message: 'analyzing' });

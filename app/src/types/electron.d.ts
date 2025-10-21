@@ -4,6 +4,7 @@ import type {
   PackRequest,
   TestDataResponse
 } from '@common/ipc';
+import type { RuntimeConfig } from '@common/runtime';
 
 declare global {
   interface Window {
@@ -14,6 +15,7 @@ declare global {
       onPackProgress: (callback: (progress: PackProgress) => void) => () => void;
       createTestData: (folderPath: string, locale: string) => Promise<TestDataResponse>;
     };
+    runtimeConfig: RuntimeConfig;
   }
 }
 
