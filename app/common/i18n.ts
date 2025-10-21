@@ -234,6 +234,13 @@ export function resolveLocale(
 ): LocaleKey {
   for (const candidate of candidates) {
     if (!candidate) continue;
+    if (typeof candidate === 'string') {
+      const match = matchLocale(candidate);
+      if (match) {
+        return match;
+      }
+      continue;
+    }
     if (Array.isArray(candidate)) {
       for (const entry of candidate) {
         const match = matchLocale(entry);
@@ -242,10 +249,6 @@ export function resolveLocale(
         }
       }
       continue;
-    }
-    const match = matchLocale(candidate);
-    if (match) {
-      return match;
     }
   }
   return DEFAULT_LOCALE;

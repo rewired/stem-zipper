@@ -3,10 +3,10 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { WaveFile } from 'wavefile';
 import { ZipFile } from 'yazl';
-import type { FileEntry, PackProgress, RendererFileAction } from '@common/ipc';
-import { SUPPORTED_EXTENSIONS } from '@common/constants';
-import { formatPathForDisplay } from '@common/paths';
-import { formatMessage, type LocaleKey } from '@common/i18n';
+import type { FileEntry, PackProgress, RendererFileAction } from '../../common/ipc';
+import { SUPPORTED_EXTENSIONS } from '../../common/constants';
+import { formatPathForDisplay } from '../../common/paths';
+import { formatMessage, type LocaleKey } from '../../common/i18n';
 
 const VERSION = '0.8';
 export const STAMP_FILENAME = '_stem-zipper.txt';
@@ -33,6 +33,10 @@ export interface SizedFile {
   size: number;
   extension: SupportedExtension;
 }
+
+type MonoCapableWaveFile = WaveFile & {
+  toMono: (channel: number) => void;
+};
 
 function isSupportedExtension(extension: string): extension is SupportedExtension {
   return (SUPPORTED_EXTENSIONS as readonly string[]).includes(extension as SupportedExtension);
@@ -189,17 +193,18 @@ async function getSizedFile(filePath: string): Promise<SizedFile> {
 async function splitStereoWav(filePath: string): Promise<SizedFile[]> {
   const buffer = await fs.promises.readFile(filePath);
   const wav = new WaveFile(buffer);
-  if (wav.fmt?.numChannels !== 2) {
+  const fmt = wav.fmt as { numChannels?: number } | undefined;
+  if ((fmt?.numChannels ?? 0) !== 2) {
     return [await getSizedFile(filePath)];
   }
 
   const { dir, name, ext } = path.parse(filePath);
 
-  const left = new WaveFile(buffer);
+  const left = new WaveFile(buffer) as MonoCapableWaveFile;
   left.toMono(0);
   const leftPath = path.join(dir, `${name}_L${ext}`);
 
-  const right = new WaveFile(buffer);
+  const right = new WaveFile(buffer) as MonoCapableWaveFile;
   right.toMono(1);
   const rightPath = path.join(dir, `${name}_R${ext}`);
 

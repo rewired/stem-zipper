@@ -2,12 +2,12 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'node:path';
 import url from 'node:url';
 import { analyzeFolder, createTestData, packFolder } from './services/packaging';
-import { ensureValidMaxSize } from '@common/validation';
-import { formatPathForDisplay } from '@common/paths';
-import { IPC_CHANNELS } from '@common/ipc';
-import type { AnalyzeResponse, PackRequest, TestDataRequest } from '@common/ipc';
-import { formatMessage, resolveLocale } from '@common/i18n';
-import type { RuntimeConfig } from '@common/runtime';
+import { ensureValidMaxSize } from '../common/validation';
+import { formatPathForDisplay } from '../common/paths';
+import { IPC_CHANNELS } from '../common/ipc';
+import type { AnalyzeResponse, PackRequest, TestDataRequest } from '../common/ipc';
+import { formatMessage, resolveLocale } from '../common/i18n';
+import type { RuntimeConfig } from '../common/runtime';
 
 let mainWindow: BrowserWindow | null = null;
 let packInProgress = false;
