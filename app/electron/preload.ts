@@ -4,10 +4,10 @@ import type {
   PackProgress,
   PackRequest,
   TestDataResponse
-} from '@common/ipc';
-import { IPC_CHANNELS } from '@common/ipc';
-import type { RuntimeConfig } from '@common/runtime';
-import { resolveLocale } from '@common/i18n';
+} from '../common/ipc';
+import { IPC_CHANNELS } from '../common/ipc';
+import type { RuntimeConfig } from '../common/runtime';
+import { resolveLocale } from '../common/i18n';
 
 type ProgressListener = (progress: PackProgress) => void;
 

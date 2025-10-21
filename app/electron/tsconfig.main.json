@@ -1,7 +1,14 @@
 {
   "extends": "../tsconfig.node.json",
   "compilerOptions": {
-    "outDir": "../dist-electron/main"
+    "outDir": "../dist-electron/main",
+    "rootDir": ".."
   },
-  "include": ["main.ts", "services/**/*.ts", "types/**/*.ts"]
+  "include": [
+    "main.ts",
+    "services/**/*.ts",
+    "types/**/*.ts",
+    "types/**/*.d.ts",
+    "../common/**/*.ts"
+  ]
 }
