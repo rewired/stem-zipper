@@ -82,5 +82,17 @@ $RECYCLE.BIN/
 *.pid
 
 # -----------------------------------------------------------------------------
-#
+# Node / Frontend Build
+# -----------------------------------------------------------------------------
+node_modules/
+**/node_modules/
+dist/
+dist-*/
+*.log
+app/.vite/
+app/dist/
+app/dist-*/
+app/node_modules/
+
+# Legacy audio input folder
 audio_input
