@@ -346,7 +346,10 @@ class StemZipperGUI:
 
 # ============================================================
 def main():
-    parser = argparse.ArgumentParser(description=f"{STEM_ZIPPER_LOGO}\nStem ZIPper v{VERSION}")
+    parser = argparse.ArgumentParser(
+        description=STEM_ZIPPER_STAMP,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument("--dev", action="store_true", help="Enable developer mode (test data button)")
     supported_languages = ", ".join(LANGS)
     parser.add_argument("--lang", type=str, help=f"Force specific language (currently supported: {supported_languages})")
