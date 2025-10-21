@@ -3,14 +3,17 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
-- Introduce a shared `app/common/i18n.ts` locale catalogue consumed by both the renderer and the Electron main process, localizing window titles, dialogs and packer errors.
-- Replace the legacy CLI `--lang`/`--dev` switches with runtime configuration resolved from `STEM_ZIPPER_LANG`/`STEM_ZIPPER_DEV_MODE` or the host locale, exposing the result to the renderer via the preload bridge.
-- Keep the Node-based dummy data generator gated behind developer mode while preserving localized feedback for max ZIP size validation and dev-only capabilities.
-- Port project to an Electron + Vite (React + TypeScript) application.
-- Add Tailwind based UI with folder selection, file table, progress display and action controls.
-- Implement IPC between renderer and main processes for folder analysis, packing and developer tooling.
-- Replace the Tkinter frontend and remove Python specific assets.
-- Introduce shared constants, IPC contracts and validation helpers for reuse across processes.
-- Implement Node-based audio scanning utilities with per-extension grouping, deterministic best-fit-decreasing packing and branded ZIP output including `_stem-zipper.txt`.
-- Mirror status/progress/error updates from the Electron main process to the renderer during packing, keeping split decisions and max-size validation aligned with the legacy workflow.
-- Add Vitest test coverage for the bin-packing algorithm and branded ZIP creation to guard against regressions in the Electron port.
+
+### Added
+- Electron desktop shell backed by Vite, React, TypeScript and Tailwind CSS.
+- Shared localisation catalogue in `app/common/i18n.ts` consumed by the renderer and Electron main process.
+- Node-based audio analysis, stereo splitting and best-fit-decreasing packing services with Vitest coverage.
+- Developer-mode dummy data generator exposed through the renderer and IPC bridge.
+
+### Changed
+- Runtime configuration now resolves locale/dev-mode via environment variables or OS defaults and is surfaced to the renderer through the preload bridge.
+- Progress events, error reporting and packer actions now flow through typed IPC contracts shared between renderer and main processes.
+- Documentation refreshed to highlight Node/Electron prerequisites, feature parity with the Python release and the new packaging expectations.
+
+### Removed
+- Tkinter frontend, Python CLI switches and PyInstaller packaging instructions from the primary documentation set (archived under `docs/archive/python-legacy.md`).

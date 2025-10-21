@@ -34,59 +34,77 @@ app/
 
 - [Node.js](https://nodejs.org/) **18.x or newer**
 - npm (bundled with Node.js)
+- macOS, Windows or Linux desktop environment with file system access for Electron
 
-> The Python/Tkinter application has been removed in this branch. All functionality now lives in the Electron experience under `app/`.
+> ✅ The legacy Python/Tkinter bundle has been retired on this branch. All features now ship with the Electron workspace under `app/`.
 
 ---
 
-## Getting started
+## Installation & workflows
 
-From the repository root:
+Run the following steps from the repository root unless noted otherwise.
+
+### Install dependencies
 
 ```bash
 cd app
 npm install
 ```
 
-### Development mode
+### Development workflow
 
 ```bash
 npm run dev
 ```
 
-This command starts the Vite dev server, compiles the Electron main & preload processes in watch mode and launches Electron once the renderer is ready. Any change in `src/` hot-reloads the UI, while updates to Electron code trigger a quick TypeScript rebuild.
+This command starts the Vite dev server, compiles the Electron main & preload processes in watch mode and launches Electron once the renderer is ready. Any change in `src/` hot-reloads the UI, while updates to Electron code trigger a fast TypeScript rebuild.
 
-### Linting & type checks
+### Quality gates
 
 ```bash
 npm run lint
 npm run typecheck
-```
-
-### Unit tests
-
-```bash
 npm run test
 ```
 
-The Vitest suite exercises the Node-based packaging service, covering the best-fit-decreasing algorithm and branded ZIP output.
+- **`lint`** runs ESLint with the React/TypeScript configuration.
+- **`typecheck`** executes `tsc --noEmit` across the Electron + renderer workspaces.
+- **`test`** triggers Vitest suites that cover the Node-based packing engine and helper utilities.
 
-### Production build
+### Production build & smoke test
 
 ```bash
 npm run build
-```
-
-The build pipeline produces:
-
-- `dist-renderer/` – the production React bundle.
-- `dist-electron/` – compiled Electron main & preload scripts.
-
-Launch the packaged application locally via:
-
-```bash
 npm run preview
 ```
+
+The build pipeline produces two artefacts:
+
+- `dist-renderer/` – the production React bundle styled with Tailwind CSS.
+- `dist-electron/` – compiled Electron main & preload scripts ready for packaging.
+
+`npm run preview` launches the built application locally using the generated artefacts, allowing a final manual smoke test before packaging.
+
+---
+
+## Feature parity with the classic release
+
+| Area | Electron implementation |
+| --- | --- |
+| **User interface** | Single-window layout with a header toolbar, drag & drop surface, folder path breadcrumb and a responsive file table. The right-hand status rail mirrors the legacy progress readout, while action buttons (Pack Now, Cancel, Clear) stay anchored at the bottom for accessibility. |
+| **Internationalisation** | The renderer resolves the OS locale (EN, DE, FR, IT, ES, PT) via the preload bridge, serving shared translations from `app/common/i18n.ts`. Dialogs triggered from the main process reuse the same catalogue to avoid drift between Electron and React copies. |
+| **Developer tooling** | Dev-mode exposes the familiar "Create Test Data" button which shells out to the Node dummy-data generator. File sizes, stems count and progress notifications follow the Python defaults to keep test scripts compatible. |
+| **ZIP logic** | Audio analysis, stereo-to-mono splitting and best-fit-decreasing packing now run inside the Electron main process (`app/electron/services/packer`). The workflow persists the `_stem-zipper.txt` stamp file and emits sequential `stems-XX.zip` archives identical to the Tkinter run. |
+
+### UI walk-through
+
+1. **Header** – Displays the application title and quick links to settings and documentation.
+2. **Drop zone** – Central card that accepts folders via drag & drop or manual selection. Provides immediate feedback on unsupported file types.
+3. **Analysis table** – Responsive table summarising detected files, duration, size and pending actions (pack, split, ignore). Rows highlight when splitting or multi-archive packing will occur.
+4. **Progress rail** – Right-aligned timeline showing current phase (scanning, splitting, packing) with an indeterminate spinner for long-running tasks.
+5. **Action footer** – Primary **Pack Now** button plus contextual secondary controls (**Cancel**, **Clear Results**) matching the previous keyboard shortcuts.
+
+> Need a visual reference? See the annotated UI description above or explore the interactive preview via `npm run dev`.
 
 ---
 
@@ -102,7 +120,9 @@ npm run preview
 
 ## Packaging & distribution
 
-Electron Builder or Forge are not yet wired into this branch. To distribute the application you can integrate your preferred packaging tool on top of the generated `dist-electron` and `dist-renderer` artefacts.
+- The workspace is ready for [Electron Forge](https://www.electronforge.io/) or [Electron Builder](https://www.electron.build/); integrate your chosen tool on top of the generated `dist-electron` and `dist-renderer` artefacts.
+- Cross-platform signing/notarisation scripts should live alongside the Electron configuration inside `app/electron`.
+- The retired PyInstaller flow lives in `docs/archive/python-legacy.md` together with notes on the final Tkinter build.
 
 ---
 
