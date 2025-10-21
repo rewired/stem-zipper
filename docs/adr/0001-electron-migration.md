@@ -21,11 +21,11 @@ Key structural changes:
 2. Shared constants/types under `electron-app/src/common/` to mirror the Python feature set.
 3. IPC contracts (`stem:*` channels) that expose analysis, packing, progress updates, and test-data generation to the renderer.
 4. Tailwind-powered UI recreating the Tkinter layout with translated strings sourced from JSON locale bundles.
-5. `electron-builder` configuration and npm scripts for development (`npm run dev`), production builds, and multi-platform packaging.
+5. `electron-builder` configuration and pnpm scripts for development (`pnpm dev`), production builds, and multi-platform packaging.
 
 ## Consequences
-- Node 18+ and npm become additional tooling requirements alongside the legacy Python runtime.
+- Node 18+ and pnpm become additional tooling requirements alongside the legacy Python runtime.
 - The Electron app now owns the authoritative implementation of the packing logic, keeping Python as a reference/legacy client.
 - Documentation, changelog, and ADRs must cover the new architecture, dev workflow, and packaging steps.
 - Automated tests are not yet included; future work should add unit/integration coverage for the Node services and renderer components.
-- The repository structure grows, so contributors must run `npm install` inside `electron-app/` and follow the new lint/build scripts.
+- The repository structure grows, so contributors must run `pnpm install` inside `electron-app/` and follow the new lint/build scripts.

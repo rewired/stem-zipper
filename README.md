@@ -15,7 +15,7 @@ Stem ZIPper analyses folders of audio stems, splits over-sized stereo WAV files,
 
 | Component | Requirements |
 |-----------|--------------|
-| Electron app | Node.js 18+ and npm |
+| Electron app | Node.js 18+ and pnpm |
 | Legacy Python client | Python 3.9+, Tkinter, `pip install -r requirements.txt` |
 
 ## Repository Layout
@@ -29,25 +29,25 @@ Stem ZIPper analyses folders of audio stems, splits over-sized stereo WAV files,
 
 ```bash
 cd electron-app
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 The dev server launches Vite (renderer) and recompiles the main/preload processes. Electron opens automatically once the renderer is ready.
 
-### Available npm Scripts
+### Available pnpm Scripts
 
 | Script | Description |
 |--------|-------------|
-| `npm run dev` | Start Vite, watch the main/preload processes, and launch Electron with `--dev`. |
-| `npm run build` | Produce production builds in `dist/` for main, preload, and renderer bundles. |
-| `npm run preview` | Launch Electron against the already-built bundles in `dist/`. |
-| `npm run package` | Build and package installers via `electron-builder` into `release/`. |
-| `npm run lint` | Run ESLint across the TypeScript sources. |
+| `pnpm dev` | Start Vite, watch the main/preload processes, and launch Electron with `--dev`. |
+| `pnpm build` | Produce production builds in `dist/` for main, preload, and renderer bundles. |
+| `pnpm preview` | Launch Electron against the already-built bundles in `dist/`. |
+| `pnpm package` | Build and package installers via `electron-builder` into `release/`. |
+| `pnpm lint` | Run ESLint across the TypeScript sources. |
 
 ### Packaging Targets
 
-`npm run package` executes `electron-builder` with presets for all major platforms:
+`pnpm package` executes `electron-builder` with presets for all major platforms:
 
 - **Windows:** NSIS installer and ZIP archive in `release/`. Run with PowerShell/CMD or CI on Windows.
 - **macOS:** Universal DMG and ZIP bundles in `release/`. Requires running on macOS (codesigning optional).
@@ -69,7 +69,7 @@ Examples:
 electron . --lang=de
 
 # Launch dev mode with the generator button visible
-npm run dev -- --dev
+pnpm dev -- --dev
 ```
 
 ## Legacy Python Client

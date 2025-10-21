@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Changed
+- Switched the Electron workspace tooling from npm to pnpm, updating scripts and documentation to reflect the new workflow.
+
 ## [0.9.0] - 2024-02-14
 ### Added
 - Electron workspace (`electron-app/`) with TypeScript main/preload processes and a Vite + React + Tailwind renderer mirroring the original Tkinter experience.
