@@ -33,7 +33,7 @@ app/
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) **18.x or newer**
-- npm (bundled with Node.js)
+- [pnpm](https://pnpm.io/) (enable via `corepack enable pnpm` if it is not yet available)
 - macOS, Windows or Linux desktop environment with file system access for Electron
 
 > ✅ The legacy Python/Tkinter bundle has been retired on this branch. All features now ship with the Electron workspace under `app/`.
@@ -48,13 +48,13 @@ Run the following steps from the repository root unless noted otherwise.
 
 ```bash
 cd app
-npm install
+pnpm install
 ```
 
 ### Development workflow
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 This command starts the Vite dev server, compiles the Electron main & preload processes in watch mode and launches Electron once the renderer is ready. Any change in `src/` hot-reloads the UI, while updates to Electron code trigger a fast TypeScript rebuild.
@@ -62,9 +62,9 @@ This command starts the Vite dev server, compiles the Electron main & preload pr
 ### Quality gates
 
 ```bash
-npm run lint
-npm run typecheck
-npm run test
+pnpm lint
+pnpm typecheck
+pnpm test
 ```
 
 - **`lint`** runs ESLint with the React/TypeScript configuration.
@@ -74,8 +74,8 @@ npm run test
 ### Production build & smoke test
 
 ```bash
-npm run build
-npm run preview
+pnpm build
+pnpm preview
 ```
 
 The build pipeline produces two artefacts:
@@ -83,7 +83,7 @@ The build pipeline produces two artefacts:
 - `dist-renderer/` – the production React bundle styled with Tailwind CSS.
 - `dist-electron/` – compiled Electron main & preload scripts ready for packaging.
 
-`npm run preview` launches the built application locally using the generated artefacts, allowing a final manual smoke test before packaging.
+`pnpm preview` launches the built application locally using the generated artefacts, allowing a final manual smoke test before packaging.
 
 ---
 
@@ -104,7 +104,7 @@ The build pipeline produces two artefacts:
 4. **Progress rail** – Right-aligned timeline showing current phase (scanning, splitting, packing) with an indeterminate spinner for long-running tasks.
 5. **Action footer** – Primary **Pack Now** button plus contextual secondary controls (**Cancel**, **Clear Results**) matching the previous keyboard shortcuts.
 
-> Need a visual reference? See the annotated UI description above or explore the interactive preview via `npm run dev`.
+> Need a visual reference? See the annotated UI description above or explore the interactive preview via `pnpm dev`.
 
 ---
 
