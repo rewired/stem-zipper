@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Windows packaging task (`pnpm package:win`) backed by `electron-builder` to produce a distributable NSIS installer.
 
 ### Changed
+- Electron main window now clears the default application menu to hide the native menu bar across platforms.
 - Runtime configuration now resolves locale/dev-mode via environment variables or OS defaults and is surfaced to the renderer through the preload bridge.
 - Progress events, error reporting and packer actions now flow through typed IPC contracts shared between renderer and main processes.
 - Documentation refreshed to highlight Node/Electron prerequisites, feature parity with the Python release and the new packaging expectations.
