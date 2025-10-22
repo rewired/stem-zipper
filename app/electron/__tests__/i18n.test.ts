@@ -14,4 +14,16 @@ describe('resolveLocale', () => {
 
     expect(locale).toBe('de');
   });
+
+  it('prefers the system locale over generic LANG fallbacks', () => {
+    const locale = resolveLocale(
+      undefined,
+      undefined,
+      'de-DE',
+      ['en-US', 'en'],
+      'en_US.UTF-8'
+    );
+
+    expect(locale).toBe('de');
+  });
 });

@@ -64,9 +64,9 @@ function computeRuntimeConfig(): RuntimeConfig {
   const locale = resolveLocale(
     process.env.STEM_ZIPPER_LANG,
     process.env.LC_ALL,
-    process.env.LANG,
     systemLocale,
-    preferredLanguages
+    preferredLanguages,
+    process.env.LANG
   );
   const devMode =
     process.env.STEM_ZIPPER_DEV_MODE === '1' || Boolean(process.env.VITE_DEV_SERVER_URL);
