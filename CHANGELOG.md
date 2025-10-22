@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Runtime configuration now resolves locale/dev-mode via environment variables or OS defaults and is surfaced to the renderer through the preload bridge.
 - Progress events, error reporting and packer actions now flow through typed IPC contracts shared between renderer and main processes.
 - Documentation refreshed to highlight Node/Electron prerequisites, feature parity with the Python release and the new packaging expectations.
+- Windows packaging now whitelists the pnpm runtime dependencies when copying `node_modules`, trimming dev tooling from the installer and reducing the bundled archive size.
 - Package management switched from npm to pnpm, updating scripts and documentation accordingly.
 - Repository ignore rules refocused on the Vite/TypeScript toolchain, removing stale Python artefacts and excluding generated source maps.
 - Renderer shell keeps the header and action controls visible with sticky positioning while scrolling large file tables.
