@@ -50,5 +50,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   openExternal(url: string): Promise<void> {
     return ipcRenderer.invoke(IPC_CHANNELS.OPEN_EXTERNAL, url);
+  },
+  openPath(path: string): Promise<void> {
+    return ipcRenderer.invoke(IPC_CHANNELS.OPEN_PATH, path);
   }
 });

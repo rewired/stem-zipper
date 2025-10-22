@@ -5,7 +5,8 @@ export const IPC_CHANNELS = {
   PACK_PROGRESS: 'pack-progress',
   PACK_STATUS: 'pack-status',
   CREATE_TESTDATA: 'create-testdata',
-  OPEN_EXTERNAL: 'open-external'
+  OPEN_EXTERNAL: 'open-external',
+  OPEN_PATH: 'open-path'
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

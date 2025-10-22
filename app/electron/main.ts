@@ -16,6 +16,29 @@ let packInProgress = false;
 let runtimeConfig: RuntimeConfig | null = null;
 let preloadPath: string | null = null;
 
+function parseArgLang(): string | undefined {
+  const args = process.argv.slice(1);
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (!a) continue;
+    if (a.startsWith('--lang=')) {
+      const v = a.split('=')[1];
+      if (v) return v;
+    }
+    if (a === '--lang') {
+      const v = args[i + 1];
+      if (v && !v.startsWith('-')) return v;
+    }
+  }
+  return undefined;
+}
+
+// Apply CLI language early so both main and preload can see it via env
+const cliLang = parseArgLang();
+if (cliLang) {
+  process.env.STEM_ZIPPER_LANG = cliLang;
+}
+
 function getCandidatePreloadPaths(): string[] {
   const appPath = app.getAppPath();
   return [
@@ -225,5 +248,21 @@ function registerIpcHandlers(): void {
       return;
     }
     await shell.openExternal(url);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.OPEN_PATH, async (_event, targetPath: string) => {
+    if (typeof targetPath !== 'string' || targetPath.trim().length === 0) {
+      return;
+    }
+    try {
+      // shell.openPath opens folders/files in the OS file manager
+      const result = await shell.openPath(targetPath);
+      if (result) {
+        // result is a non-empty error string on failure
+        throw new Error(result);
+      }
+    } catch (error) {
+      console.error('Failed to open path', targetPath, error);
+    }
   });
 }

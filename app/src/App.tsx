@@ -17,6 +17,7 @@ import { formatMessage, resolveLocale, translations, type LocaleKey } from '@com
 import { InfoModal } from './components/InfoModal';
 import { APP_VERSION } from '@common/version';
 import { DiagOverlay } from './components/DiagOverlay';
+import { ChoiceModal } from './components/ChoiceModal';
 
 const initialProgress: PackProgress = {
   state: 'idle',
@@ -42,6 +43,8 @@ export default function App() {
   const [isPacking, setIsPacking] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [isRevealOpen, setIsRevealOpen] = useState(false);
+  const [lastPackCount, setLastPackCount] = useState(0);
 
   const t = useCallback(
     (key: keyof typeof translations.en, params: Record<string, string | number> = {}) =>
@@ -147,6 +150,8 @@ export default function App() {
       });
       if (total > 0) {
         setStatusText(t('msg_finished', { count: total }));
+        setLastPackCount(total);
+        setIsRevealOpen(true);
       } else {
         setStatusText(t('msg_no_files'));
       }
@@ -357,6 +362,21 @@ export default function App() {
       ) : null}
     </div>
     <DiagOverlay hasElectronAPI={hasElectronAPI} hasRuntimeConfig={hasRuntimeConfig} isDev={isDevMode} />
+    {isRevealOpen && folderPath ? (
+      <ChoiceModal
+        title={t('status_done')}
+        text={`${t('msg_finished', { count: lastPackCount })}\n${t('open_folder_prompt')}`}
+        primaryLabel={t('browse')}
+        secondaryLabel={t('close')}
+        onPrimary={() => {
+          setIsRevealOpen(false);
+          if (window.electronAPI && typeof window.electronAPI.openPath === 'function') {
+            window.electronAPI.openPath(folderPath).catch((err) => console.error(err));
+          }
+        }}
+        onSecondary={() => setIsRevealOpen(false)}
+      />
+    ) : null}
     </>
   );
 }
