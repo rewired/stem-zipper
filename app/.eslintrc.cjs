@@ -10,7 +10,7 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
-    project: ['./tsconfig.json', './electron/tsconfig.main.json', './electron/tsconfig.preload.json'],
+    project: ['./tsconfig.json', './electron/tsconfig.main.json', './electron/tsconfig.preload.json', './electron/tsconfig.tests.json'],
     tsconfigRootDir: __dirname
   },
   plugins: ['react', '@typescript-eslint'],
@@ -24,3 +24,5 @@ module.exports = {
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }]
   }
 };
+
+

@@ -32,7 +32,6 @@ export interface SizedFile {
   extension: SupportedExtension;
 }
 
-type MonoCapableWaveFile = WaveFile; // API no longer provides toMono in v11
 
 function isSupportedExtension(extension: string): extension is SupportedExtension {
   return (SUPPORTED_EXTENSIONS as readonly string[]).includes(extension as SupportedExtension);
@@ -189,7 +188,7 @@ async function getSizedFile(filePath: string): Promise<SizedFile> {
 async function splitStereoWav(filePath: string): Promise<SizedFile[]> {
   const buffer = await fs.promises.readFile(filePath);
   const wav = new WaveFile(buffer);
-  const fmt = wav.fmt as { numChannels?: number } | undefined;
+  const fmt = wav.fmt as { numChannels?: number; sampleRate?: number } | undefined;
   if ((fmt?.numChannels ?? 0) !== 2) {
     return [await getSizedFile(filePath)];
   }
@@ -197,26 +196,24 @@ async function splitStereoWav(filePath: string): Promise<SizedFile[]> {
   const { dir, name, ext } = path.parse(filePath);
 
   // Build mono files by de-interleaving samples and writing fresh files
-  const samples = (wav as unknown as { getSamples: (interleaved?: boolean, OutputObject?: any) => any }).getSamples(
-    false,
-    Float64Array
-  ) as any;
-  const channels = Array.isArray(samples) ? (samples as any[]) : [samples];
+  const getSamples = (wav as unknown as { getSamples: (interleaved: false, OutputObject: { new (...args: unknown[]): Float64Array }) => Float64Array[] }).getSamples;
+  const channels = getSamples(false, Float64Array);
+
   const leftSamples = channels[0];
   const rightSamples = channels[1];
-  const sampleRate = (wav.fmt as any).sampleRate as number;
-  const bitDepthCode = (wav.bitDepth as unknown as string) || '16';
+  const sampleRate = fmt?.sampleRate ?? 44100;
+  const bitDepthCode = wav.bitDepth as string || '16';
 
   const left = new WaveFile();
-  (left as any).fromScratch(1, sampleRate, bitDepthCode, [leftSamples]);
+  left.fromScratch(1, sampleRate, bitDepthCode, [leftSamples]);
   const leftPath = path.join(dir, `${name}_L${ext}`);
 
   const right = new WaveFile();
-  (right as any).fromScratch(1, sampleRate, bitDepthCode, [rightSamples]);
+  right.fromScratch(1, sampleRate, bitDepthCode, [rightSamples]);
   const rightPath = path.join(dir, `${name}_R${ext}`);
 
-  await fs.promises.writeFile(leftPath, (left as any).toBuffer());
-  await fs.promises.writeFile(rightPath, (right as any).toBuffer());
+  await fs.promises.writeFile(leftPath, left.toBuffer());
+  await fs.promises.writeFile(rightPath, right.toBuffer());
   await fs.promises.unlink(filePath);
 
   return Promise.all([getSizedFile(leftPath), getSizedFile(rightPath)]);
@@ -348,3 +345,5 @@ async function createDummyFile(filePath: string, sizeMb: number): Promise<void> 
 }
 
 export { formatPathForDisplay };
+
+

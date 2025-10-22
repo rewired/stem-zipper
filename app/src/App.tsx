@@ -269,7 +269,15 @@ export default function App() {
       setProgress(event);
       switch (event.state) {
         case 'analyzing':
-          setStatusText(t('now_packing'));
+          if (event.message === 'splitting') {
+            setStatusText(
+              t('status_splitting_percent', {
+                percent: event.percent
+              })
+            );
+          } else {
+            setStatusText(t('now_packing'));
+          }
           break;
         case 'packing':
           if (event.currentZip) {
@@ -451,3 +459,4 @@ export default function App() {
     </>
   );
 }
+

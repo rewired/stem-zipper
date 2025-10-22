@@ -1,14 +1,17 @@
 {
-  "extends": "./tsconfig.base.json",
-  "compilerOptions": {
-    "types": ["vite/client"],
-    "baseUrl": "./src",
-    "paths": {
-      "@common/*": ["../common/*"]
-    }
-  },
-  "include": ["src"],
-  "references": [
-    { "path": "./tsconfig.node.json" }
-  ]
+    "extends":  "./tsconfig.base.json",
+    "compilerOptions":  {
+                            "types":  [
+                                          "vite/client"
+                                      ],
+                            "baseUrl":  "./src",
+                            "paths":  {
+                                          "@common/*":  [
+                                                            "../common/*"
+                                                        ]
+                                      }
+                        },
+    "include":  [
+                    "src"
+                ]
 }

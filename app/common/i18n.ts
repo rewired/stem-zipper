@@ -1,4 +1,5 @@
 export const SUPPORTED_LOCALES = [
+
   'en',
   'de',
   'fr',
@@ -60,6 +61,8 @@ export const translations = {
     create_testdata_done: '{count} dummy files created in\n{folder}',
     error_title: 'Something went wrong',
     browse: 'Browse',
+    splitting: 'Splitting...',
+    status_splitting_percent: 'Splitting... ({percent}%)',
     ignore: 'Ignore',
     cancel: 'Cancel',
     open_folder_prompt: 'Open the folder with the created ZIP files?',
@@ -103,6 +106,8 @@ export const translations = {
     create_testdata_done: '{count} Dummy-Dateien erstellt in\n{folder}',
     error_title: 'Es ist ein Fehler aufgetreten',
     browse: 'Durchsuchen',
+    splitting: 'Wird aufgeteilt...',
+    status_splitting_percent: 'Wird aufgeteilt... ({percent}%)',
     ignore: 'Ignorieren',
     cancel: 'Abbrechen',
     overwrite_title: 'Vorhandene ZIPs gefunden',
@@ -146,6 +151,8 @@ export const translations = {
     create_testdata_done: '{count} fichiers factices créés dans\n{folder}',
     error_title: 'Une erreur est survenue',
     browse: 'Parcourir',
+    splitting: 'D�coupage...',
+    status_splitting_percent: 'D�coupage... ({percent}%)',
     ignore: 'Ignorer',
     cancel: 'Annuler',
     overwrite_title: 'Fichiers ZIP existants détectés',
@@ -189,6 +196,8 @@ export const translations = {
     create_testdata_done: '{count} file fittizi creati in\n{folder}',
     error_title: 'Si è verificato un errore',
     browse: 'Sfoglia',
+    splitting: 'Divisione...',
+    status_splitting_percent: 'Divisione... ({percent}%)',
     ignore: 'Ignora',
     cancel: 'Annulla',
     overwrite_title: 'ZIP esistenti trovati',
@@ -232,6 +241,8 @@ export const translations = {
     create_testdata_done: '{count} archivos falsos creados en\n{folder}',
     error_title: 'Algo salió mal',
     browse: 'Examinar',
+    splitting: 'Dividiendo...',
+    status_splitting_percent: 'Dividiendo... ({percent}%)',
     ignore: 'Ignorar',
     cancel: 'Cancelar',
     overwrite_title: 'ZIP existentes encontrados',
@@ -275,6 +286,8 @@ export const translations = {
     create_testdata_done: '{count} arquivos falsos criados em\n{folder}',
     error_title: 'Algo deu errado',
     browse: 'Procurar',
+    splitting: 'Dividindo...',
+    status_splitting_percent: 'Dividindo... ({percent}%)',
     ignore: 'Ignorar',
     cancel: 'Cancelar',
     overwrite_title: 'ZIPs existentes encontrados',
@@ -301,6 +314,8 @@ export const translations = {
     status_packing: 'Opretter {name}...',
     status_done: 'Færdig.',
     status_packing_percent: 'Opretter {name}... ({percent}%)',
+    splitting: 'Opdeler...',
+    status_splitting_percent: 'Opdeler... ({percent}%)',
     msg_no_files: 'Ingen understøttede lydfiler fundet.',
     msg_finished: '{count} ZIP-filer oprettet.',
     msg_invalid_max_size: 'Angiv en værdi større end 0 og op til {max} MB. Nulstiller til {reset} MB.',
@@ -344,6 +359,8 @@ export const translations = {
     status_packing: 'Oppretter {name}...',
     status_done: 'Ferdig.',
     status_packing_percent: 'Oppretter {name}... ({percent}%)',
+    splitting: 'Deler...',
+    status_splitting_percent: 'Deler... ({percent}%)',
     msg_no_files: 'Ingen støttede lydfiler funnet.',
     msg_finished: '{count} ZIP-filer opprettet.',
     msg_invalid_max_size: 'Angi en verdi større enn 0 og opptil {max} MB. Tilbakestiller til {reset} MB.',
@@ -387,6 +404,8 @@ export const translations = {
     status_packing: 'Skapar {name}...',
     status_done: 'Klart.',
     status_packing_percent: 'Skapar {name}... ({percent}%)',
+    splitting: 'Delar...',
+    status_splitting_percent: 'Delar... ({percent}%)',
     msg_no_files: 'Inga stödda ljudfiler hittades.',
     msg_finished: '{count} ZIP-filer skapades.',
     msg_invalid_max_size: 'Ange ett värde större än 0 och upp till {max} MB. Återställer till {reset} MB.',
@@ -430,6 +449,8 @@ export const translations = {
     status_packing: 'Luodaan {name}...',
     status_done: 'Valmis.',
     status_packing_percent: 'Luodaan {name}... ({percent}%)',
+    splitting: 'Jaetaan...',
+    status_splitting_percent: 'Jaetaan... ({percent}%)',
     msg_no_files: 'Tuettuja äänitiedostoja ei löytynyt.',
     msg_finished: '{count} ZIP-tiedostoa luotu.',
     msg_invalid_max_size: 'Anna arvo, joka on suurempi kuin 0 ja enintään {max} Mt. Palautetaan arvoon {reset} Mt.',
@@ -473,6 +494,8 @@ export const translations = {
     status_packing: 'Maakt {name}...',
     status_done: 'Klaar.',
     status_packing_percent: 'Maakt {name}... ({percent}%)',
+    splitting: 'Splitsen...',
+    status_splitting_percent: 'Splitsen... ({percent}%)',
     msg_no_files: 'Geen ondersteunde audiobestanden gevonden.',
     msg_finished: '{count} ZIP-bestanden aangemaakt.',
     msg_invalid_max_size: 'Voer een waarde in groter dan 0 en tot {max} MB. Terugzetten naar {reset} MB.',
@@ -516,6 +539,8 @@ export const translations = {
     status_packing: 'Tworzenie {name}...',
     status_done: 'Gotowe.',
     status_packing_percent: 'Tworzenie {name}... ({percent}%)',
+    splitting: 'Dzielenie...',
+    status_splitting_percent: 'Dzielenie... ({percent}%)',
     msg_no_files: 'Nie znaleziono obsługiwanych plików audio.',
     msg_finished: 'Utworzono {count} plików ZIP.',
     msg_invalid_max_size: 'Podaj wartość większą niż 0 i nie większą niż {max} MB. Przywracamy wartość do {reset} MB.',
@@ -559,6 +584,8 @@ export const translations = {
     status_packing: '{name} を作成中...',
     status_done: '完了。',
     status_packing_percent: '{name} を作成中... ({percent}%)',
+    splitting: '???...',
+    status_splitting_percent: '???... ({percent}%)',
     msg_no_files: 'サポートされているオーディオファイルが見つかりませんでした。',
     msg_finished: '{count} 個のZIPファイルを作成しました。',
     msg_invalid_max_size: '0より大きく {max} MB 以下の値を入力してください。{reset} MB にリセットします。',
@@ -602,6 +629,8 @@ export const translations = {
     status_packing: '正在创建 {name}...',
     status_done: '完成。',
     status_packing_percent: '正在创建 {name}... ({percent}%)',
+    splitting: '????...',
+    status_splitting_percent: '????... ({percent}%)',
     msg_no_files: '未找到支持的音频文件。',
     msg_finished: '已成功创建 {count} 个 ZIP 文件。',
     msg_invalid_max_size: '请输入大于 0 且不超过 {max} MB 的值。已重置为 {reset} MB。',
@@ -645,6 +674,8 @@ export const translations = {
     status_packing: 'กำลังสร้าง {name}...',
     status_done: 'เสร็จสิ้น.',
     status_packing_percent: 'กำลังสร้าง {name}... ({percent}%)',
+    splitting: '????????...',
+    status_splitting_percent: '????????... ({percent}%)',
     msg_no_files: 'ไม่พบไฟล์เสียงที่รองรับ.',
     msg_finished: 'สร้างไฟล์ ZIP แล้ว {count} ไฟล์.',
     msg_invalid_max_size: 'กรุณากรอกค่าที่มากกว่า 0 และไม่เกิน {max} MB รีเซ็ตเป็น {reset} MB.',
@@ -688,6 +719,8 @@ export const translations = {
     status_packing: '{name} 생성 중...',
     status_done: '완료.',
     status_packing_percent: '{name} 생성 중... ({percent}%)',
+    splitting: '?? ?...',
+    status_splitting_percent: '?? ?... ({percent}%)',
     msg_no_files: '지원되는 오디오 파일을 찾을 수 없습니다.',
     msg_finished: 'ZIP 파일 {count}개를 생성했습니다.',
     msg_invalid_max_size: '0보다 크고 {max} MB 이하의 값을 입력하세요. {reset} MB로 초기화합니다.',
@@ -731,6 +764,8 @@ export const translations = {
     status_packing: 'Vytváření {name}...',
     status_done: 'Hotovo.',
     status_packing_percent: 'Vytváření {name}... ({percent}%)',
+    splitting: 'Rozdelov�n�...',
+    status_splitting_percent: 'Rozdelov�n�... ({percent}%)',
     msg_no_files: 'Nebyl nalezen žádný podporovaný audio soubor.',
     msg_finished: 'Bylo vytvořeno {count} souborů ZIP.',
     msg_invalid_max_size: 'Zadejte hodnotu větší než 0 a maximálně {max} MB. Obnovuje se na {reset} MB.',
@@ -774,6 +809,8 @@ export const translations = {
     status_packing: 'Se creează {name}...',
     status_done: 'Gata.',
     status_packing_percent: 'Se creează {name}... ({percent}%)',
+    splitting: 'Se �mparte...',
+    status_splitting_percent: 'Se �mparte... ({percent}%)',
     msg_no_files: 'Nu s-au găsit fișiere audio acceptate.',
     msg_finished: 'Au fost create {count} fișiere ZIP.',
     msg_invalid_max_size: 'Introduceți o valoare mai mare decât 0 și de maximum {max} MB. Se resetează la {reset} MB.',
@@ -817,6 +854,8 @@ export const translations = {
     status_packing: 'Створення {name}...',
     status_done: 'Готово.',
     status_packing_percent: 'Створення {name}... ({percent}%)',
+    splitting: '??????????...',
+    status_splitting_percent: '??????????... ({percent}%)',
     msg_no_files: 'Підтримуваних аудіофайлів не знайдено.',
     msg_finished: 'Створено {count} ZIP-файлів.',
     msg_invalid_max_size: 'Введіть значення більше 0 і не більше {max} МБ. Повертаємо значення {reset} МБ.',
@@ -843,9 +882,7 @@ export const translations = {
   }
 } as const;
 
-type TranslationMap = (typeof translations)[LocaleKey];
-
-export type TranslationKey = keyof TranslationMap;
+export type TranslationKey = keyof (typeof translations)['en'];
 
 function matchLocale(locale: string | null | undefined): LocaleKey | undefined {
   if (!locale) {
@@ -892,8 +929,10 @@ export function formatMessage(
   key: TranslationKey,
   params: Record<string, string | number> = {}
 ): string {
-  const template = translations[locale]?.[key] ?? translations[DEFAULT_LOCALE][key];
+  const localeMap = translations[locale as keyof typeof translations] as Record<string, string>;
+  const defaultMap = translations[DEFAULT_LOCALE as keyof typeof translations] as Record<string, string>;
+  const template = (localeMap[key] ?? defaultMap[key]) as string;
   return Object.keys(params).reduce((message, paramKey) => {
-    return message.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(params[paramKey]));
+    return message.replace(new RegExp(`\{${paramKey}\}`, 'g'), String(params[paramKey]));
   }, template);
 }
