@@ -1,4 +1,5 @@
 import { clsx } from 'clsx';
+import { MaterialIcon } from './icons/MaterialIcon';
 
 interface ActionBarProps {
   onPack: () => void;
@@ -42,7 +43,7 @@ export function ActionBar({
                 : 'cursor-not-allowed bg-slate-700 text-slate-300 opacity-70'
             )}
           >
-            <span aria-hidden>📦</span>
+            <MaterialIcon icon="inventory_2" />
             {isPacking ? `${packLabel}…` : packLabel}
           </button>
           {onShowInfo ? (
@@ -53,7 +54,7 @@ export function ActionBar({
               aria-label={infoLabel}
               title={infoLabel}
             >
-              <span aria-hidden>ℹ️</span>
+              <MaterialIcon icon="info" />
               <span>{infoLabel}</span>
             </button>
           ) : null}
@@ -64,7 +65,7 @@ export function ActionBar({
             onClick={onCreateTestData}
             className="inline-flex items-center gap-2 rounded-md border border-amber-400/60 bg-amber-500/20 px-4 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-500/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
           >
-            <span aria-hidden>🧪</span>
+            <MaterialIcon icon="science" />
             {createTestDataLabel}
           </button>
         ) : null}
@@ -74,7 +75,7 @@ export function ActionBar({
         onClick={onExit}
         className="inline-flex items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
       >
-        <span aria-hidden>🚪</span>
+        <MaterialIcon icon="logout" />
         {exitLabel}
       </button>
     </div>
