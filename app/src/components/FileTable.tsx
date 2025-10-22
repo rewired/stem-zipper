@@ -59,7 +59,7 @@ export function FileTable({
             <tr key={file.path} className="hover:bg-slate-800/50">
               <td className="w-7/12 px-4 py-3 text-slate-100">{file.name}</td>
               <td className="px-4 py-3 text-slate-300">{actionNames[file.action]}</td>
-              <td className="w-28 px-4 py-3 text-right tabular-nums text-slate-200">{formatSize(file.sizeMb)}</td>
+              <td className="w-28 px-4 py-3 text-right tabular-nums text-slate-200">{formatSize(file.sizeMb)} MB</td>
             </tr>
           ))}
         </tbody>
