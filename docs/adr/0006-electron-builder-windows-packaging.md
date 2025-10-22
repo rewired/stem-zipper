@@ -15,4 +15,5 @@ We adopted [`electron-builder`](https://www.electron.build/) as the packaging to
 
 - Windows users can generate a tested installer with a single command instead of assembling packaging scripts manually.
 - `electron-builder` joins the devDependencies, increasing the size of the toolchain but keeping packaging reproducible across machines.
+- Package metadata (name, version, description, author) must stay populated and the `electron` runtime scoped to development dependencies so that electron-builder accepts the Windows build inputs.
 - Future platform targets (macOS, Linux) can extend the same configuration without duplicating build logic.
