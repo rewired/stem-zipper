@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - Developer-mode dummy data generator exposed through the renderer and IPC bridge.
 - Windows packaging task (`pnpm package:win`) backed by `electron-builder` to produce a distributable NSIS installer.
 - Renderer action bar now exposes an “About” affordance that surfaces a translated modal with the packaged app version.
+- Renderer info modal links now open in the system browser via a dedicated `open-external` IPC bridge helper.
 
 ### Changed
 - Electron main window now clears the default application menu to hide the native menu bar across platforms.
