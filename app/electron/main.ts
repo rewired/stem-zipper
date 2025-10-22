@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
@@ -103,6 +103,8 @@ async function createWindow(): Promise<void> {
     },
     title: formatMessage(config.locale, 'app_title')
   });
+
+  Menu.setApplicationMenu(null);
 
   if (process.env.VITE_DEV_SERVER_URL) {
     await mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
