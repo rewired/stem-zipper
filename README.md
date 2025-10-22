@@ -64,7 +64,8 @@ pnpm dev de
 pnpm dev -- --lang=fr
 ```
 
-If no locale is provided, or an unsupported value is supplied, the runners default to English (`en`).
+If no locale is provided, the runners detect the operating system language and only fall back to English (`en`) when the locale
+cannot be resolved.
 
 This command starts the Vite dev server, compiles the Electron main & preload processes in watch mode and launches Electron once the renderer is ready. Any change in `src/` hot-reloads the UI, while updates to Electron code trigger a fast TypeScript rebuild.
 

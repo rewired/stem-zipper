@@ -5,6 +5,93 @@ const process = require('node:process');
 const SUPPORTED_LOCALES = new Set(['en', 'de', 'fr', 'it', 'es', 'pt']);
 const DEFAULT_LOCALE = 'en';
 
+function matchSupportedLocale(locale) {
+  if (typeof locale !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = locale.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const normalised = trimmed.toLowerCase();
+  if (SUPPORTED_LOCALES.has(normalised)) {
+    return normalised;
+  }
+
+  const baseMatch = normalised.match(/^[a-z]{2}/);
+  if (!baseMatch) {
+    return undefined;
+  }
+
+  const primary = baseMatch[0];
+  if (SUPPORTED_LOCALES.has(primary)) {
+    return primary;
+  }
+
+  return undefined;
+}
+
+function collectLocaleCandidates(values) {
+  const candidates = [];
+
+  for (const value of values) {
+    if (!value) {
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      for (const entry of value) {
+        if (typeof entry === 'string' && entry.trim().length > 0) {
+          candidates.push(entry);
+        }
+      }
+      continue;
+    }
+
+    if (typeof value === 'string') {
+      const parts = value.split(/[:,;]/);
+      for (const part of parts) {
+        if (part && part.trim().length > 0) {
+          candidates.push(part);
+        }
+      }
+    }
+  }
+
+  return candidates;
+}
+
+function detectSystemLocale() {
+  const locales = [
+    process.env.STEM_ZIPPER_LANG,
+    process.env.LC_ALL,
+    process.env.LC_MESSAGES,
+    process.env.LANG,
+    process.env.LANGUAGE
+  ];
+
+  try {
+    const resolved = new Intl.DateTimeFormat().resolvedOptions().locale;
+    if (resolved) {
+      locales.push(resolved);
+    }
+  } catch (error) {
+    // Ignore Intl resolution errors and continue with environment hints.
+  }
+
+  const candidates = collectLocaleCandidates(locales);
+  for (const candidate of candidates) {
+    const match = matchSupportedLocale(candidate);
+    if (match) {
+      return match;
+    }
+  }
+
+  return undefined;
+}
+
 function parseLanguageArgument(argv) {
   let language;
   const passthrough = [];
@@ -48,13 +135,14 @@ function parseLanguageArgument(argv) {
 }
 
 function normaliseLanguage(raw) {
-  if (!raw) {
-    return DEFAULT_LOCALE;
+  const directMatch = matchSupportedLocale(raw);
+  if (directMatch) {
+    return directMatch;
   }
 
-  const trimmed = raw.trim().toLowerCase();
-  if (SUPPORTED_LOCALES.has(trimmed)) {
-    return trimmed;
+  const systemLocale = detectSystemLocale();
+  if (systemLocale) {
+    return systemLocale;
   }
 
   return DEFAULT_LOCALE;
@@ -116,4 +204,18 @@ function main() {
   runDevServer(locale, passthrough);
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  DEFAULT_LOCALE,
+  SUPPORTED_LOCALES,
+  collectLocaleCandidates,
+  detectSystemLocale,
+  matchSupportedLocale,
+  normaliseLanguage,
+  parseLanguageArgument,
+  resolvePnpmInvocation,
+  runDevServer
+};

@@ -15,7 +15,7 @@ All notable changes to this project will be documented in this file.
 - Renderer info modal links now open in the system browser via a dedicated `open-external` IPC bridge helper.
 
 ### Changed
-- Development runner now accepts an optional locale argument (e.g. `pnpm dev de` or `--lang=fr`) and falls back to English when the input is missing or unsupported.
+- Development runner now accepts an optional locale argument (e.g. `pnpm dev de` or `--lang=fr`) and auto-detects the operating system language when no input is provided, falling back to English only when the locale is unsupported.
 - Renderer header now displays the application version alongside the product name and the Electron window title mirrors the versioned label.
 - Renderer header now uses a Material icon instead of the headphone emoji, drops the duplicate folder instruction copy and widens the selected-path display for long directories.
 - Renderer header, action bar and modal controls now render Material Symbols icons instead of emojis while preserving layout and accessibility.
