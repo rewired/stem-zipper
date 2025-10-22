@@ -87,6 +87,14 @@ The build pipeline produces two artefacts:
 
 `pnpm preview` launches the built application locally using the generated artefacts, allowing a final manual smoke test before packaging.
 
+### Cleanup generated artefacts
+
+```bash
+pnpm clean
+```
+
+The cleanup task removes the `dist-electron/`, `dist-renderer/` and `release/` directories. It is safe to run repeatedly and helps keep cross-platform builds reproducible.
+
 ---
 
 ## Feature parity with the classic release
@@ -128,7 +136,7 @@ The build pipeline produces two artefacts:
 pnpm package:win
 ```
 
-Run this command from the `app/` workspace. It compiles the renderer and Electron processes and then uses [electron-builder](https://www.electron.build/) to generate an NSIS installer for 64-bit Windows. The installer and unpacked artefacts are written to `app/release/`. Execute the task on Windows (or a Linux/macOS machine with [Wine](https://wiki.winehq.org/) configured) to ensure the `.exe` is produced successfully.
+Run this command from the `app/` workspace. It compiles the renderer and Electron processes and then uses [electron-builder](https://www.electron.build/) to generate an NSIS installer for 64-bit Windows. The installer and unpacked artefacts are written to `app/release/`. The packaging script automatically runs `pnpm clean` first to clear previous releases, preventing Windows from holding on to files such as `chrome_100_percent.pak` between successive builds. Execute the task on Windows (or a Linux/macOS machine with [Wine](https://wiki.winehq.org/) configured) to ensure the `.exe` is produced successfully.
 
 ### Other platforms
 
