@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file.
 - Renderer shell keeps the header and action controls visible with sticky positioning while scrolling large file tables.
 - Renderer pack button now adopts the blue accent palette to align hover and focus states with the folder selection control.
 - Renderer info button now mirrors the pack control spacing and displays the translated label beside its icon.
+- Renderer file table now lists the action column before the size column to match the desired order.
 
 ### Removed
 - Tkinter frontend, Python CLI switches and PyInstaller packaging instructions from the primary documentation set (archived under `docs/archive/python-legacy.md`).
