@@ -9,6 +9,7 @@ import { IPC_CHANNELS } from '../common/ipc';
 import type { AnalyzeResponse, PackRequest, TestDataRequest } from '../common/ipc';
 import { formatMessage, resolveLocale } from '../common/i18n';
 import type { RuntimeConfig } from '../common/runtime';
+import { APP_VERSION } from '../common/version';
 
 let mainWindow: BrowserWindow | null = null;
 let packInProgress = false;
@@ -101,7 +102,7 @@ async function createWindow(): Promise<void> {
       contextIsolation: true,
       sandbox: false
     },
-    title: formatMessage(config.locale, 'app_title')
+    title: `${formatMessage(config.locale, 'app_title')} ${APP_VERSION}`
   });
 
   Menu.setApplicationMenu(null);

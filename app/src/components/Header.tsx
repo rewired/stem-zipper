@@ -4,6 +4,7 @@ import { MaterialIcon } from './icons/MaterialIcon';
 
 interface HeaderProps {
   title: string;
+  version: string;
   folderPath: string | null;
   selectLabel: string;
   browseLabel: string;
@@ -19,6 +20,7 @@ interface HeaderProps {
 
 export function Header({
   title,
+  version,
   folderPath,
   selectLabel,
   browseLabel,
@@ -47,8 +49,11 @@ export function Header({
     <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-900/80 px-8 py-6 backdrop-blur">
       <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-y-4">
         <div className="flex items-center gap-3 text-2xl font-semibold text-slate-50 md:col-start-1 md:row-start-1">
-          <MaterialIcon icon="inventory_2" className="h-8 w-8 text-blue-300" title={title} />
-          <span>{title}</span>
+          <MaterialIcon icon="inventory_2" className="h-8 w-8 text-blue-300" title={`${title} ${version}`} />
+          <div className="flex items-baseline gap-2">
+            <span>{title}</span>
+            <span className="text-base font-medium text-slate-300">{version}</span>
+          </div>
         </div>
         <p
           className={clsx(

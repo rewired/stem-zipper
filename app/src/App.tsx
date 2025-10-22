@@ -56,6 +56,18 @@ export default function App() {
     [t]
   );
 
+  const formatSize = useMemo(() => {
+    const formatter = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    return (value: number) => formatter.format(value);
+  }, [locale]);
+
+  useEffect(() => {
+    document.title = `${t('app_title')} ${APP_VERSION}`;
+  }, [t]);
+
   const resetProgress = () => {
     setProgress(initialProgress);
   };
@@ -254,6 +266,7 @@ export default function App() {
     >
       <Header
         title={t('app_title')}
+        version={APP_VERSION}
         folderPath={folderPath}
         selectLabel={t('select_folder')}
         browseLabel={t('select_hint')}
@@ -276,6 +289,7 @@ export default function App() {
             actionNames={actionNames}
             emptyLabel={t('select_hint')}
             helperLabel={t('drop_helper')}
+            formatSize={formatSize}
           />
         </div>
         <div className="sticky bottom-0 z-30 border-t border-slate-800 bg-slate-950/90 px-8 py-4 backdrop-blur">
