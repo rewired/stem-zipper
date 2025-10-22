@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Node-based audio analysis, stereo splitting and best-fit-decreasing packing services with Vitest coverage.
 - Developer-mode dummy data generator exposed through the renderer and IPC bridge.
 - Windows packaging task (`pnpm package:win`) backed by `electron-builder` to produce a distributable NSIS installer.
+- Renderer action bar now exposes an “About” affordance that surfaces a translated modal with the packaged app version.
 
 ### Changed
 - Electron main window now clears the default application menu to hide the native menu bar across platforms.

@@ -6,6 +6,9 @@ export const DEFAULT_LOCALE: LocaleKey = 'en';
 export const translations = {
   en: {
     app_title: 'Stem ZIPper',
+    about: 'About',
+    close: 'Close',
+    about_text: 'Stem ZIPper version {version}. Manage and package your audio stems with ease.',
     select_folder: 'Select Folder',
     header_label: 'Select or drop a folder:',
     max_size_label: 'Max ZIP size (MB):',
@@ -40,6 +43,9 @@ export const translations = {
   },
   de: {
     app_title: 'Stem ZIPper',
+    about: 'Info',
+    close: 'Schließen',
+    about_text: 'Stem ZIPper Version {version}. Verwalten und packen Sie Ihre Audio-Stems mühelos.',
     select_folder: 'Ordner auswählen',
     header_label: 'Ordner auswählen oder hineinziehen:',
     max_size_label: 'Max. ZIP-Größe (MB):',
@@ -74,6 +80,9 @@ export const translations = {
   },
   fr: {
     app_title: 'Stem ZIPper',
+    about: 'À propos',
+    close: 'Fermer',
+    about_text: 'Stem ZIPper version {version}. Gérez et archivez vos stems audio en toute simplicité.',
     select_folder: 'Sélectionner le dossier',
     header_label: 'Sélectionnez ou déposez un dossier :',
     max_size_label: 'Taille ZIP max. (Mo) :',
@@ -108,6 +117,9 @@ export const translations = {
   },
   it: {
     app_title: 'Stem ZIPper',
+    about: 'Informazioni',
+    close: 'Chiudi',
+    about_text: 'Stem ZIPper versione {version}. Gestisci e comprimi i tuoi stem audio con facilità.',
     select_folder: 'Seleziona cartella',
     header_label: 'Seleziona o trascina una cartella:',
     max_size_label: 'Dimensione ZIP max (MB):',
@@ -142,6 +154,9 @@ export const translations = {
   },
   es: {
     app_title: 'Stem ZIPper',
+    about: 'Acerca de',
+    close: 'Cerrar',
+    about_text: 'Stem ZIPper versión {version}. Gestiona y empaqueta tus stems de audio con facilidad.',
     select_folder: 'Seleccionar carpeta',
     header_label: 'Seleccionar o arrastrar una carpeta:',
     max_size_label: 'Tamaño máx. ZIP (MB):',
@@ -176,6 +191,9 @@ export const translations = {
   },
   pt: {
     app_title: 'Stem ZIPper',
+    about: 'Sobre',
+    close: 'Fechar',
+    about_text: 'Stem ZIPper versão {version}. Gerencie e compacte seus stems de áudio com facilidade.',
     select_folder: 'Selecionar pasta',
     header_label: 'Selecione ou arraste uma pasta:',
     max_size_label: 'Tamanho máx. ZIP (MB):',
