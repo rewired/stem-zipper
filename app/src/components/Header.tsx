@@ -4,7 +4,6 @@ import { MaterialIcon } from './icons/MaterialIcon';
 
 interface HeaderProps {
   title: string;
-  subtitle: string;
   folderPath: string | null;
   selectLabel: string;
   browseLabel: string;
@@ -20,7 +19,6 @@ interface HeaderProps {
 
 export function Header({
   title,
-  subtitle,
   folderPath,
   selectLabel,
   browseLabel,
@@ -48,16 +46,19 @@ export function Header({
   return (
     <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-900/80 px-8 py-6 backdrop-blur">
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-50">{title}</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-300">{subtitle}</p>
+        <div className="md:flex-1">
+          <div className="flex items-center gap-3 text-2xl font-semibold text-slate-50">
+            <MaterialIcon icon="inventory_2" className="h-8 w-8 text-blue-300" title={title} />
+            <span>{title}</span>
+          </div>
           <p className="mt-3 text-xs uppercase tracking-wide text-slate-500">{dropHelper}</p>
           <p
             className={clsx(
-              'mt-2 break-all rounded bg-slate-800/80 px-3 py-2 text-xs shadow-inner',
+              'mt-2 w-full max-w-4xl overflow-x-auto whitespace-nowrap rounded bg-slate-800/80 px-3 py-2 text-sm shadow-inner',
               folderPath ? 'text-slate-200' : 'text-slate-500 italic'
             )}
             aria-live="polite"
+            title={folderPath ?? undefined}
           >
             {folderPath ?? browseLabel}
           </p>
