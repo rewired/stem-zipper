@@ -88,7 +88,6 @@ export function Header({
               title={maxSizeTooltip}
             />
           </div>
-          <p className="text-xs text-slate-400">{browseLabel}</p>
         </div>
       </div>
     </header>
