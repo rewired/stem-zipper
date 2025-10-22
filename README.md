@@ -136,7 +136,16 @@ The cleanup task removes the `dist-electron/`, `dist-renderer/` and `release/` d
 pnpm package:win
 ```
 
-Run this command from the `app/` workspace. It compiles the renderer and Electron processes and then uses [electron-builder](https://www.electron.build/) to generate an NSIS installer for 64-bit Windows. The installer and unpacked artefacts are written to `app/release/`. The packaging script automatically runs `pnpm clean` first to clear previous releases, preventing Windows from holding on to files such as `chrome_100_percent.pak` between successive builds. Execute the task on Windows (or a Linux/macOS machine with [Wine](https://wiki.winehq.org/) configured) to ensure the `.exe` is produced successfully.
+Run this command from the `app/` workspace. It compiles the renderer and Electron processes and then uses [electron-builder](https://www.electron.build/) to generate an NSIS installer for 64-bit Windows. The packaging script automatically runs `pnpm clean` first to clear previous releases, preventing Windows from holding on to files such as `chrome_100_percent.pak` between successive builds.
+
+The Electron Builder configuration now whitelists only the production runtime packages (`buffer-crc32`, `clsx`, `react`, `react-dom`, `scheduler`, `loose-envify`, `js-tokens`, `wavefile`, `yazl`) so that development tooling such as Vite and ESLint is no longer copied into the installer. After running the packaging task you can inspect the generated archive with:
+
+```bash
+npx asar extract release/win-unpacked/resources/app.asar /tmp/app-asar
+ls /tmp/app-asar/node_modules
+```
+
+The extracted `node_modules` directory should only contain the runtime dependencies listed above, yielding a noticeably smaller `app.asar` and installer payload. Execute the task on Windows (or a Linux/macOS machine with [Wine](https://wiki.winehq.org/) configured) to ensure the `.exe` is produced successfully.
 
 ### Other platforms
 

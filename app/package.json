@@ -63,8 +63,52 @@
     "files": [
       "dist-electron/**/*",
       "dist-renderer/**/*",
-      "node_modules/**/*",
-      "package.json"
+      "package.json",
+      {
+        "from": "node_modules/.pnpm/buffer-crc32@0.2.13/node_modules/buffer-crc32",
+        "to": "node_modules/buffer-crc32",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "node_modules/.pnpm/clsx@2.1.1/node_modules/clsx",
+        "to": "node_modules/clsx",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "node_modules/.pnpm/js-tokens@4.0.0/node_modules/js-tokens",
+        "to": "node_modules/js-tokens",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "node_modules/.pnpm/loose-envify@1.4.0/node_modules/loose-envify",
+        "to": "node_modules/loose-envify",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom",
+        "to": "node_modules/react-dom",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "node_modules/.pnpm/react@18.3.1/node_modules/react",
+        "to": "node_modules/react",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "node_modules/.pnpm/scheduler@0.23.2/node_modules/scheduler",
+        "to": "node_modules/scheduler",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "node_modules/.pnpm/wavefile@11.0.0/node_modules/wavefile",
+        "to": "node_modules/wavefile",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "node_modules/.pnpm/yazl@2.5.1/node_modules/yazl",
+        "to": "node_modules/yazl",
+        "filter": ["**/*"]
+      }
     ],
     "extraMetadata": {
       "main": "dist-electron/main/electron/main.js"
