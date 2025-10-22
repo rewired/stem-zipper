@@ -10,11 +10,9 @@ import { formatMessage, type LocaleKey } from '../../common/i18n';
 import { APP_VERSION } from '../../common/version';
 
 export const STAMP_FILENAME = '_stem-zipper.txt';
-const STEM_ZIPPER_LOGO = `░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-░█▀▀░▀█▀░█▀▀░█▄█░░░▀▀█░▀█▀░█▀█░█▀█░█▀▀░█▀▄░
+const STEM_ZIPPER_LOGO = `░█▀▀░▀█▀░█▀▀░█▄█░░░▀▀█░▀█▀░█▀█░█▀█░█▀▀░█▀▄░
 ░▀▀█░░█░░█▀▀░█░█░░░▄▀░░░█░░█▀▀░█▀▀░█▀▀░█▀▄░
-░▀▀▀░░▀░░▀▀▀░▀░▀░░░▀▀▀░▀▀▀░▀░░░▀░░░▀▀▀░▀░▀░
-░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ v${APP_VERSION} ░`;
+░▀▀▀░░▀░░▀▀▀░▀░▀░░░▀▀▀░▀▀▀░▀░░░▀░░░▀▀▀░▀░▀░`;
 export const STEM_ZIPPER_STAMP = `${STEM_ZIPPER_LOGO}
 
 Packed with Stem ZIPper v${APP_VERSION}
