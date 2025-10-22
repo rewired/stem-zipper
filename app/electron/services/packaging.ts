@@ -32,9 +32,7 @@ export interface SizedFile {
   extension: SupportedExtension;
 }
 
-type MonoCapableWaveFile = WaveFile & {
-  toMono: (channel: number) => void;
-};
+type MonoCapableWaveFile = WaveFile; // API no longer provides toMono in v11
 
 function isSupportedExtension(extension: string): extension is SupportedExtension {
   return (SUPPORTED_EXTENSIONS as readonly string[]).includes(extension as SupportedExtension);
@@ -198,16 +196,27 @@ async function splitStereoWav(filePath: string): Promise<SizedFile[]> {
 
   const { dir, name, ext } = path.parse(filePath);
 
-  const left = new WaveFile(buffer) as MonoCapableWaveFile;
-  left.toMono(0);
+  // Build mono files by de-interleaving samples and writing fresh files
+  const samples = (wav as unknown as { getSamples: (interleaved?: boolean, OutputObject?: any) => any }).getSamples(
+    false,
+    Float64Array
+  ) as any;
+  const channels = Array.isArray(samples) ? (samples as any[]) : [samples];
+  const leftSamples = channels[0];
+  const rightSamples = channels[1];
+  const sampleRate = (wav.fmt as any).sampleRate as number;
+  const bitDepthCode = (wav.bitDepth as unknown as string) || '16';
+
+  const left = new WaveFile();
+  (left as any).fromScratch(1, sampleRate, bitDepthCode, [leftSamples]);
   const leftPath = path.join(dir, `${name}_L${ext}`);
 
-  const right = new WaveFile(buffer) as MonoCapableWaveFile;
-  right.toMono(1);
+  const right = new WaveFile();
+  (right as any).fromScratch(1, sampleRate, bitDepthCode, [rightSamples]);
   const rightPath = path.join(dir, `${name}_R${ext}`);
 
-  await fs.promises.writeFile(leftPath, left.toBuffer());
-  await fs.promises.writeFile(rightPath, right.toBuffer());
+  await fs.promises.writeFile(leftPath, (left as any).toBuffer());
+  await fs.promises.writeFile(rightPath, (right as any).toBuffer());
   await fs.promises.unlink(filePath);
 
   return Promise.all([getSizedFile(leftPath), getSizedFile(rightPath)]);
