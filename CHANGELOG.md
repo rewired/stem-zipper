@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Expanded the shared localisation catalogue with Danish, Norwegian, Swedish, Finnish, Dutch, Polish, Japanese, Chinese, Thai, Korean, Czech, Romanian and Ukrainian translations.
 - Reusable Material Symbols helper component for consistent inline icons in the renderer UI.
 - Electron desktop shell backed by Vite, React, TypeScript and Tailwind CSS.
 - Shared localisation catalogue in `app/common/i18n.ts` consumed by the renderer and Electron main process.

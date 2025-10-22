@@ -9,7 +9,7 @@ The Python-era CLI exposed `--lang` and `--dev` switches and embedded translatio
 
 ## Decision
 
-- Create `app/common/i18n.ts` containing all six locale catalogues plus helpers to resolve and format messages so both renderer and main processes stay in sync.
+- Create `app/common/i18n.ts` containing all supported locale catalogues plus helpers to resolve and format messages so both renderer and main processes stay in sync.
 - Resolve the runtime locale/dev-mode inside the Electron main process using `STEM_ZIPPER_LANG`/`STEM_ZIPPER_DEV_MODE` environment variables or the host language via `app.getPreferredSystemLanguages()` / `app.getLocale()`.
 - Persist the resolved configuration in `process.env` and expose it synchronously through the preload bridge as `window.runtimeConfig` so the renderer can bootstrap without extra IPC.
 - Localise Electron-owned surfaces (window title, folder chooser, packer error propagation) and return translated error messages for developer-only operations such as the test data generator.
@@ -21,4 +21,4 @@ The Python-era CLI exposed `--lang` and `--dev` switches and embedded translatio
 - Packaged builds can honour explicit language/dev toggles by setting environment variables prior to launch; development still works out-of-the-box via `VITE_DEV_SERVER_URL`.
 - The pnpm development runner now exposes a locale argument that writes `STEM_ZIPPER_LANG` before spawning the Electron/Vite processes, auto-detecting the host language when no input is provided and falling back to English only when unsupported.
 - The preload bridge now publishes runtime metadata, slightly increasing its API surface but avoiding ad-hoc IPC calls during start-up.
-- Tests and code touching `packFolder` or runtime config must import the new helpers/types; the stricter localisation also means new strings need entries in all six catalogues.
+- Tests and code touching `packFolder` or runtime config must import the new helpers/types; the stricter localisation also means new strings need entries in every catalogue.
