@@ -1,15 +1,14 @@
 import { useEffect, useId } from 'react';
-import { APP_VERSION } from '@common/version';
+import type { ReactNode } from 'react';
 
 interface InfoModalProps {
   title: string;
-  text: string;
+  text: ReactNode;
   closeLabel: string;
   onClose: () => void;
-  version?: string;
 }
 
-export function InfoModal({ title, text, closeLabel, onClose, version = APP_VERSION }: InfoModalProps) {
+export function InfoModal({ title, text, closeLabel, onClose }: InfoModalProps) {
   const labelId = useId();
   const descriptionId = useId();
 
@@ -23,8 +22,6 @@ export function InfoModal({ title, text, closeLabel, onClose, version = APP_VERS
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
-
-  const resolvedText = text.split('{version}').join(version);
 
   return (
     <div
@@ -42,9 +39,9 @@ export function InfoModal({ title, text, closeLabel, onClose, version = APP_VERS
         <h2 id={labelId} className="text-lg font-semibold">
           {title}
         </h2>
-        <p id={descriptionId} className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-300">
-          {resolvedText}
-        </p>
+        <div id={descriptionId} className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-300">
+          {text}
+        </div>
         <div className="mt-6 flex justify-end">
           <button
             type="button"
