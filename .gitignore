@@ -69,3 +69,4 @@ app/node_modules/
 # Project-specific
 # -----------------------------------------------------------------------------
 audio_input
+/app/release
