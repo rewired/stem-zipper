@@ -30,6 +30,7 @@ All notable changes to this project will be documented in this file.
 - Renderer info button now mirrors the pack control spacing and displays the translated label beside its icon.
 - Renderer file table now lists the action column before the size column to match the desired order.
 - Renderer file table now widens the filename column and narrows the size column to improve readability.
+- Renderer file table now pulls the megabyte unit label from the locale-aware translation catalogue, enabling localized abbreviations.
 
 ### Removed
 - Tkinter frontend, Python CLI switches and PyInstaller packaging instructions from the primary documentation set (archived under `docs/archive/python-legacy.md`).

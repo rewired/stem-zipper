@@ -289,6 +289,7 @@ export default function App() {
             actionNames={actionNames}
             emptyLabel={t('select_hint')}
             helperLabel={t('drop_helper')}
+            sizeUnitLabel={t('size_unit_megabyte')}
             formatSize={formatSize}
           />
         </div>
