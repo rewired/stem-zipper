@@ -6,7 +6,8 @@ export const IPC_CHANNELS = {
   PACK_STATUS: 'pack-status',
   CREATE_TESTDATA: 'create-testdata',
   OPEN_EXTERNAL: 'open-external',
-  OPEN_PATH: 'open-path'
+  OPEN_PATH: 'open-path',
+  CHECK_EXISTING_ZIPS: 'check-existing-zips'
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
@@ -57,4 +58,9 @@ export interface TestDataResponse {
 export interface FolderSelectionResponse {
   canceled: boolean;
   filePaths: string[];
+}
+
+export interface CheckExistingZipsResponse {
+  count: number;
+  files: string[];
 }

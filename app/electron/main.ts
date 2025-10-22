@@ -210,6 +210,28 @@ function registerIpcHandlers(): void {
     const config = getRuntimeConfig();
     const locale = resolveLocale(args.locale, config.locale);
     try {
+      const entries = await fs.promises.readdir(args.folderPath, { withFileTypes: true });
+      const existing = entries.filter((e) => e.isFile() && /^stems-.*\.zip$/i.test(e.name));
+      if (existing.length > 0) {
+        const window = getWindow();
+        const { response } = await dialog.showMessageBox(window, {
+          type: 'warning',
+          buttons: [formatMessage(locale, 'pack_now'), formatMessage(locale, 'close')],
+          defaultId: 0,
+          cancelId: 1,
+          title: formatMessage(locale, 'overwrite_title'),
+          message: formatMessage(locale, 'overwrite_title'),
+          detail: formatMessage(locale, 'overwrite_text')
+        });
+        if (response !== 0) {
+          packInProgress = false;
+          return 0;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to check for existing ZIPs before packing', e);
+    }
+    try {
       const total = await packFolder(args.folderPath, sanitizedMax, locale, (progress) => {
         event.sender.send(IPC_CHANNELS.PACK_PROGRESS, progress);
       });
@@ -263,6 +285,24 @@ function registerIpcHandlers(): void {
       }
     } catch (error) {
       console.error('Failed to open path', targetPath, error);
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CHECK_EXISTING_ZIPS, async (_event, folderPath: string) => {
+    try {
+      if (typeof folderPath !== 'string' || folderPath.trim().length === 0) {
+        return { count: 0, files: [] };
+      }
+      const entries = await fs.promises.readdir(folderPath, { withFileTypes: true });
+      const files = entries
+        .filter((e) => e.isFile())
+        .map((e) => e.name)
+        .filter((name) => /^stems-.*\.zip$/i.test(name));
+      const preview = files.slice(0, 10);
+      return { count: files.length, files: preview };
+    } catch (error) {
+      console.error('Failed to scan for existing ZIPs', folderPath, error);
+      return { count: 0, files: [] };
     }
   });
 }

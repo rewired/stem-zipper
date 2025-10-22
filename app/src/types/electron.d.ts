@@ -16,6 +16,7 @@ declare global {
       createTestData: (folderPath: string, locale: string) => Promise<TestDataResponse>;
       openExternal: (url: string) => Promise<void>;
       openPath: (path: string) => Promise<void>;
+      checkExistingZips: (folderPath: string) => Promise<{ count: number; files: string[] }>;
     };
     runtimeConfig: RuntimeConfig;
   }

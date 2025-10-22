@@ -41,6 +41,8 @@ export const translations = {
     error_title: 'Something went wrong',
     browse: 'Browse',
     open_folder_prompt: 'Open the folder with the created ZIP files?',
+    overwrite_title: 'Existing ZIPs found',
+    overwrite_text: 'This folder already contains stems-*.zip files. Existing files will be overwritten. Continue?',
     testdata_dev_only: 'Test data generation is only available in developer mode.'
   },
   de: {
@@ -79,6 +81,8 @@ export const translations = {
     create_testdata_done: '{count} Dummy-Dateien erstellt in\n{folder}',
     error_title: 'Es ist ein Fehler aufgetreten',
     browse: 'Durchsuchen',
+    overwrite_title: 'Vorhandene ZIPs gefunden',
+    overwrite_text: 'In diesem Ordner befinden sich bereits stems-*.zip-Dateien. Bestehende Dateien werden überschrieben. Fortfahren?',
     open_folder_prompt: 'Ordner mit den erstellten ZIP-Dateien öffnen?',
     testdata_dev_only: 'Das Erstellen von Testdaten ist nur im Entwicklermodus verfügbar.'
   },
@@ -118,6 +122,8 @@ export const translations = {
     create_testdata_done: '{count} fichiers factices créés dans\n{folder}',
     error_title: 'Une erreur est survenue',
     browse: 'Parcourir',
+    overwrite_title: 'Fichiers ZIP existants détectés',
+    overwrite_text: 'Ce dossier contient déjà des fichiers stems-*.zip. Les fichiers existants seront écrasés. Continuer ?',
     open_folder_prompt: 'Ouvrir le dossier contenant les fichiers ZIP créés ?',
     testdata_dev_only: 'La génération de données de test est uniquement disponible en mode développeur.'
   },
@@ -157,6 +163,8 @@ export const translations = {
     create_testdata_done: '{count} file fittizi creati in\n{folder}',
     error_title: 'Si è verificato un errore',
     browse: 'Sfoglia',
+    overwrite_title: 'ZIP esistenti trovati',
+    overwrite_text: 'Questa cartella contiene già file stems-*.zip. I file esistenti verranno sovrascritti. Continuare?',
     open_folder_prompt: 'Aprire la cartella con i file ZIP creati?',
     testdata_dev_only: 'La generazione di dati di test è disponibile solo in modalità sviluppatore.'
   },
@@ -196,6 +204,8 @@ export const translations = {
     create_testdata_done: '{count} archivos falsos creados en\n{folder}',
     error_title: 'Algo salió mal',
     browse: 'Examinar',
+    overwrite_title: 'ZIP existentes encontrados',
+    overwrite_text: 'Esta carpeta ya contiene archivos stems-*.zip. Se sobrescribirán los archivos existentes. ¿Continuar?',
     open_folder_prompt: '¿Abrir la carpeta con los archivos ZIP creados?',
     testdata_dev_only: 'La generación de datos de prueba solo está disponible en modo desarrollador.'
   },
@@ -235,6 +245,8 @@ export const translations = {
     create_testdata_done: '{count} arquivos falsos criados em\n{folder}',
     error_title: 'Algo deu errado',
     browse: 'Procurar',
+    overwrite_title: 'ZIPs existentes encontrados',
+    overwrite_text: 'Esta pasta já contém arquivos stems-*.zip. Os arquivos existentes serão substituídos. Continuar?',
     open_folder_prompt: 'Abrir a pasta com os arquivos ZIP criados?',
     testdata_dev_only: 'A geração de dados de teste está disponível apenas no modo desenvolvedor.'
   }

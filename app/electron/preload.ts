@@ -53,5 +53,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   openPath(path: string): Promise<void> {
     return ipcRenderer.invoke(IPC_CHANNELS.OPEN_PATH, path);
+  },
+  checkExistingZips(folderPath: string) {
+    return ipcRenderer.invoke(IPC_CHANNELS.CHECK_EXISTING_ZIPS, folderPath);
   }
 });

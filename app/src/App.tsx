@@ -45,6 +45,9 @@ export default function App() {
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isRevealOpen, setIsRevealOpen] = useState(false);
   const [lastPackCount, setLastPackCount] = useState(0);
+  const [isOverwriteOpen, setIsOverwriteOpen] = useState(false);
+  const [isOverwriteWarnOpen, setIsOverwriteWarnOpen] = useState(false);
+  const [warnedForPath, setWarnedForPath] = useState<string | null>(null);
 
   const t = useCallback(
     (key: keyof typeof translations.en, params: Record<string, string | number> = {}) =>
@@ -83,6 +86,22 @@ export default function App() {
         const response = await window.electronAPI.analyzeFolder(targetFolder, currentMaxSize, locale);
         setFiles(response.files);
         setFolderPath(targetFolder);
+        // Show early overwrite warning when directory contains existing stems-*.zip
+        try {
+          if (
+            warnedForPath !== targetFolder &&
+            window.electronAPI &&
+            typeof window.electronAPI.checkExistingZips === 'function'
+          ) {
+            const res = await window.electronAPI.checkExistingZips(targetFolder);
+            if (res && res.count > 0) {
+              setIsOverwriteWarnOpen(true);
+              setWarnedForPath(targetFolder);
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to check existing ZIPs during analyze', e);
+        }
         if (response.maxSizeMb !== currentMaxSize) {
           setMaxSize(response.maxSizeMb);
           setStatusText(t('msg_invalid_max_size', { max: MAX_SIZE_LIMIT_MB, reset: response.maxSizeMb }));
@@ -96,7 +115,7 @@ export default function App() {
         setStatusText(`${t('error_title')}: ${(error as Error).message}`);
       }
     },
-    [locale, t]
+    [locale, t, warnedForPath]
   );
 
   const handleFolderSelection = useCallback(
@@ -131,7 +150,7 @@ export default function App() {
     }
   };
 
-  const handlePack = async () => {
+  const performPack = async () => {
     if (!folderPath || typeof maxSize !== 'number') {
       setStatusText(t('pack_disabled'));
       return;
@@ -162,6 +181,25 @@ export default function App() {
     } finally {
       setIsPacking(false);
     }
+  };
+
+  const handlePack = async () => {
+    if (!folderPath || typeof maxSize !== 'number') {
+      setStatusText(t('pack_disabled'));
+      return;
+    }
+    try {
+      if (window.electronAPI && typeof window.electronAPI.checkExistingZips === 'function') {
+        const result = await window.electronAPI.checkExistingZips(folderPath);
+        if (result && result.count > 0) {
+          setIsOverwriteOpen(true);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Check existing zips failed', e);
+    }
+    await performPack();
   };
 
   const handleCreateTestData = async () => {
@@ -345,14 +383,22 @@ export default function App() {
           </div>
         </div>
       </main>
-      {isInfoOpen ? (
-        <InfoModal
-          title={`Stem ZIPper v${APP_VERSION}`}
-          text={infoModalContent}
-          closeLabel={t('close')}
-          onClose={() => setIsInfoOpen(false)}
-        />
-      ) : null}
+    {isInfoOpen ? (
+      <InfoModal
+        title={`Stem ZIPper v${APP_VERSION}`}
+        text={infoModalContent}
+        closeLabel={t('close')}
+        onClose={() => setIsInfoOpen(false)}
+      />
+    ) : null}
+    {isOverwriteWarnOpen ? (
+      <InfoModal
+        title={t('overwrite_title')}
+        text={t('overwrite_text')}
+        closeLabel={t('close')}
+        onClose={() => setIsOverwriteWarnOpen(false)}
+      />
+    ) : null}
       {isDragActive ? (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-blue-500/10 backdrop-blur-sm">
           <div className="rounded-xl border border-blue-400/60 bg-slate-900/90 px-10 py-6 text-center text-lg font-semibold text-blue-100 shadow-xl">
@@ -362,6 +408,19 @@ export default function App() {
       ) : null}
     </div>
     <DiagOverlay hasElectronAPI={hasElectronAPI} hasRuntimeConfig={hasRuntimeConfig} isDev={isDevMode} />
+    {isOverwriteOpen ? (
+      <ChoiceModal
+        title={t('overwrite_title')}
+        text={t('overwrite_text')}
+        primaryLabel={t('pack_now')}
+        secondaryLabel={t('close')}
+        onPrimary={() => {
+          setIsOverwriteOpen(false);
+          void performPack();
+        }}
+        onSecondary={() => setIsOverwriteOpen(false)}
+      />
+    ) : null}
     {isRevealOpen && folderPath ? (
       <ChoiceModal
         title={t('status_done')}
