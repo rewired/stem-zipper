@@ -2,7 +2,27 @@
 const { spawn } = require('node:child_process');
 const process = require('node:process');
 
-const SUPPORTED_LOCALES = new Set(['en', 'de', 'fr', 'it', 'es', 'pt']);
+const SUPPORTED_LOCALES = new Set([
+  'en',
+  'de',
+  'fr',
+  'it',
+  'es',
+  'pt',
+  'da',
+  'no',
+  'sv',
+  'fi',
+  'nl',
+  'pl',
+  'ja',
+  'zh',
+  'th',
+  'ko',
+  'cs',
+  'ro',
+  'uk'
+]);
 const DEFAULT_LOCALE = 'en';
 
 function matchSupportedLocale(locale) {

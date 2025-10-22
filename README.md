@@ -10,7 +10,7 @@ Stem ZIPper is now delivered as an Electron application that combines a Vite pow
 - 🗂️ **Drag & drop** or manual folder selection with live validation of the configured ZIP size target.
 - 📦 **Best-fit packing** into `stems-XX.zip` archives including the classic Stem ZIPper stamp file.
 - 🪄 **Automatic mono-splitting** for stereo WAV files that exceed the configured limit.
-- 🌍 **Multilingual interface** (EN, DE, FR, IT, ES, PT) that adapts to the operating system locale.
+- 🌍 **Multilingual interface** (EN, DE, FR, IT, ES, PT, DA, NO, SV, FI, NL, PL, JA, ZH, TH, KO, CS, RO, UK) that adapts to the operating system locale.
 - 🧪 **Developer utilities** (available in dev mode) to generate dummy audio files for testing the packing workflow.
 
 Supported formats remain: `.wav`, `.flac`, `.mp3`, `.aiff`, `.ogg`, `.aac`, `.wma`.
@@ -112,7 +112,7 @@ The cleanup task removes the `dist-electron/`, `dist-renderer/` and `release/` d
 | Area | Electron implementation |
 | --- | --- |
 | **User interface** | Single-window layout with a header toolbar, drag & drop surface, folder path breadcrumb and a responsive file table. The right-hand status rail mirrors the legacy progress readout, while action buttons (Pack Now, Cancel, Clear) stay anchored at the bottom for accessibility. |
-| **Internationalisation** | The renderer resolves the OS locale (EN, DE, FR, IT, ES, PT) via the preload bridge, serving shared translations from `app/common/i18n.ts`. Dialogs triggered from the main process reuse the same catalogue to avoid drift between Electron and React copies. |
+| **Internationalisation** | The renderer resolves the OS locale (EN, DE, FR, IT, ES, PT, DA, NO, SV, FI, NL, PL, JA, ZH, TH, KO, CS, RO, UK) via the preload bridge, serving shared translations from `app/common/i18n.ts`. Dialogs triggered from the main process reuse the same catalogue to avoid drift between Electron and React copies. |
 | **Developer tooling** | Dev-mode exposes the familiar "Create Test Data" button which shells out to the Node dummy-data generator. File sizes, stems count and progress notifications follow the Python defaults to keep test scripts compatible. |
 | **ZIP logic** | Audio analysis, stereo-to-mono splitting and best-fit-decreasing packing now run inside the Electron main process (`app/electron/services/packer`). The workflow persists the `_stem-zipper.txt` stamp file and emits sequential `stems-XX.zip` archives identical to the Tkinter run. |
 

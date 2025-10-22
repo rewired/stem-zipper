@@ -28,6 +28,11 @@ describe('normaliseLanguage', () => {
     expect(normaliseLanguage('pt-BR')).toBe('pt');
   });
 
+  it('normalises extended locale tags for newly added languages', () => {
+    expect(normaliseLanguage('zh-CN')).toBe('zh');
+    expect(normaliseLanguage('sv-SE')).toBe('sv');
+  });
+
   it('falls back to the LC_ALL environment locale when no language is provided', () => {
     delete process.env.STEM_ZIPPER_LANG;
     process.env.LC_ALL = 'fr_FR.UTF-8';
@@ -66,14 +71,14 @@ describe('normaliseLanguage', () => {
 
   it('falls back to English when no supported locale can be detected', () => {
     delete process.env.STEM_ZIPPER_LANG;
-    process.env.LC_ALL = 'zh_CN.UTF-8';
-    process.env.LANG = 'ja_JP';
+    process.env.LC_ALL = 'ar_EG.UTF-8';
+    process.env.LANG = 'he_IL';
 
     vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(
       () =>
         ({
           resolvedOptions() {
-            return { locale: 'ko-KR' };
+            return { locale: 'tr-TR' };
           }
         } as unknown as Intl.DateTimeFormat)
     );
