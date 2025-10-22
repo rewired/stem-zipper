@@ -243,17 +243,17 @@ export default function App() {
             className="text-blue-400 underline underline-offset-2 hover:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
             onClick={(event) => handleOpenExternal(event, 'https://github.com/rewired/stem-zipper')}
           >
-            github.com/rewired/stem-zipper
+            https://github.com/rewired/stem-zipper
           </a>
         </p>
         <p className="mt-4">
-          My music by 7OOP3D on ccMixter:{' '}<br />
+          Music by 7OOP3D at ccMixter:{' '}<br />
           <a
             href="https://ccmixter.org/people/7OOP3D"
             className="text-blue-400 underline underline-offset-2 hover:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
             onClick={(event) => handleOpenExternal(event, 'https://ccmixter.org/people/7OOP3D')}
           >
-            ccmixter.org/people/7OOP3D
+            https://ccmixter.org/people/7OOP3D
           </a>
         </p>
       </>
