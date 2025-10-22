@@ -149,5 +149,5 @@
       "allowToChangeInstallationDirectory": true
     }
   },
-  "packageManager": "pnpm@10.13.1"
+  "packageManager": "pnpm@10.19.0"
 }

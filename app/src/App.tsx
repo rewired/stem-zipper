@@ -16,6 +16,7 @@ import { ActionBar } from './components/ActionBar';
 import { formatMessage, resolveLocale, translations, type LocaleKey } from '@common/i18n';
 import { InfoModal } from './components/InfoModal';
 import { APP_VERSION } from '@common/version';
+import { DiagOverlay } from './components/DiagOverlay';
 
 const initialProgress: PackProgress = {
   state: 'idle',
@@ -27,7 +28,8 @@ const initialProgress: PackProgress = {
 
 function detectInitialLocale(): LocaleKey {
   const languages = Array.isArray(navigator.languages) ? navigator.languages : [];
-  return resolveLocale(window.runtimeConfig.locale, languages, navigator.language);
+  const runtime = (window as unknown as { runtimeConfig?: { locale?: string } }).runtimeConfig;
+  return resolveLocale(runtime?.locale, languages, navigator.language);
 }
 
 export default function App() {
@@ -106,6 +108,10 @@ export default function App() {
   );
 
   const handleSelectFolder = async () => {
+    if (!window.electronAPI || typeof window.electronAPI.selectFolder !== 'function') {
+      setStatusText(t('error_title'));
+      return;
+    }
     const selected = await window.electronAPI.selectFolder();
     await handleFolderSelection(selected);
   };
@@ -125,6 +131,10 @@ export default function App() {
   const handlePack = async () => {
     if (!folderPath || typeof maxSize !== 'number') {
       setStatusText(t('pack_disabled'));
+      return;
+    }
+    if (!window.electronAPI || typeof window.electronAPI.startPack !== 'function') {
+      setStatusText(t('error_title'));
       return;
     }
     setIsPacking(true);
@@ -150,11 +160,19 @@ export default function App() {
   };
 
   const handleCreateTestData = async () => {
+    if (!window.electronAPI || typeof window.electronAPI.selectFolder !== 'function') {
+      setStatusText(t('error_title'));
+      return;
+    }
     const target = await window.electronAPI.selectFolder();
     if (!target) {
       return;
     }
     try {
+      if (!window.electronAPI || typeof window.electronAPI.createTestData !== 'function') {
+        setStatusText(t('error_title'));
+        return;
+      }
       const response = await window.electronAPI.createTestData(target, locale);
       setStatusText(t('create_testdata_done', { count: response.count, folder: response.folderPath }));
     } catch (error) {
@@ -165,6 +183,10 @@ export default function App() {
 
   const handleOpenExternal = useCallback((event: MouseEvent<HTMLAnchorElement>, url: string) => {
     event.preventDefault();
+    if (!window.electronAPI || typeof window.electronAPI.openExternal !== 'function') {
+      console.error('Failed to open external link: API not available');
+      return;
+    }
     window.electronAPI.openExternal(url).catch((error) => {
       console.error('Failed to open external link', error);
     });
@@ -200,6 +222,9 @@ export default function App() {
   );
 
   useEffect(() => {
+    if (!window.electronAPI || typeof window.electronAPI.onPackProgress !== 'function') {
+      return () => {};
+    }
     const removeListener = window.electronAPI.onPackProgress((event) => {
       setProgress(event);
       switch (event.state) {
@@ -255,9 +280,12 @@ export default function App() {
   };
 
   const canPack = Boolean(folderPath && files.length > 0 && !isPacking && typeof maxSize === 'number');
-  const isDevMode = window.runtimeConfig.devMode || import.meta.env.DEV;
+  const isDevMode = (window as unknown as { runtimeConfig?: { devMode?: boolean } }).runtimeConfig?.devMode || import.meta.env.DEV;
+  const hasElectronAPI = Boolean((window as unknown as { electronAPI?: unknown }).electronAPI);
+  const hasRuntimeConfig = Boolean((window as unknown as { runtimeConfig?: unknown }).runtimeConfig);
 
   return (
+    <>
     <div
       className="flex min-h-screen flex-col bg-slate-950 text-slate-50"
       onDragOver={onDragOver}
@@ -328,5 +356,7 @@ export default function App() {
         </div>
       ) : null}
     </div>
+    <DiagOverlay hasElectronAPI={hasElectronAPI} hasRuntimeConfig={hasRuntimeConfig} isDev={isDevMode} />
+    </>
   );
 }
