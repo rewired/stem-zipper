@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Reusable Material Symbols helper component for consistent inline icons in the renderer UI.
 - Electron desktop shell backed by Vite, React, TypeScript and Tailwind CSS.
 - Shared localisation catalogue in `app/common/i18n.ts` consumed by the renderer and Electron main process.
 - Node-based audio analysis, stereo splitting and best-fit-decreasing packing services with Vitest coverage.
@@ -14,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Renderer info modal links now open in the system browser via a dedicated `open-external` IPC bridge helper.
 
 ### Changed
+- Renderer header, action bar and modal controls now render Material Symbols icons instead of emojis while preserving layout and accessibility.
 - Electron main window now clears the default application menu to hide the native menu bar across platforms.
 - Runtime configuration now resolves locale/dev-mode via environment variables or OS defaults and is surfaced to the renderer through the preload bridge.
 - Progress events, error reporting and packer actions now flow through typed IPC contracts shared between renderer and main processes.

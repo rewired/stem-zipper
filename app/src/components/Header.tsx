@@ -1,5 +1,6 @@
 import type { ChangeEvent } from 'react';
 import { clsx } from 'clsx';
+import { MaterialIcon } from './icons/MaterialIcon';
 
 interface HeaderProps {
   title: string;
@@ -67,7 +68,7 @@ export function Header({
             onClick={onSelectFolder}
             className="inline-flex items-center gap-2 rounded-md bg-blue-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300"
           >
-            <span aria-hidden>📁</span>
+            <MaterialIcon icon="folder_open" />
             {selectLabel}
           </button>
           <div className="flex items-center gap-3 text-sm text-slate-200">

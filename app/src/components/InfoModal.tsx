@@ -1,6 +1,8 @@
 import { useEffect, useId } from 'react';
 import type { ReactNode } from 'react';
 
+import { MaterialIcon } from './icons/MaterialIcon';
+
 interface InfoModalProps {
   title: string;
   text: ReactNode;
@@ -48,7 +50,7 @@ export function InfoModal({ title, text, closeLabel, onClose }: InfoModalProps) 
             onClick={onClose}
             className="inline-flex items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
           >
-            <span aria-hidden>✖️</span>
+            <MaterialIcon icon="close" />
             {closeLabel}
           </button>
         </div>
