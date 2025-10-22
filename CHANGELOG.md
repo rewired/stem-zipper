@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - Tkinter frontend, Python CLI switches and PyInstaller packaging instructions from the primary documentation set (archived under `docs/archive/python-legacy.md`).
 
 ### Fixed
+- Windows installer packaging now bundles pnpm-managed production dependencies by including `node_modules` in the Electron Builder file list, ensuring the desktop app launches correctly from the distributable.
 - Windows packaging metadata now satisfies Electron Builder by providing author/description fields and keeping the `electron` runtime scoped to development dependencies, restoring `pnpm package:win` builds.
 - Locale resolution in the Electron main process now prioritises the operating system locale over English preference lists and generic `LANG` fallbacks, ensuring the renderer bootstraps with the expected language.
 - The development Electron launcher now reruns the upstream installer when the binary download is skipped, preventing `Electron failed to install correctly` crashes after fresh installs.
