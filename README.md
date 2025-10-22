@@ -33,7 +33,7 @@ app/
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) **18.x or newer**
-- [pnpm](https://pnpm.io/) (enable via `corepack enable pnpm` if it is not yet available)
+- [pnpm](https://pnpm.io/) (enable via `corepack enable pnpm` if it is not yet available). The workspace pins `node-linker=hoisted` via `.npmrc` so that production dependencies are flattened for Electron packaging.
 - macOS, Windows or Linux desktop environment with file system access for Electron
 
 > ✅ The legacy Python/Tkinter bundle has been retired on this branch. All features now ship with the Electron workspace under `app/`.

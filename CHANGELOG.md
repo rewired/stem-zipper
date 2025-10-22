@@ -23,7 +23,7 @@ All notable changes to this project will be documented in this file.
 - Tkinter frontend, Python CLI switches and PyInstaller packaging instructions from the primary documentation set (archived under `docs/archive/python-legacy.md`).
 
 ### Fixed
-- Windows runtime now ships `buffer-crc32` alongside `yazl`, preventing `Cannot find module 'buffer-crc32'` crashes when launching the packaged desktop app.
+- Windows runtime now enforces a hoisted pnpm `node_modules` layout, ensuring `buffer-crc32` ships alongside `yazl` and preventing `Cannot find module 'buffer-crc32'` crashes when launching the packaged desktop app.
 - Windows packaging now clears previous build artefacts before invoking Electron Builder, preventing `Zugriff verweigert` errors when rerunning `pnpm package:win` on Windows systems that keep `chrome_100_percent.pak` locked between builds.
 - Windows installer packaging now bundles pnpm-managed production dependencies by including `node_modules` in the Electron Builder file list, ensuring the desktop app launches correctly from the distributable.
 - Windows packaging metadata now satisfies Electron Builder by providing author/description fields and keeping the `electron` runtime scoped to development dependencies, restoring `pnpm package:win` builds.
