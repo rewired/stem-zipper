@@ -222,12 +222,28 @@ async function splitStereoWav(filePath: string): Promise<SizedFile[]> {
   return Promise.all([getSizedFile(leftPath), getSizedFile(rightPath)]);
 }
 
-async function expandFiles(files: SizedFile[], maxSizeBytes: number): Promise<SizedFile[]> {
+async function expandFiles(
+  files: SizedFile[],
+  maxSizeBytes: number,
+  onProgress?: (progress: PackProgress) => void
+): Promise<SizedFile[]> {
   const expanded: SizedFile[] = [];
+  const toSplit = files.filter((f) => f.size > maxSizeBytes && f.extension === '.wav').length;
+  let processed = 0;
   for (const file of files) {
     if (file.size > maxSizeBytes && file.extension === '.wav') {
       const split = await splitStereoWav(file.path);
       expanded.push(...split);
+      processed += 1;
+      if (onProgress && toSplit > 0) {
+        onProgress({
+          state: 'analyzing',
+          current: processed,
+          total: toSplit,
+          percent: Math.floor((processed / toSplit) * 100),
+          message: 'splitting'
+        });
+      }
     } else {
       expanded.push(file);
     }
@@ -265,7 +281,7 @@ export async function packFolder(
   for (const extension of orderedExtensions) {
     const filesForExtension = groupedByExtension.get(extension);
     if (!filesForExtension || filesForExtension.length === 0) continue;
-    const expanded = await expandFiles(filesForExtension, maxSizeBytes);
+    const expanded = await expandFiles(filesForExtension, maxSizeBytes, onProgress);
     const packed = bestFitPack(expanded, maxSizeBytes);
     zipGroups.push(...packed);
   }
