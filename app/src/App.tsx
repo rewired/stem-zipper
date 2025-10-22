@@ -10,6 +10,10 @@ import { formatMessage, resolveLocale, translations, type LocaleKey } from '@com
 import { InfoModal } from './components/InfoModal';
 import { APP_VERSION } from '@common/version';
 
+const INFO_MODAL_TEXT = `© 2025 Björn Ahlers — MIT License
+https://github.com/rewired/stem-zipper
+https://ccmixter.org`;
+
 const initialProgress: PackProgress = {
   state: 'idle',
   current: 0,
@@ -257,11 +261,10 @@ export default function App() {
       </main>
       {isInfoOpen ? (
         <InfoModal
-          title={t('about')}
-          text={t('about_text')}
+          title={`Stem ZIPper v${APP_VERSION}`}
+          text={INFO_MODAL_TEXT}
           closeLabel={t('close')}
           onClose={() => setIsInfoOpen(false)}
-          version={APP_VERSION}
         />
       ) : null}
       {isDragActive ? (
