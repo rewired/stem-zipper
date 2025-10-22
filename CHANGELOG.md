@@ -37,4 +37,5 @@ All notable changes to this project will be documented in this file.
 - Electron runtime now loads the rebuilt main/preload bundles from their new output locations, preventing `@common/*` resolution failures when launching the desktop shell.
 - Stereo splitting now tolerates the community `wavefile` type gaps, preventing `toMono` compile errors and enabling deterministic WAV channel extraction during packaging.
 - Electron window creation now waits for the compiled preload bundle and resolves it via the application root, eliminating `Unable to load preload script` crashes and keeping the renderer runtime configuration available.
+- Packaging stamps now read the shared application version metadata, ensuring the generated archive banner matches the bundled release number.
 - The renderer template now ships with a strict content security policy, silencing the Electron CSP warning while keeping development hot reloading functional.

@@ -7,17 +7,17 @@ import type { FileEntry, PackProgress, RendererFileAction } from '../../common/i
 import { SUPPORTED_EXTENSIONS } from '../../common/constants';
 import { formatPathForDisplay } from '../../common/paths';
 import { formatMessage, type LocaleKey } from '../../common/i18n';
+import { APP_VERSION } from '../../common/version';
 
-const VERSION = '0.8';
 export const STAMP_FILENAME = '_stem-zipper.txt';
 const STEM_ZIPPER_LOGO = `░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 ░█▀▀░▀█▀░█▀▀░█▄█░░░▀▀█░▀█▀░█▀█░█▀█░█▀▀░█▀▄░
 ░▀▀█░░█░░█▀▀░█░█░░░▄▀░░░█░░█▀▀░█▀▀░█▀▀░█▀▄░
 ░▀▀▀░░▀░░▀▀▀░▀░▀░░░▀▀▀░▀▀▀░▀░░░▀░░░▀▀▀░▀░▀░
-░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ v${VERSION} ░`;
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ v${APP_VERSION} ░`;
 export const STEM_ZIPPER_STAMP = `${STEM_ZIPPER_LOGO}
 
-Packed with Stem ZIPper v${VERSION}
+Packed with Stem ZIPper v${APP_VERSION}
 
 Get it here: https://github.com/rewired/stem-zipper
 It's free and open source!`;
