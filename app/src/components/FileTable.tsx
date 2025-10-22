@@ -43,12 +43,15 @@ export function FileTable({
             >
               {fileLabel}
             </th>
-            <th scope="col" className="px-4 py-3 text-left font-semibold uppercase tracking-wide text-xs text-slate-400">
+            <th
+              scope="col"
+              className="w-24 px-4 py-3 text-left font-semibold uppercase tracking-wide text-xs text-slate-400"
+            >
               {actionLabel}
             </th>
             <th
               scope="col"
-              className="w-28 px-4 py-3 text-right font-semibold uppercase tracking-wide text-xs text-slate-400"
+              className="w-32 px-4 py-3 text-right font-semibold uppercase tracking-wide text-xs text-slate-400"
             >
               {sizeLabel}
             </th>
@@ -58,8 +61,8 @@ export function FileTable({
           {files.map((file) => (
             <tr key={file.path} className="hover:bg-slate-800/50">
               <td className="w-7/12 px-4 py-3 text-slate-100">{file.name}</td>
-              <td className="px-4 py-3 text-slate-300">{actionNames[file.action]}</td>
-              <td className="w-28 px-4 py-3 text-right tabular-nums text-slate-200">{formatSize(file.sizeMb)} MB</td>
+              <td className="w-24 px-4 py-3 text-slate-300">{actionNames[file.action]}</td>
+              <td className="w-32 px-4 py-3 text-right tabular-nums text-slate-200">{formatSize(file.sizeMb)} MB</td>
             </tr>
           ))}
         </tbody>
