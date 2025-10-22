@@ -37,13 +37,19 @@ export function FileTable({
       <table className="min-w-full divide-y divide-slate-800 text-sm">
         <thead className="bg-slate-900/90 text-slate-300">
           <tr>
-            <th scope="col" className="px-4 py-3 text-left font-semibold uppercase tracking-wide text-xs text-slate-400">
+            <th
+              scope="col"
+              className="w-7/12 px-4 py-3 text-left font-semibold uppercase tracking-wide text-xs text-slate-400"
+            >
               {fileLabel}
             </th>
             <th scope="col" className="px-4 py-3 text-left font-semibold uppercase tracking-wide text-xs text-slate-400">
               {actionLabel}
             </th>
-            <th scope="col" className="px-4 py-3 text-right font-semibold uppercase tracking-wide text-xs text-slate-400">
+            <th
+              scope="col"
+              className="w-28 px-4 py-3 text-right font-semibold uppercase tracking-wide text-xs text-slate-400"
+            >
               {sizeLabel}
             </th>
           </tr>
@@ -51,9 +57,9 @@ export function FileTable({
         <tbody className="divide-y divide-slate-800/60">
           {files.map((file) => (
             <tr key={file.path} className="hover:bg-slate-800/50">
-              <td className="px-4 py-3 text-slate-100">{file.name}</td>
+              <td className="w-7/12 px-4 py-3 text-slate-100">{file.name}</td>
               <td className="px-4 py-3 text-slate-300">{actionNames[file.action]}</td>
-              <td className="px-4 py-3 text-right tabular-nums text-slate-200">{formatSize(file.sizeMb)}</td>
+              <td className="w-28 px-4 py-3 text-right tabular-nums text-slate-200">{formatSize(file.sizeMb)}</td>
             </tr>
           ))}
         </tbody>
