@@ -8,7 +8,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "clean": "node scripts/clean-output.cjs",
-    "dev": "concurrently -k \"pnpm:dev:main\" \"pnpm:dev:preload\" \"pnpm:dev:renderer\" \"pnpm:electron\"",
+    "dev": "node scripts/dev.cjs",
+    "dev:start": "concurrently -k \"pnpm:dev:main\" \"pnpm:dev:preload\" \"pnpm:dev:renderer\" \"pnpm:electron\"",
     "dev:renderer": "vite",
     "dev:main": "tsc --watch --project electron/tsconfig.main.json",
     "dev:preload": "tsc --watch --project electron/tsconfig.preload.json",
