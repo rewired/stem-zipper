@@ -9,6 +9,7 @@
     "services/**/*.ts",
     "types/**/*.ts",
     "types/**/*.d.ts",
-    "../common/**/*.ts"
+    "../common/**/*.ts",
+    "../package.json"
   ]
 }

@@ -7,6 +7,8 @@ import { FileTable } from './components/FileTable';
 import { ProgressPanel } from './components/ProgressPanel';
 import { ActionBar } from './components/ActionBar';
 import { formatMessage, resolveLocale, translations, type LocaleKey } from '@common/i18n';
+import { InfoModal } from './components/InfoModal';
+import { APP_VERSION } from '@common/version';
 
 const initialProgress: PackProgress = {
   state: 'idle',
@@ -30,6 +32,7 @@ export default function App() {
   const [statusText, setStatusText] = useState(() => formatMessage(locale, 'ready'));
   const [isPacking, setIsPacking] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
 
   const t = useCallback(
     (key: keyof typeof translations.en, params: Record<string, string | number> = {}) =>
@@ -188,11 +191,12 @@ export default function App() {
   const onDrop = async (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragActive(false);
-    const item = event.dataTransfer.files?.[0];
-    if (!item?.path) {
+    const item = event.dataTransfer.files?.[0] as (File & { path?: string }) | undefined;
+    const itemPath = item?.path;
+    if (!itemPath) {
       return;
     }
-    await handleFolderSelection(item.path);
+    await handleFolderSelection(itemPath);
   };
 
   const canPack = Boolean(folderPath && files.length > 0 && !isPacking && typeof maxSize === 'number');
@@ -239,16 +243,27 @@ export default function App() {
               onPack={handlePack}
               onExit={() => window.close()}
               onCreateTestData={isDevMode ? handleCreateTestData : undefined}
+              onShowInfo={() => setIsInfoOpen(true)}
               canPack={canPack}
               isPacking={isPacking}
               packLabel={t('pack_now')}
               exitLabel={t('exit')}
               createTestDataLabel={t('create_testdata')}
               devMode={isDevMode}
+              infoLabel={t('about')}
             />
           </div>
         </div>
       </main>
+      {isInfoOpen ? (
+        <InfoModal
+          title={t('about')}
+          text={t('about_text')}
+          closeLabel={t('close')}
+          onClose={() => setIsInfoOpen(false)}
+          version={APP_VERSION}
+        />
+      ) : null}
       {isDragActive ? (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-blue-500/10 backdrop-blur-sm">
           <div className="rounded-xl border border-blue-400/60 bg-slate-900/90 px-10 py-6 text-center text-lg font-semibold text-blue-100 shadow-xl">

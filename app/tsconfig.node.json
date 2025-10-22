@@ -14,5 +14,5 @@
       "@common/*": ["./common/*"]
     }
   },
-  "include": ["electron/**/*.ts", "types/**/*.d.ts", "common/**/*.ts"]
+  "include": ["electron/**/*.ts", "types/**/*.d.ts", "common/**/*.ts", "package.json"]
 }
