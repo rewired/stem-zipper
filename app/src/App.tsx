@@ -253,8 +253,7 @@ export default function App() {
       onDrop={onDrop}
     >
       <Header
-        title={`🎧 ${t('app_title')}`}
-        subtitle={t('header_label')}
+        title={t('app_title')}
         folderPath={folderPath}
         selectLabel={t('select_folder')}
         browseLabel={t('select_hint')}

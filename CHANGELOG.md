@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Renderer info modal links now open in the system browser via a dedicated `open-external` IPC bridge helper.
 
 ### Changed
+- Renderer header now uses a Material icon instead of the headphone emoji, drops the duplicate folder instruction copy and widens the selected-path display for long directories.
 - Renderer header, action bar and modal controls now render Material Symbols icons instead of emojis while preserving layout and accessibility.
 - Electron main window now clears the default application menu to hide the native menu bar across platforms.
 - Runtime configuration now resolves locale/dev-mode via environment variables or OS defaults and is surfaced to the renderer through the preload bridge.
