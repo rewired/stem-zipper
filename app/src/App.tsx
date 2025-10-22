@@ -11,8 +11,12 @@ import { InfoModal } from './components/InfoModal';
 import { APP_VERSION } from '@common/version';
 
 const INFO_MODAL_TEXT = `© 2025 Björn Ahlers — MIT License
+
+Get the source code at:
 https://github.com/rewired/stem-zipper
-https://ccmixter.org`;
+
+My music by 7OOP3D on ccMixter:
+https://ccmixter.org/people/7OOP3D`;
 
 const initialProgress: PackProgress = {
   state: 'idle',
