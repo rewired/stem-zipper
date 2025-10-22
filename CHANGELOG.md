@@ -37,6 +37,7 @@ All notable changes to this project will be documented in this file.
 - Tkinter frontend, Python CLI switches and PyInstaller packaging instructions from the primary documentation set (archived under `docs/archive/python-legacy.md`).
 
 ### Fixed
+- Windows development runner now reuses the invoking Node/PNPM executables, avoiding `spawn EINVAL` crashes when starting `pnpm run dev` on Windows terminals.
 - File size display in the renderer table now respects locale-specific decimal separators when rendering megabyte values.
 - Windows runtime now enforces a hoisted pnpm `node_modules` layout, ensuring `buffer-crc32` ships alongside `yazl` and preventing `Cannot find module 'buffer-crc32'` crashes when launching the packaged desktop app.
 - Windows packaging now clears previous build artefacts before invoking Electron Builder, preventing `Zugriff verweigert` errors when rerunning `pnpm package:win` on Windows systems that keep `chrome_100_percent.pak` locked between builds.

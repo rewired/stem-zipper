@@ -60,18 +60,36 @@ function normaliseLanguage(raw) {
   return DEFAULT_LOCALE;
 }
 
+function resolvePnpmInvocation(baseArgs) {
+  const npmExecPath = process.env.npm_execpath;
+  const npmNodeExecPath = process.env.npm_node_execpath;
+
+  if (npmExecPath && npmNodeExecPath) {
+    return {
+      command: npmNodeExecPath,
+      args: [npmExecPath, ...baseArgs]
+    };
+  }
+
+  return {
+    command: process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
+    args: baseArgs
+  };
+}
+
 function runDevServer(locale, passthroughArgs) {
   process.env.STEM_ZIPPER_LANG = locale;
   console.log(`[dev] Starting Vite/Electron in locale "${locale}".`);
 
-  const pnpmExecutable = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
   const pnpmArgs = ['run', 'dev:start'];
 
   if (passthroughArgs.length > 0) {
     pnpmArgs.push('--', ...passthroughArgs);
   }
 
-  const child = spawn(pnpmExecutable, pnpmArgs, {
+  const { command, args } = resolvePnpmInvocation(pnpmArgs);
+
+  const child = spawn(command, args, {
     stdio: 'inherit',
     env: process.env
   });
