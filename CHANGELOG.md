@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Continuous integration workflow validating linting, type safety and test suites on Node 18 with pnpm caching.
 - Expanded the shared localisation catalogue with Danish, Norwegian, Swedish, Finnish, Dutch, Polish, Japanese, Chinese, Thai, Korean, Czech, Romanian and Ukrainian translations.
 - Reusable Material Symbols helper component for consistent inline icons in the renderer UI.
 - Electron desktop shell backed by Vite, React, TypeScript and Tailwind CSS.
