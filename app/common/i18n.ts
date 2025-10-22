@@ -6,7 +6,7 @@ export const DEFAULT_LOCALE: LocaleKey = 'en';
 export const translations = {
   en: {
     app_title: 'Stem ZIPper',
-    about: 'About',
+    about: 'Info',
     close: 'Close',
     about_text: 'Stem ZIPper version {version}. Manage and package your audio stems with ease.',
     select_folder: 'Select Folder',
@@ -80,7 +80,7 @@ export const translations = {
   },
   fr: {
     app_title: 'Stem ZIPper',
-    about: 'À propos',
+    about: 'Info',
     close: 'Fermer',
     about_text: 'Stem ZIPper version {version}. Gérez et archivez vos stems audio en toute simplicité.',
     select_folder: 'Sélectionner le dossier',
@@ -117,7 +117,7 @@ export const translations = {
   },
   it: {
     app_title: 'Stem ZIPper',
-    about: 'Informazioni',
+    about: 'Info',
     close: 'Chiudi',
     about_text: 'Stem ZIPper versione {version}. Gestisci e comprimi i tuoi stem audio con facilità.',
     select_folder: 'Seleziona cartella',
@@ -154,7 +154,7 @@ export const translations = {
   },
   es: {
     app_title: 'Stem ZIPper',
-    about: 'Acerca de',
+    about: 'Info',
     close: 'Cerrar',
     about_text: 'Stem ZIPper versión {version}. Gestiona y empaqueta tus stems de audio con facilidad.',
     select_folder: 'Seleccionar carpeta',
@@ -191,7 +191,7 @@ export const translations = {
   },
   pt: {
     app_title: 'Stem ZIPper',
-    about: 'Sobre',
+    about: 'Info',
     close: 'Fechar',
     about_text: 'Stem ZIPper versão {version}. Gerencie e compacte seus stems de áudio com facilidade.',
     select_folder: 'Selecionar pasta',
