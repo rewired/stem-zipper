@@ -49,12 +49,12 @@ export function ActionBar({
             <button
               type="button"
               onClick={onShowInfo}
-              className="inline-flex items-center justify-center rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-lg text-slate-200 transition hover:bg-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+              className="inline-flex items-center gap-2 rounded-md border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200 shadow transition hover:bg-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
               aria-label={infoLabel}
               title={infoLabel}
             >
               <span aria-hidden>ℹ️</span>
-              <span className="sr-only">{infoLabel}</span>
+              <span>{infoLabel}</span>
             </button>
           ) : null}
         </div>
