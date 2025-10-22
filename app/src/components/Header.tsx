@@ -51,7 +51,6 @@ export function Header({
             <MaterialIcon icon="inventory_2" className="h-8 w-8 text-blue-300" title={title} />
             <span>{title}</span>
           </div>
-          <p className="mt-3 text-xs uppercase tracking-wide text-slate-500">{dropHelper}</p>
           <p
             className={clsx(
               'mt-2 w-full max-w-4xl overflow-x-auto whitespace-nowrap rounded bg-slate-800/80 px-3 py-2 text-sm shadow-inner',

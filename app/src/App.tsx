@@ -163,7 +163,7 @@ export default function App() {
       <>
         <p>© 2025 Björn Ahlers — MIT License</p>
         <p className="mt-4">
-          Get the source code at:{' '}
+          Get the source code at:{' '}<br />
           <a
             href="https://github.com/rewired/stem-zipper"
             className="text-blue-400 underline underline-offset-2 hover:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
@@ -173,7 +173,7 @@ export default function App() {
           </a>
         </p>
         <p className="mt-4">
-          My music by 7OOP3D on ccMixter:{' '}
+          My music by 7OOP3D on ccMixter:{' '}<br />
           <a
             href="https://ccmixter.org/people/7OOP3D"
             className="text-blue-400 underline underline-offset-2 hover:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
