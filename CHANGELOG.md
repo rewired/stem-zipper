@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Shared localisation catalogue in `app/common/i18n.ts` consumed by the renderer and Electron main process.
 - Node-based audio analysis, stereo splitting and best-fit-decreasing packing services with Vitest coverage.
 - Developer-mode dummy data generator exposed through the renderer and IPC bridge.
+- Windows packaging task (`pnpm package:win`) backed by `electron-builder` to produce a distributable NSIS installer.
 
 ### Changed
 - Runtime configuration now resolves locale/dev-mode via environment variables or OS defaults and is surfaced to the renderer through the preload bridge.

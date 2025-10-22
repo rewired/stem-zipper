@@ -122,7 +122,17 @@ The build pipeline produces two artefacts:
 
 ## Packaging & distribution
 
-- The workspace is ready for [Electron Forge](https://www.electronforge.io/) or [Electron Builder](https://www.electron.build/); integrate your chosen tool on top of the generated `dist-electron` and `dist-renderer` artefacts.
+### Windows installer
+
+```bash
+pnpm package:win
+```
+
+Run this command from the `app/` workspace. It compiles the renderer and Electron processes and then uses [electron-builder](https://www.electron.build/) to generate an NSIS installer for 64-bit Windows. The installer and unpacked artefacts are written to `app/release/`. Execute the task on Windows (or a Linux/macOS machine with [Wine](https://wiki.winehq.org/) configured) to ensure the `.exe` is produced successfully.
+
+### Other platforms
+
+- The workspace remains ready for additional tooling such as [Electron Forge](https://www.electronforge.io/) or custom `electron-builder` targets; integrate them on top of the generated `dist-electron` and `dist-renderer` artefacts.
 - Cross-platform signing/notarisation scripts should live alongside the Electron configuration inside `app/electron`.
 - The retired PyInstaller flow lives in `docs/archive/python-legacy.md` together with notes on the final Tkinter build.
 
