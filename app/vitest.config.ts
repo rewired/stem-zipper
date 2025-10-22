@@ -5,7 +5,11 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: false,
-    include: ['electron/**/*.test.ts', 'electron/**/__tests__/**/*.test.ts'],
+    include: [
+      'electron/**/*.test.ts',
+      'electron/**/__tests__/**/*.test.ts',
+      'scripts/**/__tests__/**/*.test.ts'
+    ],
     coverage: {
       reporter: ['text', 'html'],
       enabled: false
