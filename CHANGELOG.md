@@ -21,6 +21,7 @@ All notable changes to this project will be documented in this file.
 - Package management switched from npm to pnpm, updating scripts and documentation accordingly.
 - Repository ignore rules refocused on the Vite/TypeScript toolchain, removing stale Python artefacts and excluding generated source maps.
 - Renderer shell keeps the header and action controls visible with sticky positioning while scrolling large file tables.
+- Renderer pack button now adopts the blue accent palette to align hover and focus states with the folder selection control.
 
 ### Removed
 - Tkinter frontend, Python CLI switches and PyInstaller packaging instructions from the primary documentation set (archived under `docs/archive/python-legacy.md`).

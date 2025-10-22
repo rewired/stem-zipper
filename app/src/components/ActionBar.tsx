@@ -38,7 +38,7 @@ export function ActionBar({
             className={clsx(
               'inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold shadow transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
               canPack && !isPacking
-                ? 'bg-emerald-500 text-white hover:bg-emerald-400 focus-visible:outline-emerald-300'
+                ? 'bg-blue-500 text-white hover:bg-blue-400 focus-visible:outline-blue-300'
                 : 'cursor-not-allowed bg-slate-700 text-slate-300 opacity-70'
             )}
           >
