@@ -8,9 +8,19 @@ interface FileTableProps {
   actionNames: Record<FileEntry['action'], string>;
   emptyLabel: string;
   helperLabel: string;
+  formatSize: (value: number) => string;
 }
 
-export function FileTable({ files, fileLabel, sizeLabel, actionLabel, actionNames, emptyLabel, helperLabel }: FileTableProps) {
+export function FileTable({
+  files,
+  fileLabel,
+  sizeLabel,
+  actionLabel,
+  actionNames,
+  emptyLabel,
+  helperLabel,
+  formatSize
+}: FileTableProps) {
   if (files.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-slate-700 bg-slate-900/50 p-12 text-center text-slate-400">
@@ -42,7 +52,7 @@ export function FileTable({ files, fileLabel, sizeLabel, actionLabel, actionName
           {files.map((file) => (
             <tr key={file.path} className="hover:bg-slate-800/50">
               <td className="px-4 py-3 text-slate-100">{file.name}</td>
-              <td className="px-4 py-3 text-right tabular-nums text-slate-200">{file.sizeMb.toFixed(2)}</td>
+              <td className="px-4 py-3 text-right tabular-nums text-slate-200">{formatSize(file.sizeMb)}</td>
               <td className="px-4 py-3 text-slate-300">{actionNames[file.action]}</td>
             </tr>
           ))}

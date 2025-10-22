@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Renderer info modal links now open in the system browser via a dedicated `open-external` IPC bridge helper.
 
 ### Changed
+- Renderer header now displays the application version alongside the product name and the Electron window title mirrors the versioned label.
 - Renderer header now uses a Material icon instead of the headphone emoji, drops the duplicate folder instruction copy and widens the selected-path display for long directories.
 - Renderer header, action bar and modal controls now render Material Symbols icons instead of emojis while preserving layout and accessibility.
 - Electron main window now clears the default application menu to hide the native menu bar across platforms.
@@ -32,6 +33,7 @@ All notable changes to this project will be documented in this file.
 - Tkinter frontend, Python CLI switches and PyInstaller packaging instructions from the primary documentation set (archived under `docs/archive/python-legacy.md`).
 
 ### Fixed
+- File size display in the renderer table now respects locale-specific decimal separators when rendering megabyte values.
 - Windows runtime now enforces a hoisted pnpm `node_modules` layout, ensuring `buffer-crc32` ships alongside `yazl` and preventing `Cannot find module 'buffer-crc32'` crashes when launching the packaged desktop app.
 - Windows packaging now clears previous build artefacts before invoking Electron Builder, preventing `Zugriff verweigert` errors when rerunning `pnpm package:win` on Windows systems that keep `chrome_100_percent.pak` locked between builds.
 - Windows installer packaging now bundles pnpm-managed production dependencies by including `node_modules` in the Electron Builder file list, ensuring the desktop app launches correctly from the distributable.
