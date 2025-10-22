@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
@@ -217,5 +217,12 @@ function registerIpcHandlers(): void {
       count,
       folderPath: formatPathForDisplay(args.folderPath)
     };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.OPEN_EXTERNAL, async (_event, url: string) => {
+    if (typeof url !== 'string' || url.trim().length === 0) {
+      return;
+    }
+    await shell.openExternal(url);
   });
 }

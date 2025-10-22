@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useState, type DragEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type DragEvent,
+  type MouseEvent
+} from 'react';
 import type { FileEntry, PackProgress } from '@common/ipc';
 import { DEFAULT_MAX_SIZE_MB, MAX_SIZE_LIMIT_MB } from '@common/constants';
 import { ensureValidMaxSize } from '@common/validation';
@@ -9,14 +16,6 @@ import { ActionBar } from './components/ActionBar';
 import { formatMessage, resolveLocale, translations, type LocaleKey } from '@common/i18n';
 import { InfoModal } from './components/InfoModal';
 import { APP_VERSION } from '@common/version';
-
-const INFO_MODAL_TEXT = `© 2025 Björn Ahlers — MIT License
-
-Get the source code at:
-https://github.com/rewired/stem-zipper
-
-My music by 7OOP3D on ccMixter:
-https://ccmixter.org/people/7OOP3D`;
 
 const initialProgress: PackProgress = {
   state: 'idle',
@@ -152,6 +151,42 @@ export default function App() {
     }
   };
 
+  const handleOpenExternal = useCallback((event: MouseEvent<HTMLAnchorElement>, url: string) => {
+    event.preventDefault();
+    window.electronAPI.openExternal(url).catch((error) => {
+      console.error('Failed to open external link', error);
+    });
+  }, []);
+
+  const infoModalContent = useMemo(
+    () => (
+      <>
+        <p>© 2025 Björn Ahlers — MIT License</p>
+        <p className="mt-4">
+          Get the source code at:{' '}
+          <a
+            href="https://github.com/rewired/stem-zipper"
+            className="text-blue-400 underline underline-offset-2 hover:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+            onClick={(event) => handleOpenExternal(event, 'https://github.com/rewired/stem-zipper')}
+          >
+            github.com/rewired/stem-zipper
+          </a>
+        </p>
+        <p className="mt-4">
+          My music by 7OOP3D on ccMixter:{' '}
+          <a
+            href="https://ccmixter.org/people/7OOP3D"
+            className="text-blue-400 underline underline-offset-2 hover:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+            onClick={(event) => handleOpenExternal(event, 'https://ccmixter.org/people/7OOP3D')}
+          >
+            ccmixter.org/people/7OOP3D
+          </a>
+        </p>
+      </>
+    ),
+    [handleOpenExternal]
+  );
+
   useEffect(() => {
     const removeListener = window.electronAPI.onPackProgress((event) => {
       setProgress(event);
@@ -266,7 +301,7 @@ export default function App() {
       {isInfoOpen ? (
         <InfoModal
           title={`Stem ZIPper v${APP_VERSION}`}
-          text={INFO_MODAL_TEXT}
+          text={infoModalContent}
           closeLabel={t('close')}
           onClose={() => setIsInfoOpen(false)}
         />
