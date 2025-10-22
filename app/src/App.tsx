@@ -47,7 +47,7 @@ export default function App() {
   const [lastPackCount, setLastPackCount] = useState(0);
   const [isOverwriteOpen, setIsOverwriteOpen] = useState(false);
   const [isOverwriteWarnOpen, setIsOverwriteWarnOpen] = useState(false);
-  const [warnedForPath, setWarnedForPath] = useState<string | null>(null);
+  const [pendingAnalyze, setPendingAnalyze] = useState<{ path: string; max: number } | null>(null);
 
   const t = useCallback(
     (key: keyof typeof translations.en, params: Record<string, string | number> = {}) =>
@@ -86,22 +86,6 @@ export default function App() {
         const response = await window.electronAPI.analyzeFolder(targetFolder, currentMaxSize, locale);
         setFiles(response.files);
         setFolderPath(targetFolder);
-        // Show early overwrite warning when directory contains existing stems-*.zip
-        try {
-          if (
-            warnedForPath !== targetFolder &&
-            window.electronAPI &&
-            typeof window.electronAPI.checkExistingZips === 'function'
-          ) {
-            const res = await window.electronAPI.checkExistingZips(targetFolder);
-            if (res && res.count > 0) {
-              setIsOverwriteWarnOpen(true);
-              setWarnedForPath(targetFolder);
-            }
-          }
-        } catch (e) {
-          console.warn('Failed to check existing ZIPs during analyze', e);
-        }
         if (response.maxSizeMb !== currentMaxSize) {
           setMaxSize(response.maxSizeMb);
           setStatusText(t('msg_invalid_max_size', { max: MAX_SIZE_LIMIT_MB, reset: response.maxSizeMb }));
@@ -115,7 +99,7 @@ export default function App() {
         setStatusText(`${t('error_title')}: ${(error as Error).message}`);
       }
     },
-    [locale, t, warnedForPath]
+    [locale, t]
   );
 
   const handleFolderSelection = useCallback(
@@ -124,7 +108,20 @@ export default function App() {
         return;
       }
       resetProgress();
-      await analyze(selectedPath, typeof maxSize === 'number' ? maxSize : DEFAULT_MAX_SIZE_MB);
+      const numericMax = typeof maxSize === 'number' ? maxSize : DEFAULT_MAX_SIZE_MB;
+      try {
+        if (window.electronAPI && typeof window.electronAPI.checkExistingZips === 'function') {
+          const res = await window.electronAPI.checkExistingZips(selectedPath);
+          if (res && res.count > 0) {
+            setPendingAnalyze({ path: selectedPath, max: numericMax });
+            setIsOverwriteWarnOpen(true);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to check existing ZIPs before analyze', e);
+      }
+      await analyze(selectedPath, numericMax);
     },
     [analyze, maxSize]
   );
@@ -392,11 +389,26 @@ export default function App() {
       />
     ) : null}
     {isOverwriteWarnOpen ? (
-      <InfoModal
+      <ChoiceModal
         title={t('overwrite_title')}
         text={t('overwrite_text')}
-        closeLabel={t('close')}
-        onClose={() => setIsOverwriteWarnOpen(false)}
+        primaryLabel={t('ignore')}
+        secondaryLabel={t('cancel')}
+        onPrimary={async () => {
+          setIsOverwriteWarnOpen(false);
+          const next = pendingAnalyze;
+          setPendingAnalyze(null);
+          if (next) {
+            await analyze(next.path, next.max);
+          }
+        }}
+        onSecondary={() => {
+          setIsOverwriteWarnOpen(false);
+          setPendingAnalyze(null);
+          setFiles([]);
+          setFolderPath(null);
+          setStatusText(t('select_hint'));
+        }}
       />
     ) : null}
       {isDragActive ? (
