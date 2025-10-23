@@ -1,3 +1,5 @@
+import type { EstimateFileKind } from './packing/estimator';
+
 export const IPC_CHANNELS = {
   SELECT_FOLDER: 'dialog:select-folder',
   ANALYZE_FOLDER: 'analyze-folder',
@@ -7,7 +9,8 @@ export const IPC_CHANNELS = {
   CREATE_TESTDATA: 'create-testdata',
   OPEN_EXTERNAL: 'open-external',
   OPEN_PATH: 'open-path',
-  CHECK_EXISTING_ZIPS: 'check-existing-zips'
+  CHECK_EXISTING_ZIPS: 'check-existing-zips',
+  ESTIMATE: 'estimator:estimate'
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
@@ -19,6 +22,9 @@ export interface FileEntry {
   sizeMb: number;
   action: RendererFileAction;
   path: string;
+  sizeBytes: number;
+  kind: EstimateFileKind;
+  stereo?: boolean;
 }
 
 export interface AnalyzeResponse {

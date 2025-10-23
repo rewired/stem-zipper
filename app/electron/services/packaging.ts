@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import { WaveFile } from 'wavefile';
 import { ZipFile } from 'yazl';
 import type { FileEntry, PackProgress, RendererFileAction } from '../../common/ipc';
+import type { EstimateFileKind } from '../../common/packing/estimator';
 import { SUPPORTED_EXTENSIONS } from '../../common/constants';
 import { formatPathForDisplay } from '../../common/paths';
 import { formatMessage, type LocaleKey } from '../../common/i18n';
@@ -32,6 +33,15 @@ export interface SizedFile {
   extension: SupportedExtension;
 }
 
+const EXTENSION_KIND_MAP: Record<SupportedExtension, EstimateFileKind> = {
+  '.wav': 'wav',
+  '.flac': 'flac',
+  '.mp3': 'mp3',
+  '.aiff': 'aiff',
+  '.ogg': 'ogg',
+  '.aac': 'aac',
+  '.wma': 'wma'
+};
 
 function isSupportedExtension(extension: string): extension is SupportedExtension {
   return (SUPPORTED_EXTENSIONS as readonly string[]).includes(extension as SupportedExtension);
@@ -54,6 +64,58 @@ function createSizedFile(filePath: string, stats: fs.Stats): SizedFile {
     size: stats.size,
     extension
   };
+}
+
+function isLikelyStereoWav(file: SizedFile): boolean {
+  let handle: number | undefined;
+  try {
+    handle = fs.openSync(file.path, 'r');
+    const riffHeader = Buffer.alloc(12);
+    const riffRead = fs.readSync(handle, riffHeader, 0, 12, 0);
+    if (riffRead < 12) {
+      return false;
+    }
+    if (riffHeader.toString('ascii', 0, 4) !== 'RIFF' || riffHeader.toString('ascii', 8, 12) !== 'WAVE') {
+      return false;
+    }
+
+    let offset = 12;
+    const chunkHeader = Buffer.alloc(8);
+
+    while (offset + 8 <= file.size) {
+      const headerRead = fs.readSync(handle, chunkHeader, 0, 8, offset);
+      if (headerRead < 8) {
+        break;
+      }
+      const chunkId = chunkHeader.toString('ascii', 0, 4);
+      const chunkSize = chunkHeader.readUInt32LE(4);
+      if (chunkId === 'fmt ') {
+        const fmtBuffer = Buffer.alloc(4);
+        const fmtRead = fs.readSync(handle, fmtBuffer, 0, 4, offset + 8);
+        if (fmtRead < 4) {
+          return false;
+        }
+        const channels = fmtBuffer.readUInt16LE(2);
+        return channels >= 2;
+      }
+      const paddedSize = chunkSize + (chunkSize % 2);
+      if (paddedSize <= 0) {
+        break;
+      }
+      offset += 8 + paddedSize;
+    }
+  } catch (error) {
+    console.warn('Failed to inspect WAV header for stereo flag', file.path, error);
+  } finally {
+    if (handle !== undefined) {
+      try {
+        fs.closeSync(handle);
+      } catch (closeError) {
+        console.warn('Failed to close WAV handle after inspection', file.path, closeError);
+      }
+    }
+  }
+  return false;
 }
 
 export function scanTargetFolder(folderPath: string): SizedFile[] {
@@ -150,12 +212,20 @@ export function bestFitPack(files: SizedFile[], maxSizeBytes: number): SizedFile
 export function analyzeFolder(folderPath: string, maxSizeMb: number): FileEntry[] {
   const maxSizeBytes = maxSizeMb * 1024 * 1024;
   const sizedFiles = scanTargetFolder(folderPath);
-  const entries: FileEntry[] = sizedFiles.map((file) => ({
-    name: path.basename(file.path),
-    sizeMb: toMb(file.size),
-    action: resolveAction(file.size, file.extension, maxSizeBytes),
-    path: file.path
-  }));
+  const entries: FileEntry[] = sizedFiles.map((file) => {
+    const action = resolveAction(file.size, file.extension, maxSizeBytes);
+    const shouldInspectStereo = file.extension === '.wav' && file.size > maxSizeBytes;
+    const stereo = shouldInspectStereo && isLikelyStereoWav(file) ? true : undefined;
+    return {
+      name: path.basename(file.path),
+      sizeMb: toMb(file.size),
+      action,
+      path: file.path,
+      sizeBytes: file.size,
+      kind: EXTENSION_KIND_MAP[file.extension],
+      stereo
+    };
+  });
 
   entries.sort((a, b) => a.name.localeCompare(b.name));
   return entries;

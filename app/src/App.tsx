@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type DragEvent,
   type MouseEvent
@@ -18,6 +19,7 @@ import { InfoModal } from './components/InfoModal';
 import { APP_VERSION } from '@common/version';
 import { DiagOverlay } from './components/DiagOverlay';
 import { ChoiceModal } from './components/ChoiceModal';
+import { useToast } from './components/ui/ToastProvider';
 
 const initialProgress: PackProgress = {
   state: 'idle',
@@ -48,6 +50,10 @@ export default function App() {
   const [isOverwriteOpen, setIsOverwriteOpen] = useState(false);
   const [isOverwriteWarnOpen, setIsOverwriteWarnOpen] = useState(false);
   const [pendingAnalyze, setPendingAnalyze] = useState<{ path: string; max: number } | null>(null);
+  const { show: showToast } = useToast();
+  const estimateTimeoutRef = useRef<number | null>(null);
+  const estimateRequestTokenRef = useRef(0);
+  const estimatorErrorLoggedRef = useRef(false);
 
   const t = useCallback(
     (key: keyof typeof translations.en, params: Record<string, string | number> = {}) =>
@@ -305,6 +311,75 @@ export default function App() {
     });
     return removeListener;
   }, [t]);
+
+  useEffect(() => {
+    if (estimateTimeoutRef.current !== null) {
+      window.clearTimeout(estimateTimeoutRef.current);
+      estimateTimeoutRef.current = null;
+    }
+    if (!files.length) {
+      return;
+    }
+    if (typeof maxSize !== 'number' || Number.isNaN(maxSize)) {
+      return;
+    }
+    if (!window.electronAPI || typeof window.electronAPI.estimateZipCount !== 'function') {
+      return;
+    }
+
+    const requestFiles = files
+      .filter((file) => Number.isFinite(file.sizeBytes) && file.sizeBytes >= 0)
+      .map((file) => ({
+        path: file.path,
+        sizeBytes: file.sizeBytes,
+        kind: file.kind,
+        stereo: file.stereo === true ? true : undefined
+      }));
+
+    if (requestFiles.length === 0) {
+      return;
+    }
+
+    const request = {
+      files: requestFiles,
+      targetMB: maxSize
+    };
+
+    estimateTimeoutRef.current = window.setTimeout(() => {
+      estimateTimeoutRef.current = null;
+      const currentToken = estimateRequestTokenRef.current + 1;
+      estimateRequestTokenRef.current = currentToken;
+      window.electronAPI
+        .estimateZipCount(request)
+        .then((response) => {
+          if (estimateRequestTokenRef.current !== currentToken) {
+            return;
+          }
+          estimatorErrorLoggedRef.current = false;
+          showToast({
+            id: 'estimate',
+            title: t('toast.estimate.title'),
+            message: t('toast.estimate.body', { zips: response.zips }),
+            note: t('toast.estimate.note'),
+            closeLabel: t('close'),
+            timeoutMs: 10_000
+          });
+        })
+        .catch((error) => {
+          if (!estimatorErrorLoggedRef.current) {
+            console.error('Failed to estimate ZIP count', error);
+            estimatorErrorLoggedRef.current = true;
+          }
+        });
+    }, 100);
+
+    return () => {
+      if (estimateTimeoutRef.current !== null) {
+        window.clearTimeout(estimateTimeoutRef.current);
+        estimateTimeoutRef.current = null;
+      }
+    };
+  }, [files, maxSize, showToast, t]);
 
   const onDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();

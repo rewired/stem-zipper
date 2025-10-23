@@ -8,6 +8,7 @@ import type {
 import { IPC_CHANNELS } from '../common/ipc';
 import type { RuntimeConfig } from '../common/runtime';
 import { resolveLocale } from '../common/i18n';
+import type { EstimateRequest, EstimateResponse } from '../common/packing/estimator';
 
 type ProgressListener = (progress: PackProgress) => void;
 
@@ -56,5 +57,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   checkExistingZips(folderPath: string) {
     return ipcRenderer.invoke(IPC_CHANNELS.CHECK_EXISTING_ZIPS, folderPath);
+  },
+  estimateZipCount(request: EstimateRequest): Promise<EstimateResponse> {
+    return ipcRenderer.invoke(IPC_CHANNELS.ESTIMATE, request);
   }
 });
