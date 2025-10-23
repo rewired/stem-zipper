@@ -2,7 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## 1.0.1 - unreleased
+
+### Added
+- Automation contribution guide (`AGENTS.md`) capturing CI discipline, i18n requirements, and reviewer expectations for agents.
+- Renderer toast that surfaces a deterministic ZIP count estimate (with stereo split heuristics) after scans and max-size updates.
+- Lightweight underscore-based i18n policy with flat locale JSONs, helper utilities, and a guard test enforcing mirrored keys and placeholders.
+
+### Changed
+
+- Migrated the shared localisation layer to JSON-based catalogs with typed helpers, updating renderer and Electron callers to use the new key set.
+
+### Removed
+
+### Fixed
+- Electron main and preload TypeScript configs now include locale JSON catalogs, restoring watch mode after expanding the translation set.
+- Development runner now spawns pnpm watchers directly, eliminating the `util._extend` deprecation warning raised by `spawn-command`.
+- Repaired the German localisation catalogue entry so bundlers and the TypeScript compiler can parse the new toast estimate keys without syntax errors.
+- Renderer now dismisses the ZIP estimate toast once packing completes, preventing stale notifications after successful runs.
+## 1.0.0
 
 ### Added
 - Continuous integration workflow validating linting, type safety and test suites on Node 18 with pnpm caching.
