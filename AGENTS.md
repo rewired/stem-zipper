@@ -59,3 +59,40 @@
 7. Request review with context: what changed, risks, mitigations, manual QA performed.
 
 Happy automating! Stay deterministic, keep UX polished, and leave the tree greener than you found it.
+
+## Internationalization (i18n) Policy (Lightweight)
+
+**Why this is simple:** This is a small app. We avoid over-engineering and keep i18n lean and predictable.
+
+### File layout
+- One flat JSON per language:
+  - `locales/en.json` (master)
+  - `locales/<lang>.json` (mirrors English keys)
+- Keys are **underscore_case** with a namespace prefix: `pack_toast_estimate`, `app_status_ready`.
+- **No dot-notation in keys**. The namespace is part of the key name via underscore, not a nested path.
+
+### API
+- New code uses:
+  - `tNS(namespace: string, key: string, params?: Record<string, string | number>): string`
+- Legacy shim:
+  - `t('ns.key', params?)` remains available but is **deprecated**. Do not introduce new call sites.
+- Placeholder format: `{{name}}`, `{{count}}` (must be identical across all languages for the same key).
+
+### Rules for contributors (including AI agents)
+1. **Do not rename or remove keys** unless explicitly requested by a task.
+2. **Underscore keys only** (`^[a-z0-9_]+$`). Dots in keys are forbidden.
+3. English (`locales/en.json`) is the master. Other languages must mirror the exact key set.
+4. Keep placeholders identical across languages.
+5. No user-facing hard-coded strings in code — always use `tNS(...)` (or the legacy shim during migration).
+
+### CI gates (must pass)
+- `pnpm lint`
+- `pnpm typecheck`
+- `pnpm test` (includes a tiny i18n test that checks: missing keys, placeholder consistency, and forbids dot-notation in keys)
+
+### Review checklist
+- [ ] No new legacy `t('ns.key')` usages
+- [ ] Keys are underscore_case; no dots
+- [ ] All locales updated with the same keys
+- [ ] Placeholders match across languages
+- [ ] No hard-coded UI strings
