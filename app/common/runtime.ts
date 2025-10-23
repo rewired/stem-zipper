@@ -1,4 +1,4 @@
-import type { LocaleKey } from './i18n';
+import type { LocaleKey } from '@common/i18n';
 
 export interface RuntimeConfig {
   locale: LocaleKey;

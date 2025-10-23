@@ -182,7 +182,7 @@ function registerIpcHandlers(): void {
     const config = getRuntimeConfig();
     const window = getWindow();
     return dialog.showOpenDialog(window, {
-      title: formatMessage(config.locale, 'select_folder'),
+      title: formatMessage(config.locale, 'app_select_folder_label'),
       properties: ['openDirectory']
     });
   });
@@ -217,12 +217,12 @@ function registerIpcHandlers(): void {
         const window = getWindow();
         const { response } = await dialog.showMessageBox(window, {
           type: 'warning',
-          buttons: [formatMessage(locale, 'pack_now'), formatMessage(locale, 'close')],
+          buttons: [formatMessage(locale, 'pack_action_start'), formatMessage(locale, 'common_close')],
           defaultId: 0,
           cancelId: 1,
-          title: formatMessage(locale, 'overwrite_title'),
-          message: formatMessage(locale, 'overwrite_title'),
-          detail: formatMessage(locale, 'overwrite_text')
+          title: formatMessage(locale, 'dialog_overwrite_title'),
+          message: formatMessage(locale, 'dialog_overwrite_title'),
+          detail: formatMessage(locale, 'dialog_overwrite_text')
         });
         if (response !== 0) {
           packInProgress = false;
@@ -238,7 +238,7 @@ function registerIpcHandlers(): void {
       });
       return total;
     } catch (error) {
-      const fallback = formatMessage(locale, 'error_title');
+      const fallback = formatMessage(locale, 'common_error_title');
       const message = error instanceof Error && error.message ? error.message : fallback;
       event.sender.send(IPC_CHANNELS.PACK_PROGRESS, {
         state: 'error',
@@ -257,7 +257,7 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.CREATE_TESTDATA, async (_event, args: TestDataRequest) => {
     const config = getRuntimeConfig();
     if (!config.devMode) {
-      throw new Error(formatMessage(config.locale, 'testdata_dev_only'));
+      throw new Error(formatMessage(config.locale, 'dev_error_dev_only'));
     }
     const count = await createTestData(args.folderPath);
     return {
