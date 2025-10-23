@@ -1,7 +1,7 @@
 # ADR 0001: Migrating the Stem ZIPper UI to Electron
 
 - Status: Accepted
-- Date: 2024-05-08
+- Date: 2025-10-22
 
 ## Context
 

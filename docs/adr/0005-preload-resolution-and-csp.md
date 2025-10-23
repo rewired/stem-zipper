@@ -1,7 +1,7 @@
 # ADR 0005: Robust Preload Resolution and Renderer CSP
 
 - Status: Accepted
-- Date: 2025-05-09
+- Date: 2025-10-22
 
 ## Context
 

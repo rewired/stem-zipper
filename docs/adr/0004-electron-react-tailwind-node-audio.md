@@ -1,7 +1,7 @@
 # ADR 0004: Electron + React + Tailwind with Node-based Audio Engine
 
 - Status: Accepted
-- Date: 2025-05-08
+- Date: 2025-10-22
 
 ## Context
 

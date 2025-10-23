@@ -1,7 +1,7 @@
 # ADR 0006: Electron Builder packaging for Windows
 
 - Status: Accepted
-- Date: 2025-10-21
+- Date: 2025-10-22
 
 ## Context
 

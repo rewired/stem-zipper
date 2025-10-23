@@ -1,7 +1,7 @@
 # ADR 0002: Node-based packaging engine
 
 - Status: Accepted
-- Date: 2024-05-10
+- Date: 2025-10-22
 
 ## Context
 

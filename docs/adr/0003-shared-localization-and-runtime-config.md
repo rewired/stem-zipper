@@ -1,7 +1,7 @@
 # ADR 0003: Shared localization and runtime configuration
 
 - Status: Accepted
-- Date: 2024-05-12
+- Date: 2025-10-22
 
 ## Context
 
