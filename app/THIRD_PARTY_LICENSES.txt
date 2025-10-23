@@ -1,0 +1,68 @@
+├─ buffer-crc32@0.2.13
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/brianloveswords/buffer-crc32
+│  ├─ publisher: Brian J. Brennan
+│  ├─ email: brianloveswords@gmail.com
+│  ├─ path: D:\__DEV\stem-zipper\app\node_modules\yazl\node_modules\buffer-crc32
+│  └─ licenseFile: node_modules\yazl\node_modules\buffer-crc32\LICENSE
+├─ buffer-crc32@1.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/brianloveswords/buffer-crc32
+│  ├─ publisher: Brian J. Brennan
+│  ├─ email: brianloveswords@gmail.com
+│  ├─ path: D:\__DEV\stem-zipper\app\node_modules\buffer-crc32
+│  └─ licenseFile: node_modules\buffer-crc32\LICENSE
+├─ clsx@2.1.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lukeed/clsx
+│  ├─ publisher: Luke Edwards
+│  ├─ email: luke.edwards05@gmail.com
+│  ├─ path: D:\__DEV\stem-zipper\app\node_modules\clsx
+│  └─ licenseFile: node_modules\clsx\license
+├─ js-tokens@4.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/lydell/js-tokens
+│  ├─ publisher: Simon Lydell
+│  ├─ path: D:\__DEV\stem-zipper\app\node_modules\js-tokens
+│  └─ licenseFile: node_modules\js-tokens\LICENSE
+├─ loose-envify@1.4.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/zertosh/loose-envify
+│  ├─ publisher: Andres Suarez
+│  ├─ email: zertosh@gmail.com
+│  ├─ path: D:\__DEV\stem-zipper\app\node_modules\loose-envify
+│  └─ licenseFile: node_modules\loose-envify\LICENSE
+├─ react-dom@18.3.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/facebook/react
+│  ├─ path: D:\__DEV\stem-zipper\app\node_modules\react-dom
+│  └─ licenseFile: node_modules\react-dom\LICENSE
+├─ react@18.3.1
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/facebook/react
+│  ├─ path: D:\__DEV\stem-zipper\app\node_modules\react
+│  └─ licenseFile: node_modules\react\LICENSE
+├─ scheduler@0.23.2
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/facebook/react
+│  ├─ path: D:\__DEV\stem-zipper\app\node_modules\scheduler
+│  └─ licenseFile: node_modules\scheduler\LICENSE
+├─ stem-zipper-electron@1.0.0
+│  ├─ licenses: [1m[31mUNLICENSED[39m[22m
+│  ├─ private: true
+│  ├─ publisher: Björn Ahlers
+│  └─ path: D:\__DEV\stem-zipper\app
+├─ wavefile@11.0.0
+│  ├─ licenses: MIT
+│  ├─ repository: https://github.com/rochars/wavefile
+│  ├─ publisher: Rafael da Silva Rocha
+│  ├─ email: rocha.rafaelsilva@gmail.com
+│  ├─ path: D:\__DEV\stem-zipper\app\node_modules\wavefile
+│  └─ licenseFile: node_modules\wavefile\LICENSE
+└─ yazl@2.5.1
+   ├─ licenses: MIT
+   ├─ repository: https://github.com/thejoshwolfe/yazl
+   ├─ publisher: Josh Wolfe
+   ├─ email: thejoshwolfe@gmail.com
+   ├─ path: D:\__DEV\stem-zipper\app\node_modules\yazl
+   └─ licenseFile: node_modules\yazl\LICENSE

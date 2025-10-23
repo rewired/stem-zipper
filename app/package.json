@@ -5,6 +5,7 @@
   "author": "Björn Ahlers",
   "private": true,
   "main": "dist-electron/main/electron/main.js",
+  "license": "MIT",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "clean": "node scripts/clean-output.cjs",
@@ -22,7 +23,11 @@
     "build:preload": "tsc --project electron/tsconfig.preload.json",
     "lint": "eslint \"{src,electron}/**/*.{ts,tsx}\"",
     "preview": "pnpm run build && electron .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "licenses:txt": "pnpm dlx license-checker-rseidelsohn --production --relativeLicensePath --out THIRD_PARTY_LICENSES.txt",
+    "licenses:guard": "pnpm dlx license-checker-rseidelsohn --production --onlyAllow='MIT;BSD-2-Clause;BSD-3-Clause;Apache-2.0;ISC;CC0-1.0'",
+    "notices:collect": "node scripts/collect-notices.mjs",
+    "prepack": "pnpm run licenses:txt && pnpm run notices:collect"
   },
   "dependencies": {
     "buffer-crc32": "^1.0.0",
@@ -58,7 +63,7 @@
     "wait-on": "^7.0.1"
   },
   "build": {
-    "appId": "org.ccmixter.stemzipper",
+    "appId": "rewired.stemzipper",
     "productName": "Stem ZIPper",
     "directories": {
       "output": "release"
