@@ -6,10 +6,16 @@ import { analyzeFolder, createTestData, packFolder } from './services/packaging'
 import { ensureValidMaxSize } from '../common/validation';
 import { formatPathForDisplay } from '../common/paths';
 import { IPC_CHANNELS } from '../common/ipc';
-import type { AnalyzeResponse, PackRequest, TestDataRequest } from '../common/ipc';
+import type {
+  AnalyzeResponse,
+  EstimateRequest,
+  PackRequest,
+  TestDataRequest
+} from '../common/ipc';
 import { formatMessage, resolveLocale } from '../common/i18n';
 import type { RuntimeConfig } from '../common/runtime';
 import { APP_VERSION } from '../common/version';
+import { estimateZipCount } from '../common/packing/estimator';
 
 let mainWindow: BrowserWindow | null = null;
 let packInProgress = false;
@@ -199,6 +205,29 @@ function registerIpcHandlers(): void {
       return response;
     }
   );
+
+  ipcMain.handle(IPC_CHANNELS.ESTIMATE_ZIP_COUNT, async (_event, request: EstimateRequest) => {
+    const safeFiles = Array.isArray(request?.files)
+      ? request.files.map((file) => ({
+          path: file.path,
+          sizeBytes: file.sizeBytes,
+          kind: file.kind,
+          stereo: file.stereo
+        }))
+      : [];
+    const safeRequest: EstimateRequest = {
+      files: safeFiles,
+      targetMB: typeof request?.targetMB === 'number' ? request.targetMB : 0
+    };
+    const result = estimateZipCount(safeRequest);
+    console.debug(
+      '[estimator] files=%d targetMB=%d -> zips=%d',
+      safeRequest.files.length,
+      safeRequest.targetMB,
+      result.zips
+    );
+    return result;
+  });
 
   ipcMain.handle(IPC_CHANNELS.PACK_FOLDER, async (event, args: PackRequest) => {
     if (packInProgress) {

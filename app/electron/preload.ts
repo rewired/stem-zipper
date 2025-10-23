@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type {
   AnalyzeResponse,
+  EstimateRequest,
+  EstimateResponse,
   PackProgress,
   PackRequest,
   TestDataResponse
@@ -56,5 +58,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   checkExistingZips(folderPath: string) {
     return ipcRenderer.invoke(IPC_CHANNELS.CHECK_EXISTING_ZIPS, folderPath);
+  },
+  estimateZipCount(request: EstimateRequest): Promise<EstimateResponse> {
+    return ipcRenderer.invoke(IPC_CHANNELS.ESTIMATE_ZIP_COUNT, request);
   }
 });

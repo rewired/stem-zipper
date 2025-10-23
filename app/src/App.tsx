@@ -2,11 +2,12 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type DragEvent,
   type MouseEvent
 } from 'react';
-import type { FileEntry, PackProgress } from '@common/ipc';
+import type { EstimateResponse, FileEntry, PackProgress } from '@common/ipc';
 import { DEFAULT_MAX_SIZE_MB, MAX_SIZE_LIMIT_MB } from '@common/constants';
 import { ensureValidMaxSize } from '@common/validation';
 import { Header } from './components/Header';
@@ -39,7 +40,7 @@ export default function App() {
   const [folderPath, setFolderPath] = useState<string | null>(null);
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [progress, setProgress] = useState<PackProgress>(initialProgress);
-  const [statusText, setStatusText] = useState(() => formatMessage(locale, 'ready'));
+  const [statusText, setStatusText] = useState(() => formatMessage(locale, 'status.ready'));
   const [isPacking, setIsPacking] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
@@ -48,6 +49,8 @@ export default function App() {
   const [isOverwriteOpen, setIsOverwriteOpen] = useState(false);
   const [isOverwriteWarnOpen, setIsOverwriteWarnOpen] = useState(false);
   const [pendingAnalyze, setPendingAnalyze] = useState<{ path: string; max: number } | null>(null);
+  const [estimate, setEstimate] = useState<EstimateResponse | null>(null);
+  const estimateRequestId = useRef(0);
 
   const t = useCallback(
     (key: keyof typeof translations.en, params: Record<string, string | number> = {}) =>
@@ -76,9 +79,11 @@ export default function App() {
     document.title = `${t('app_title')} ${APP_VERSION}`;
   }, [t]);
 
-  const resetProgress = () => {
+  const resetProgress = useCallback(() => {
     setProgress(initialProgress);
-  };
+    setEstimate(null);
+    setStatusText(t('status.ready'));
+  }, [t]);
 
   const analyze = useCallback(
     async (targetFolder: string, currentMaxSize: number) => {
@@ -89,10 +94,11 @@ export default function App() {
         if (response.maxSizeMb !== currentMaxSize) {
           setMaxSize(response.maxSizeMb);
           setStatusText(t('msg_invalid_max_size', { max: MAX_SIZE_LIMIT_MB, reset: response.maxSizeMb }));
+        } else if (response.count > 0) {
+          setStatusText(t('status.ready'));
         } else {
-          setStatusText(
-            response.count > 0 ? t('found_files', { count: response.count }) : t('msg_no_files')
-          );
+          setStatusText(t('msg_no_files'));
+          setEstimate(null);
         }
       } catch (error) {
         console.error(error);
@@ -123,7 +129,7 @@ export default function App() {
       }
       await analyze(selectedPath, numericMax);
     },
-    [analyze, maxSize]
+    [analyze, maxSize, resetProgress]
   );
 
   const handleSelectFolder = async () => {
@@ -327,6 +333,82 @@ export default function App() {
     await handleFolderSelection(itemPath);
   };
 
+  useEffect(() => {
+    if (!window.electronAPI || typeof window.electronAPI.estimateZipCount !== 'function') {
+      setEstimate(null);
+      return;
+    }
+    if (files.length === 0) {
+      setEstimate(null);
+      return;
+    }
+    const numericTarget = typeof maxSize === 'number' ? maxSize : DEFAULT_MAX_SIZE_MB;
+    const sanitizedTarget = ensureValidMaxSize(numericTarget);
+    const requestFiles = files.map((file) => ({
+      path: file.path,
+      sizeBytes: file.sizeBytes,
+      kind: file.kind,
+      stereo: file.stereo
+    }));
+    const requestId = estimateRequestId.current + 1;
+    estimateRequestId.current = requestId;
+    const timeout = window.setTimeout(() => {
+      window.electronAPI
+        .estimateZipCount({
+          files: requestFiles,
+          targetMB: sanitizedTarget
+        })
+        .then((result) => {
+          if (estimateRequestId.current === requestId) {
+            setEstimate(result);
+          }
+        })
+        .catch((error) => {
+          console.error('Failed to estimate ZIP count', error);
+          if (estimateRequestId.current === requestId) {
+            setEstimate(null);
+          }
+        });
+    }, 100);
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [files, maxSize]);
+
+  const estimateLabel = useMemo(() => {
+    if (!estimate) {
+      return null;
+    }
+    return t('status.estimate', { zips: estimate.zips });
+  }, [estimate, t]);
+
+  const readyLabel = useMemo(() => t('status.ready'), [t]);
+  const estimateTooltip = useMemo(() => t('status.estimate.tooltip'), [t]);
+
+  const primaryStatus = useMemo(() => {
+    if (progress.state === 'idle') {
+      if (files.length === 0) {
+        return readyLabel;
+      }
+      if (estimateLabel) {
+        return estimateLabel;
+      }
+    }
+    return statusText;
+  }, [progress.state, files.length, estimateLabel, statusText, readyLabel]);
+
+  const secondaryStatus = useMemo(() => {
+    if (primaryStatus === statusText) {
+      return undefined;
+    }
+    if (!statusText || statusText.trim().length === 0) {
+      return undefined;
+    }
+    return statusText;
+  }, [primaryStatus, statusText]);
+
+  const primaryTooltip = primaryStatus === estimateLabel ? estimateTooltip : undefined;
+
   const canPack = Boolean(folderPath && files.length > 0 && !isPacking && typeof maxSize === 'number');
   const isDevMode = (window as unknown as { runtimeConfig?: { devMode?: boolean } }).runtimeConfig?.devMode || import.meta.env.DEV;
   const hasElectronAPI = Boolean((window as unknown as { electronAPI?: unknown }).electronAPI);
@@ -371,7 +453,12 @@ export default function App() {
         </div>
         <div className="sticky bottom-0 z-30 border-t border-slate-800 bg-slate-950/90 px-8 py-4 backdrop-blur">
           <div className="space-y-4">
-            <ProgressPanel progress={progress} statusText={statusText} />
+            <ProgressPanel
+              progress={progress}
+              primaryText={primaryStatus}
+              primaryTooltip={primaryTooltip}
+              secondaryText={secondaryStatus}
+            />
             <ActionBar
               onPack={handlePack}
               onExit={() => window.close()}
@@ -416,6 +503,7 @@ export default function App() {
           setFiles([]);
           setFolderPath(null);
           setStatusText(t('select_hint'));
+          setEstimate(null);
         }}
       />
     ) : null}

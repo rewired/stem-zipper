@@ -1,3 +1,5 @@
+import type { SupportedAudioKind } from './constants';
+
 export const IPC_CHANNELS = {
   SELECT_FOLDER: 'dialog:select-folder',
   ANALYZE_FOLDER: 'analyze-folder',
@@ -7,7 +9,8 @@ export const IPC_CHANNELS = {
   CREATE_TESTDATA: 'create-testdata',
   OPEN_EXTERNAL: 'open-external',
   OPEN_PATH: 'open-path',
-  CHECK_EXISTING_ZIPS: 'check-existing-zips'
+  CHECK_EXISTING_ZIPS: 'check-existing-zips',
+  ESTIMATE_ZIP_COUNT: 'estimator:estimate'
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
@@ -19,6 +22,9 @@ export interface FileEntry {
   sizeMb: number;
   action: RendererFileAction;
   path: string;
+  sizeBytes: number;
+  kind: SupportedAudioKind;
+  stereo?: boolean;
 }
 
 export interface AnalyzeResponse {
@@ -63,4 +69,21 @@ export interface FolderSelectionResponse {
 export interface CheckExistingZipsResponse {
   count: number;
   files: string[];
+}
+
+export interface EstimateRequest {
+  files: Array<{
+    path: string;
+    sizeBytes: number;
+    kind: SupportedAudioKind;
+    stereo?: boolean;
+  }>;
+  targetMB: number;
+}
+
+export interface EstimateResponse {
+  zips: number;
+  bytesLogical: number;
+  bytesCapacity: number;
+  constants: Record<string, number>;
 }

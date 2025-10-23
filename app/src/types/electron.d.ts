@@ -1,5 +1,7 @@
 import type {
   AnalyzeResponse,
+  EstimateRequest,
+  EstimateResponse,
   PackProgress,
   PackRequest,
   TestDataResponse
@@ -17,6 +19,7 @@ declare global {
       openExternal: (url: string) => Promise<void>;
       openPath: (path: string) => Promise<void>;
       checkExistingZips: (folderPath: string) => Promise<{ count: number; files: string[] }>;
+      estimateZipCount: (request: EstimateRequest) => Promise<EstimateResponse>;
     };
     runtimeConfig: RuntimeConfig;
   }

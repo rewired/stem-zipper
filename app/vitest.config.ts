@@ -6,6 +6,8 @@ export default defineConfig({
     environment: 'node',
     globals: false,
     include: [
+      'common/**/*.spec.ts',
+      'src/**/*.test.tsx',
       'electron/**/*.test.ts',
       'electron/**/__tests__/**/*.test.ts',
       'scripts/**/__tests__/**/*.test.ts'

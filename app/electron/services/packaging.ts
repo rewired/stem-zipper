@@ -4,7 +4,11 @@ import crypto from 'node:crypto';
 import { WaveFile } from 'wavefile';
 import { ZipFile } from 'yazl';
 import type { FileEntry, PackProgress, RendererFileAction } from '../../common/ipc';
-import { SUPPORTED_EXTENSIONS } from '../../common/constants';
+import {
+  SUPPORTED_EXTENSIONS,
+  type SupportedExtension,
+  type SupportedAudioKind
+} from '../../common/constants';
 import { formatPathForDisplay } from '../../common/paths';
 import { formatMessage, type LocaleKey } from '../../common/i18n';
 import { APP_VERSION } from '../../common/version';
@@ -24,7 +28,15 @@ function toMb(bytes: number): number {
   return Math.round((bytes / 1024 / 1024) * 100) / 100;
 }
 
-type SupportedExtension = (typeof SUPPORTED_EXTENSIONS)[number];
+const extensionToKindMap: Record<SupportedExtension, SupportedAudioKind> = {
+  '.wav': 'wav',
+  '.flac': 'flac',
+  '.mp3': 'mp3',
+  '.aiff': 'aiff',
+  '.ogg': 'ogg',
+  '.aac': 'aac',
+  '.wma': 'wma'
+};
 
 export interface SizedFile {
   path: string;
@@ -35,6 +47,37 @@ export interface SizedFile {
 
 function isSupportedExtension(extension: string): extension is SupportedExtension {
   return (SUPPORTED_EXTENSIONS as readonly string[]).includes(extension as SupportedExtension);
+}
+
+const WAV_HEADER_MIN_LENGTH = 24;
+const WAV_NUM_CHANNELS_OFFSET = 22;
+
+function readWavStereoFlag(filePath: string): boolean | undefined {
+  let handle: number | undefined;
+  try {
+    handle = fs.openSync(filePath, 'r');
+    const buffer = Buffer.alloc(WAV_HEADER_MIN_LENGTH);
+    const bytesRead = fs.readSync(handle, buffer, 0, buffer.length, 0);
+    if (bytesRead < WAV_NUM_CHANNELS_OFFSET + 2) {
+      return undefined;
+    }
+    const channels = buffer.readUInt16LE(WAV_NUM_CHANNELS_OFFSET);
+    if (channels <= 0) {
+      return undefined;
+    }
+    return channels === 2;
+  } catch (error) {
+    console.warn('Failed to inspect WAV header for stereo detection', filePath, error);
+    return undefined;
+  } finally {
+    if (typeof handle === 'number') {
+      try {
+        fs.closeSync(handle);
+      } catch (closeError) {
+        console.warn('Failed to close WAV header handle', filePath, closeError);
+      }
+    }
+  }
 }
 
 function resolveAction(sizeBytes: number, extension: SupportedExtension, maxSizeBytes: number): RendererFileAction {
@@ -154,7 +197,10 @@ export function analyzeFolder(folderPath: string, maxSizeMb: number): FileEntry[
     name: path.basename(file.path),
     sizeMb: toMb(file.size),
     action: resolveAction(file.size, file.extension, maxSizeBytes),
-    path: file.path
+    path: file.path,
+    sizeBytes: file.size,
+    kind: extensionToKindMap[file.extension],
+    stereo: file.extension === '.wav' ? readWavStereoFlag(file.path) : undefined
   }));
 
   entries.sort((a, b) => a.name.localeCompare(b.name));

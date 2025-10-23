@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Windows packaging task (`pnpm package:win`) backed by `electron-builder` to produce a distributable NSIS installer.
 - Renderer action bar now exposes an “About” affordance that surfaces a translated modal with the packaged app version.
 - Renderer info modal links now open in the system browser via a dedicated `open-external` IPC bridge helper.
+- Live ZIP archive count estimator triggered after analysis updates the Ready status chip with a localized tooltip summarising the mono-split and overhead model.
 
 ### Changed
 - Development runner now accepts an optional locale argument (e.g. `pnpm dev de` or `--lang=fr`) and auto-detects the operating system language when no input is provided, falling back to English only when the locale is unsupported.
