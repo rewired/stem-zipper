@@ -90,6 +90,17 @@ export interface CheckExistingZipsResponse {
 
 export type UserPrefsGet = Record<string, never>;
 
-export type UserPrefsSet = { default_artist?: string };
+export type UserPrefsSet = {
+  default_artist?: string;
+  default_artist_url?: string;
+  default_contact_email?: string;
+};
 
 export type UserPrefsAddRecent = { artist: string };
+
+export interface UserPrefsResponse {
+  default_artist?: string;
+  default_artist_url?: string;
+  default_contact_email?: string;
+  recent_artists?: string[];
+}

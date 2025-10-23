@@ -27,7 +27,12 @@ function createElectronAPIMock() {
     openPath: vi.fn(),
     checkExistingZips: vi.fn().mockResolvedValue({ count: 0, files: [] }),
     estimateZipCount: vi.fn().mockResolvedValue({ zips: 1 }),
-    getUserPrefs: vi.fn().mockResolvedValue({ default_artist: 'Saved Artist', recent_artists: ['Saved Artist'] }),
+    getUserPrefs: vi.fn().mockResolvedValue({
+      default_artist: 'Saved Artist',
+      default_artist_url: 'https://saved.example',
+      default_contact_email: 'saved@example.com',
+      recent_artists: ['Saved Artist']
+    }),
     setUserPrefs: vi.fn().mockResolvedValue(undefined),
     addRecentArtist: vi.fn().mockResolvedValue(undefined)
   };
@@ -90,11 +95,21 @@ describe('metadata modal integration', () => {
     const selectFolderButton = await screen.findByRole('button', { name: /Select Folder/i });
     await user.click(selectFolderButton);
     await screen.findByRole('heading', { name: /Pack metadata/i });
-    const artistInput = await screen.findByLabelText((content) => content.startsWith('Artist') && !content.includes('URL'));
+    const artistInput = await screen.findByLabelText(
+      (content: string) => content.startsWith('Artist') && !content.includes('URL')
+    );
     expect((artistInput as HTMLInputElement).value).toBe('Saved Artist');
+    const artistUrlInput = await screen.findByLabelText((content: string) => content.startsWith('Artist URL'));
+    expect((artistUrlInput as HTMLInputElement).value).toBe('https://saved.example');
+    const emailInput = await screen.findByLabelText((content: string) => content.startsWith('Email'));
+    expect((emailInput as HTMLInputElement).value).toBe('saved@example.com');
   });
 
   it('saves metadata and triggers packing when using Save & Pack', async () => {
+    electronAPI.getUserPrefs.mockResolvedValueOnce({
+      default_artist: 'Saved Artist',
+      recent_artists: ['Saved Artist']
+    });
     render(
       <ToastProvider>
         <App />
@@ -109,11 +124,21 @@ describe('metadata modal integration', () => {
     await user.click(initialClose);
     await user.click(screen.getByRole('button', { name: /Pack Now/i }));
     const modal = await screen.findByRole('dialog', { name: /Pack metadata/i });
-    const titleInput = within(modal).getByLabelText((content) => content.startsWith('Title')) as HTMLInputElement;
+    const titleInput = within(modal).getByLabelText((content: string) => content.startsWith('Title')) as HTMLInputElement;
     await user.clear(titleInput);
     await user.type(titleInput, 'Test Title');
-    const licenseSelect = within(modal).getByLabelText((content) => content.startsWith('License'));
+    const licenseSelect = within(modal).getByLabelText((content: string) => content.startsWith('License'));
     await user.selectOptions(licenseSelect, 'CC-BY-4.0');
+    const artistUrlInput = within(modal).getByLabelText(
+      (content: string) => content.startsWith('Artist URL')
+    ) as HTMLInputElement;
+    await user.click(artistUrlInput);
+    await user.type(artistUrlInput, 'https://artist.example');
+    expect(artistUrlInput.value).toBe('https://artist.example');
+    const emailInput = within(modal).getByLabelText((content: string) => content.startsWith('Email')) as HTMLInputElement;
+    await user.click(emailInput);
+    await user.type(emailInput, 'contact@example.com');
+    expect(emailInput.value).toBe('contact@example.com');
     const saveAndPack = within(modal).getByRole('button', { name: /Save & Pack/i });
     await user.click(saveAndPack);
 
@@ -124,7 +149,59 @@ describe('metadata modal integration', () => {
     expect(request.packMetadata).toMatchObject({
       title: 'Test Title',
       artist: 'Saved Artist',
-      license: { id: 'CC-BY-4.0' }
+      license: { id: 'CC-BY-4.0' },
+      links: { artist_url: 'https://artist.example', contact_email: 'contact@example.com' }
     });
+    expect(electronAPI.setUserPrefs).toHaveBeenCalledWith({
+      default_artist: 'Saved Artist',
+      default_artist_url: 'https://artist.example',
+      default_contact_email: 'contact@example.com'
+    });
+  });
+
+  it('does not request a new estimate immediately after packing', async () => {
+    render(
+      <ToastProvider>
+        <App />
+      </ToastProvider>
+    );
+    const user = userEvent.setup();
+
+    const selectFolderButton = await screen.findByRole('button', { name: /Select Folder/i });
+    await user.click(selectFolderButton);
+    const initialModal = await screen.findByRole('dialog', { name: /Pack metadata/i });
+
+    await waitFor(() => {
+      expect(electronAPI.estimateZipCount).toHaveBeenCalledTimes(1);
+    });
+    const initialEstimateCalls = electronAPI.estimateZipCount.mock.calls.length;
+
+    const initialClose = within(initialModal).getByRole('button', { name: /^Close$/i });
+    await user.click(initialClose);
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /Pack metadata/i })).toBeNull();
+    });
+    await user.click(screen.getByRole('button', { name: /Pack Now/i }));
+    const modal = await screen.findByRole('dialog', { name: /Pack metadata/i });
+    const titleInput = within(modal).getByLabelText(
+      (content: string) => content.startsWith('Title')
+    ) as HTMLInputElement;
+    await user.clear(titleInput);
+    await user.type(titleInput, 'Pack Title');
+    const licenseSelect = within(modal).getByLabelText((content: string) => content.startsWith('License'));
+    await user.selectOptions(licenseSelect, 'CC-BY-4.0');
+    const saveAndPack = within(modal).getByRole('button', { name: /Save & Pack/i });
+    await user.click(saveAndPack);
+
+    await waitFor(() => {
+      expect(electronAPI.startPack).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(electronAPI.analyzeFolder).toHaveBeenCalledTimes(2);
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    expect(electronAPI.estimateZipCount).toHaveBeenCalledTimes(initialEstimateCalls);
   });
 });

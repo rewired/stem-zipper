@@ -85,9 +85,17 @@ export default function App() {
   const [isMetadataOpen, setIsMetadataOpen] = useState(false);
   const [metadataIntent, setMetadataIntent] = useState<'idle' | 'pack'>('idle');
   const [metadataSaving, setMetadataSaving] = useState(false);
-  const [userPrefs, setUserPrefs] = useState<{ defaultArtist?: string; recentArtists: string[] }>(
-    () => ({ defaultArtist: undefined, recentArtists: [] })
-  );
+  const [userPrefs, setUserPrefs] = useState<{
+    defaultArtist?: string;
+    defaultArtistUrl?: string;
+    defaultContactEmail?: string;
+    recentArtists: string[];
+  }>(() => ({
+    defaultArtist: undefined,
+    defaultArtistUrl: undefined,
+    defaultContactEmail: undefined,
+    recentArtists: []
+  }));
   const ensureMetadataDraft = useCallback((folder: string) => {
     setMetadataDrafts((prev) => {
       if (prev[folder]) {
@@ -118,6 +126,7 @@ export default function App() {
   const estimateRequestTokenRef = useRef(0);
   const estimatorErrorLoggedRef = useRef(false);
   const progressStateRef = useRef<PackState>(initialProgress.state);
+  const skipEstimateRef = useRef(false);
 
   const t = useCallback(
     (key: TranslationKey, params: Record<string, string | number> = {}) =>
@@ -134,6 +143,8 @@ export default function App() {
       .then((prefs) => {
         setUserPrefs({
           defaultArtist: prefs?.default_artist?.trim() || undefined,
+          defaultArtistUrl: prefs?.default_artist_url?.trim() || undefined,
+          defaultContactEmail: prefs?.default_contact_email?.trim() || undefined,
           recentArtists: dedupeRecentArtists(prefs?.recent_artists ?? [])
         });
       })
@@ -323,6 +334,7 @@ export default function App() {
       } else {
         setStatusText(t('pack_status_no_files'));
       }
+      skipEstimateRef.current = true;
       await analyze(folderPath, maxSize);
     } catch (error) {
       console.error(error);
@@ -391,13 +403,23 @@ export default function App() {
           rememberDefault: current.rememberDefault
         }));
         if (window.electronAPI && typeof window.electronAPI.setUserPrefs === 'function' && draft.rememberDefault) {
-          await window.electronAPI.setUserPrefs({ default_artist: metadata.artist });
+          await window.electronAPI.setUserPrefs({
+            default_artist: metadata.artist,
+            default_artist_url: metadata.links?.artist_url,
+            default_contact_email: metadata.links?.contact_email
+          });
         }
         if (window.electronAPI && typeof window.electronAPI.addRecentArtist === 'function') {
           await window.electronAPI.addRecentArtist({ artist: metadata.artist });
         }
         setUserPrefs((prev) => ({
           defaultArtist: draft.rememberDefault ? metadata.artist : prev.defaultArtist,
+          defaultArtistUrl: draft.rememberDefault
+            ? metadata.links?.artist_url ?? undefined
+            : prev.defaultArtistUrl,
+          defaultContactEmail: draft.rememberDefault
+            ? metadata.links?.contact_email ?? undefined
+            : prev.defaultContactEmail,
           recentArtists: dedupeRecentArtists([metadata.artist, ...prev.recentArtists])
         }));
         setIsMetadataOpen(false);
@@ -539,6 +561,10 @@ export default function App() {
     if (estimateTimeoutRef.current !== null) {
       window.clearTimeout(estimateTimeoutRef.current);
       estimateTimeoutRef.current = null;
+    }
+    if (skipEstimateRef.current) {
+      skipEstimateRef.current = false;
+      return;
     }
     if (progress.state === 'finished') {
       return;
@@ -722,6 +748,8 @@ export default function App() {
         rememberDefault={currentMetadataDraft.rememberDefault}
         lastAutoAttribution={currentMetadataDraft.lastAutoAttribution}
         defaultArtist={userPrefs.defaultArtist}
+        defaultArtistUrl={userPrefs.defaultArtistUrl}
+        defaultContactEmail={userPrefs.defaultContactEmail}
         recentArtists={userPrefs.recentArtists}
         saveLabel={t('modal_save')}
         saveAndPackLabel={t('modal_save_and_pack')}

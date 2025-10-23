@@ -13,6 +13,8 @@ interface MetadataModalProps {
   rememberDefault: boolean;
   lastAutoAttribution?: string;
   defaultArtist?: string;
+  defaultArtistUrl?: string;
+  defaultContactEmail?: string;
   recentArtists: string[];
   saveLabel: string;
   saveAndPackLabel: string;
@@ -54,6 +56,8 @@ export function MetadataModal({
   rememberDefault,
   lastAutoAttribution,
   defaultArtist,
+  defaultArtistUrl,
+  defaultContactEmail,
   recentArtists,
   saveLabel,
   saveAndPackLabel,
@@ -84,12 +88,16 @@ export function MetadataModal({
   const labelId = useId();
   const [submitted, setSubmitted] = useState(false);
   const artistPrefilledRef = useRef(false);
+  const artistUrlPrefilledRef = useRef(false);
+  const contactEmailPrefilledRef = useRef(false);
   const prefillKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (prefillKeyRef.current !== prefillKey) {
       prefillKeyRef.current = prefillKey;
       artistPrefilledRef.current = false;
+      artistUrlPrefilledRef.current = false;
+      contactEmailPrefilledRef.current = false;
     }
   }, [prefillKey]);
 
@@ -99,6 +107,20 @@ export function MetadataModal({
       onChange({ artist: defaultArtist });
     }
   }, [defaultArtist, draft.artist, onChange]);
+
+  useEffect(() => {
+    if (!artistUrlPrefilledRef.current && !draft.artistUrl.trim() && defaultArtistUrl) {
+      artistUrlPrefilledRef.current = true;
+      onChange({ artistUrl: defaultArtistUrl });
+    }
+  }, [defaultArtistUrl, draft.artistUrl, onChange]);
+
+  useEffect(() => {
+    if (!contactEmailPrefilledRef.current && !draft.contactEmail.trim() && defaultContactEmail) {
+      contactEmailPrefilledRef.current = true;
+      onChange({ contactEmail: defaultContactEmail });
+    }
+  }, [defaultContactEmail, draft.contactEmail, onChange]);
 
   useEffect(() => {
     const trimmedAttribution = draft.attribution.trim();
