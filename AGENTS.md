@@ -58,7 +58,7 @@
 6. Keep commits conventional (`feat:`, `fix:`, etc.) with descriptive summaries.
 7. Request review with context: what changed, risks, mitigations, manual QA performed.
 
-Happy automating! Stay deterministic, keep UX polished, and leave the tree greener than you found it.
+Stay deterministic, keep UX polished, and leave the tree greener than you found it.
 
 ## Internationalization (i18n) Policy (Lightweight)
 
