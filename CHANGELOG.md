@@ -17,12 +17,11 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
-- Electron preferences service now uses a runtime `import()` bridge for the ESM-only `electron-store`, eliminating the `ERR_REQUIRE_ESM` crash when launching the main process on Node 18+.
+- Electron preferences service now persists JSON preferences directly via the filesystem, removing the `electron-store` dependency and eliminating the `ERR_REQUIRE_ESM` crash on Node 18+.
 - Electron main and preload TypeScript configs now include locale JSON catalogs, restoring watch mode after expanding the translation set.
 - Development runner now spawns pnpm watchers directly, eliminating the `util._extend` deprecation warning raised by `spawn-command`.
 - Repaired the German localisation catalogue entry so bundlers and the TypeScript compiler can parse the new toast estimate keys without syntax errors.
 - Renderer now dismisses the ZIP estimate toast once packing completes, preventing stale notifications after successful runs.
-- Electron preference store typings now cover the `electron-store` dependency, restoring strict get/set/delete usage in the user preferences service.
 ## 1.0.0
 
 ### Added

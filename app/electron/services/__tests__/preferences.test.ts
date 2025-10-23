@@ -1,101 +1,109 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ElectronPreferencesStore } from '../electronStoreLoader';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  __resetPreferencesForTests,
   addRecentArtist,
   getUserPreferences,
-  setUserPreferences,
-  __resetPreferencesForTests
+  setUserPreferences
 } from '../preferences';
 import type { UserPrefsAddRecent, UserPrefsSet } from '../../../common/ipc';
 
-const { loadElectronStoreMock } = vi.hoisted(() => ({
-  loadElectronStoreMock: vi.fn()
+const PREFERENCES_FILE_NAME = 'stem-zipper-user-prefs.json';
+
+const { appMock, setUserDataPath } = vi.hoisted(() => {
+  let currentUserDataPath: string | null = null;
+
+  return {
+    appMock: {
+      getPath: vi.fn((key: string) => {
+        if (key !== 'userData') {
+          throw new Error(`Unsupported path: ${key}`);
+        }
+        if (!currentUserDataPath) {
+          throw new Error('userData path has not been initialised');
+        }
+        return currentUserDataPath;
+      })
+    },
+    setUserDataPath(pathValue: string) {
+      currentUserDataPath = pathValue;
+    }
+  };
+});
+
+vi.mock('electron', () => ({
+  app: appMock
 }));
 
-vi.mock('../electronStoreLoader', () => ({
-  loadElectronStore: loadElectronStoreMock
-}));
+let tempDir: string;
 
-interface StoredPreferences {
-  default_artist?: string;
-  recent_artists?: string[];
+function preferencesFilePath(): string {
+  return path.join(tempDir, PREFERENCES_FILE_NAME);
 }
 
-class FakeElectronStore implements ElectronPreferencesStore<StoredPreferences> {
-  private data: Record<string, unknown>;
-
-  constructor(options?: { defaults?: StoredPreferences; name?: string }) {
-    this.data = { ...(options?.defaults ?? {}) };
-    fakeStores.push(this);
-  }
-
-  public get<Key extends keyof StoredPreferences>(key: Key): StoredPreferences[Key];
-  public get<Result = unknown>(key: string): Result;
-  public get(key: string): unknown {
-    return this.data[key];
-  }
-
-  public set<Key extends keyof StoredPreferences>(key: Key, value: StoredPreferences[Key]): void;
-  public set(key: string, value: unknown): void;
-  public set(key: string, value: unknown): void {
-    this.data[key] = value;
-  }
-
-  public delete<Key extends keyof StoredPreferences>(key: Key): void;
-  public delete(key: string): void;
-  public delete(key: string): void {
-    delete this.data[key];
-  }
-}
-
-const fakeStores: FakeElectronStore[] = [];
-
-function latestStore(): FakeElectronStore {
-  const store = fakeStores.at(-1);
-  if (!store) {
-    throw new Error('Store was not initialised');
-  }
-  return store;
-}
-
-beforeEach(() => {
-  fakeStores.length = 0;
-  loadElectronStoreMock.mockReset();
-  loadElectronStoreMock.mockResolvedValue(FakeElectronStore);
+beforeEach(async () => {
+  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'stem-zipper-prefs-'));
+  setUserDataPath(tempDir);
+  appMock.getPath.mockClear();
   __resetPreferencesForTests();
 });
 
+afterEach(async () => {
+  await fs.rm(tempDir, { recursive: true, force: true });
+});
+
 describe('preferences service', () => {
-  it('creates the store lazily and sanitises results', async () => {
+  it('reads preferences lazily and sanitises results', async () => {
     const emptyResult = await getUserPreferences();
     expect(emptyResult).toEqual({ default_artist: undefined, recent_artists: [] });
-    expect(loadElectronStoreMock).toHaveBeenCalledTimes(1);
 
-    const store = latestStore();
-    store.set('default_artist', '  Beyoncé  ');
-    store.set('recent_artists', ['  Beyoncé  ', '', 'Prince', '   ', '  prince  ']);
+    await fs.writeFile(
+      preferencesFilePath(),
+      JSON.stringify(
+        {
+          default_artist: '  Beyoncé  ',
+          recent_artists: ['  Beyoncé  ', '', 'Prince', '   ', '  prince  ', 'Extra']
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
 
     const populated = await getUserPreferences();
-    expect(populated).toEqual({ default_artist: 'Beyoncé', recent_artists: ['Beyoncé', 'Prince', 'prince'] });
+    expect(populated).toEqual({
+      default_artist: 'Beyoncé',
+      recent_artists: ['Beyoncé', 'Prince', 'Extra']
+    });
   });
 
   it('updates the default artist while trimming invalid values', async () => {
-    await getUserPreferences();
-    const store = latestStore();
-
     const request: UserPrefsSet = { default_artist: '  Prince  ' };
     await setUserPreferences(request);
-    expect(store.get('default_artist')).toBe('Prince');
+
+    const stored = JSON.parse(await fs.readFile(preferencesFilePath(), 'utf8'));
+    expect(stored).toEqual({ default_artist: 'Prince', recent_artists: [] });
 
     await setUserPreferences({ default_artist: '   ' });
-    expect(store.get('default_artist')).toBeUndefined();
+    const cleared = JSON.parse(await fs.readFile(preferencesFilePath(), 'utf8'));
+    expect(cleared).toEqual({ recent_artists: [] });
   });
 
   it('deduplicates and caps the recent artist list', async () => {
-    await getUserPreferences();
-    const store = latestStore();
-    store.set('recent_artists', ['Existing', 'Other']);
-    store.set('default_artist', 'Existing');
+    await fs.writeFile(
+      preferencesFilePath(),
+      JSON.stringify(
+        {
+          default_artist: 'Existing',
+          recent_artists: ['Existing', 'Other']
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
 
     const requests: UserPrefsAddRecent[] = [
       { artist: '  ' },
@@ -112,7 +120,8 @@ describe('preferences service', () => {
       await addRecentArtist(item);
     }
 
-    expect(store.get('recent_artists')).toEqual(['Fifth', 'Fourth', 'Third', 'Another', 'New One']);
-    expect(store.get('default_artist')).toBe('existing');
+    const stored = JSON.parse(await fs.readFile(preferencesFilePath(), 'utf8'));
+    expect(stored.recent_artists).toEqual(['Fifth', 'Fourth', 'Third', 'Another', 'New One']);
+    expect(stored.default_artist).toBe('existing');
   });
 });
