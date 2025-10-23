@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Repaired the German localisation catalogue entry so bundlers and the TypeScript compiler can parse the new toast estimate keys without syntax errors.
+- Renderer now dismisses the ZIP estimate toast once packing completes, preventing stale notifications after successful runs.
 ## 1.0.0
 
 ### Added

@@ -3,24 +3,34 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { ToastProvider, useToast } from '../ui/ToastProvider';
 
 function createHarness() {
-  let trigger: ((message: number) => void) | undefined;
+  let controls:
+    | {
+        showEstimate: (zips: number) => void;
+        dismissEstimate: () => void;
+      }
+    | undefined;
 
   function Harness() {
-    const { show } = useToast();
-    trigger = (zips: number) => {
-      show({
-        id: 'estimate',
-        title: 'Estimate',
-        message: `This run will likely produce ≈ ${zips} ZIP archive(s).`,
-        note: 'Note text',
-        closeLabel: 'Close',
-        timeoutMs: 10_000
-      });
+    const { show, dismiss } = useToast();
+    controls = {
+      showEstimate: (zips: number) => {
+        show({
+          id: 'estimate',
+          title: 'Estimate',
+          message: `This run will likely produce ≈ ${zips} ZIP archive(s).`,
+          note: 'Note text',
+          closeLabel: 'Close',
+          timeoutMs: 10_000
+        });
+      },
+      dismissEstimate: () => {
+        dismiss('estimate');
+      }
     };
     return null;
   }
 
-  return { Harness, trigger: () => trigger };
+  return { Harness, controls: () => controls };
 }
 
 describe('ToastProvider', () => {
@@ -34,7 +44,7 @@ describe('ToastProvider', () => {
   });
 
   it('shows estimate toasts for at least 10 seconds and replaces older entries', () => {
-    const { Harness, trigger } = createHarness();
+    const { Harness, controls } = createHarness();
 
     render(
       <ToastProvider>
@@ -42,11 +52,11 @@ describe('ToastProvider', () => {
       </ToastProvider>
     );
 
-    const showEstimate = trigger();
-    expect(showEstimate).toBeDefined();
+    const api = controls();
+    expect(api).toBeDefined();
 
     act(() => {
-      showEstimate?.(3);
+      api?.showEstimate(3);
     });
 
     expect(screen.getByText('Estimate')).toBeTruthy();
@@ -58,7 +68,7 @@ describe('ToastProvider', () => {
     expect(screen.getByText(/≈ 3 ZIP archive/)).toBeTruthy();
 
     act(() => {
-      showEstimate?.(5);
+      api?.showEstimate(5);
     });
 
     const messages = screen.getAllByText(/This run will likely produce/);
@@ -73,6 +83,37 @@ describe('ToastProvider', () => {
     act(() => {
       vi.advanceTimersByTime(1);
     });
+    expect(screen.queryByText(/This run will likely produce/)).toBeNull();
+  });
+
+  it('dismisses estimate toasts via the toast context', () => {
+    const { Harness, controls } = createHarness();
+
+    render(
+      <ToastProvider>
+        <Harness />
+      </ToastProvider>
+    );
+
+    const api = controls();
+    expect(api).toBeDefined();
+
+    act(() => {
+      api?.showEstimate(7);
+    });
+
+    expect(screen.getByText(/≈ 7 ZIP archive/)).toBeTruthy();
+
+    act(() => {
+      api?.dismissEstimate();
+    });
+
+    expect(screen.queryByText(/This run will likely produce/)).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(20_000);
+    });
+
     expect(screen.queryByText(/This run will likely produce/)).toBeNull();
   });
 });
