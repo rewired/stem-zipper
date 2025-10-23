@@ -1,11 +1,13 @@
 import { clsx } from 'clsx';
 import { MaterialIcon } from './icons/MaterialIcon';
+import { MetadataButton } from './MetadataButton';
 
 interface ActionBarProps {
   onPack: () => void;
   onExit: () => void;
   onCreateTestData?: () => void;
   onShowInfo?: () => void;
+  onShowMetadata?: () => void;
   canPack: boolean;
   isPacking: boolean;
   packLabel: string;
@@ -13,6 +15,10 @@ interface ActionBarProps {
   createTestDataLabel: string;
   devMode: boolean;
   infoLabel: string;
+  metadataLabel: string;
+  metadataBadgeLabel: string;
+  showMetadataBadge: boolean;
+  metadataDisabled: boolean;
 }
 
 export function ActionBar({
@@ -20,13 +26,18 @@ export function ActionBar({
   onExit,
   onCreateTestData,
   onShowInfo,
+  onShowMetadata,
   canPack,
   isPacking,
   packLabel,
   exitLabel,
   createTestDataLabel,
   devMode,
-  infoLabel
+  infoLabel,
+  metadataLabel,
+  metadataBadgeLabel,
+  showMetadataBadge,
+  metadataDisabled
 }: ActionBarProps) {
   return (
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -46,6 +57,15 @@ export function ActionBar({
             <MaterialIcon icon="inventory_2" />
             {isPacking ? `${packLabel}…` : packLabel}
           </button>
+          {onShowMetadata ? (
+            <MetadataButton
+              onClick={onShowMetadata}
+              label={metadataLabel}
+              badgeLabel={metadataBadgeLabel}
+              showBadge={showMetadataBadge}
+              disabled={metadataDisabled}
+            />
+          ) : null}
           {onShowInfo ? (
             <button
               type="button"
