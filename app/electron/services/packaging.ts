@@ -9,6 +9,13 @@ import { SUPPORTED_EXTENSIONS } from '../../common/constants';
 import { formatPathForDisplay } from '../../common/paths';
 import { formatMessage, type LocaleKey } from '../../common/i18n';
 import { APP_VERSION } from '../../common/version';
+import {
+  appendMetadataSection,
+  createAttributionText,
+  createLicenseText,
+  createPackMetadataJson,
+  type NormalizedPackMetadata
+} from './packMetadata';
 
 export const STAMP_FILENAME = '_stem-zipper.txt';
 const STEM_ZIPPER_LOGO = `░█▀▀░▀█▀░█▀▀░█▄█░░░▀▀█░▀█▀░█▀█░█▀█░█▀▀░█▀▄░
@@ -231,7 +238,23 @@ export function analyzeFolder(folderPath: string, maxSizeMb: number): FileEntry[
   return entries;
 }
 
-export async function createBrandedZip(zipName: string, files: SizedFile[], outDir: string): Promise<string> {
+interface ZipTextEntry {
+  name: string;
+  content: string | Buffer;
+  compress?: boolean;
+}
+
+interface CreateBrandedZipOptions {
+  extras?: ZipTextEntry[];
+  stampContent?: string;
+}
+
+export async function createBrandedZip(
+  zipName: string,
+  files: SizedFile[],
+  outDir: string,
+  options: CreateBrandedZipOptions = {}
+): Promise<string> {
   await fs.promises.mkdir(outDir, { recursive: true });
   const zipPath = path.join(outDir, `${zipName}.zip`);
   const zip = new ZipFile();
@@ -239,7 +262,15 @@ export async function createBrandedZip(zipName: string, files: SizedFile[], outD
   for (const file of files) {
     zip.addFile(file.path, path.basename(file.path));
   }
-  zip.addBuffer(Buffer.from(STEM_ZIPPER_STAMP, 'utf-8'), STAMP_FILENAME, { compress: false });
+  const stamp = options.stampContent ?? STEM_ZIPPER_STAMP;
+  zip.addBuffer(Buffer.from(stamp, 'utf-8'), STAMP_FILENAME, { compress: false });
+
+  if (options.extras) {
+    for (const entry of options.extras) {
+      const buffer = typeof entry.content === 'string' ? Buffer.from(entry.content, 'utf-8') : entry.content;
+      zip.addBuffer(buffer, entry.name, { compress: entry.compress ?? false });
+    }
+  }
 
   return new Promise((resolve, reject) => {
     zip
@@ -322,6 +353,7 @@ export async function packFolder(
   folderPath: string,
   maxSizeMb: number,
   locale: LocaleKey,
+  metadata: NormalizedPackMetadata,
   onProgress: (progress: PackProgress) => void
 ): Promise<number> {
   const maxSizeBytes = maxSizeMb * 1024 * 1024;
@@ -366,7 +398,14 @@ export async function packFolder(
       message: 'packing',
       currentZip: zipName
     });
-    await createBrandedZip(zipName, group, folderPath);
+    const packedAt = new Date().toISOString();
+    const extras = [
+      { name: 'PACK-METADATA.json', content: createPackMetadataJson(metadata) },
+      { name: 'LICENSE.txt', content: createLicenseText(metadata) },
+      { name: 'ATTRIBUTION.txt', content: createAttributionText(metadata) }
+    ];
+    const stampContent = appendMetadataSection(STEM_ZIPPER_STAMP, metadata, locale, packedAt);
+    await createBrandedZip(zipName, group, folderPath, { extras, stampContent });
     onProgress({
       state: 'packing',
       current: index + 1,

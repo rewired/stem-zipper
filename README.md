@@ -11,9 +11,22 @@ Stem ZIPper is now delivered as an Electron application that combines a Vite pow
 - **Best-fit packing** into `stems-XX.zip` archives including the classic Stem ZIPper stamp file.
 - **Automatic mono-splitting** for stereo WAV files that exceed the configured limit.
 - **Multilingual interface** (EN, DE, FR, IT, ES, PT, DA, NO, SV, FI, NL, PL, JA, ZH, TH, KO, CS, RO, UK) that adapts to the operating system locale.
+- **Metadata automation** with a dedicated modal that validates title/artist/license input, remembers preferred defaults and generates `PACK-METADATA.json`, `LICENSE.txt`, and `ATTRIBUTION.txt` alongside packed archives.
+- **Deterministic ZIP estimates** surfaced as renderer toasts that account for stereo split heuristics whenever scans finish or the maximum size changes.
 - **Developer utilities** (available in dev mode) to generate dummy audio files for testing the packing workflow.
+- **JSON-based localisation catalogues** shared between Electron and the renderer, backed by guard tests to ensure mirrored keys and placeholder integrity across languages.
 
 Supported formats remain: `.wav`, `.flac`, `.mp3`, `.aiff`, `.ogg`, `.aac`, `.wma`.
+
+---
+
+## What's new in 1.0.1
+
+- **Contributor automation guide** – `AGENTS.md` now captures CI discipline, localisation rules and review expectations for automated contributions.
+- **Metadata defaults & exports** – The metadata modal persists artist name, URL and contact preferences to streamline repeated pack runs while emitting standard metadata files automatically.
+- **Predictable ZIP counts** – A renderer toast reports how many archives the next pack will create, stays in sync with mono split decisions and clears as soon as packing succeeds.
+- **Localisation pipeline upgrade** – Shared translations moved to flat JSON catalogues with typed helpers so renderer, preload and main processes stay aligned.
+- **Reliability improvements** – Preferences now persist via the filesystem, locale catalogues participate in TypeScript watch mode, and the development runner spawns pnpm watchers directly to eliminate previous crashers and warnings.
 
 ---
 
@@ -112,7 +125,7 @@ The cleanup task removes the `dist-electron/`, `dist-renderer/` and `release/` d
 | Area | Electron implementation |
 | --- | --- |
 | **User interface** | Single-window layout with a header toolbar, drag & drop surface, folder path breadcrumb and a responsive file table. The right-hand status rail mirrors the legacy progress readout, while action buttons (Pack Now, Cancel, Clear) stay anchored at the bottom for accessibility. |
-| **Internationalisation** | The renderer resolves the OS locale (EN, DE, FR, IT, ES, PT, DA, NO, SV, FI, NL, PL, JA, ZH, TH, KO, CS, RO, UK) via the preload bridge, serving shared translations from `app/common/i18n.ts`. Dialogs triggered from the main process reuse the same catalogue to avoid drift between Electron and React copies. |
+| **Internationalisation** | The renderer resolves the OS locale (EN, DE, FR, IT, ES, PT, DA, NO, SV, FI, NL, PL, JA, ZH, TH, KO, CS, RO, UK) via the preload bridge, serving shared JSON catalogues from `app/locales/*.json` through typed helpers in `app/common/i18n`. Dialogs triggered from the main process reuse the same catalogue to avoid drift between Electron and React copies. |
 | **Developer tooling** | Dev-mode exposes the familiar "Create Test Data" button which shells out to the Node dummy-data generator. File sizes, stems count and progress notifications follow the Python defaults to keep test scripts compatible. |
 | **ZIP logic** | Audio analysis, stereo-to-mono splitting and best-fit-decreasing packing now run inside the Electron main process (`app/electron/services/packer`). The workflow persists the `_stem-zipper.txt` stamp file and emits sequential `stems-XX.zip` archives identical to the Tkinter run. |
 
@@ -131,7 +144,7 @@ The cleanup task removes the `dist-electron/`, `dist-renderer/` and `release/` d
 ## Usage tips
 
 1. Choose or drop a folder containing supported audio files.
-2. Adjust the **Max ZIP size (MB)** field if required (defaults to 48 MB, capped at 500 MB).
+2. Adjust the **Max ZIP size (MB)** field if required (defaults to 48 MB, capped at 50 MB).
 3. Review the analysed files in the table – the action column highlights when mono splitting or multi-archive packaging will occur.
 4. Click **Pack Now** to create `stems-XX.zip` files in the source folder. Progress updates mirror the classic Tkinter interface.
 5. In development builds, a **Create Test Data (DEV)** button generates random dummy audio files in a chosen directory.

@@ -7,7 +7,7 @@ import {
   type DragEvent,
   type MouseEvent
 } from 'react';
-import type { FileEntry, PackProgress, PackState } from '@common/ipc';
+import type { FileEntry, PackMetadata, PackProgress, PackState } from '@common/ipc';
 import { DEFAULT_MAX_SIZE_MB, MAX_SIZE_LIMIT_MB } from '@common/constants';
 import { ensureValidMaxSize } from '@common/validation';
 import { Header } from './components/Header';
@@ -20,6 +20,16 @@ import { APP_VERSION } from '@common/version';
 import { DiagOverlay } from './components/DiagOverlay';
 import { ChoiceModal } from './components/ChoiceModal';
 import { useToast } from './components/ui/ToastProvider';
+import { MetadataModal } from './components/MetadataModal';
+import {
+  buildPackMetadata,
+  createEmptyDraft,
+  hasRequiredMetadata,
+  mergeDraftData,
+  updateAutoAttribution,
+  type MetadataDraftData,
+  type MetadataDraftState
+} from './state/metadataStore';
 
 const initialProgress: PackProgress = {
   state: 'idle',
@@ -28,6 +38,27 @@ const initialProgress: PackProgress = {
   percent: 0,
   message: 'pack_status_ready'
 };
+
+function dedupeRecentArtists(values: readonly string[], max = 5): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      continue;
+    }
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    result.push(trimmed);
+    if (result.length >= max) {
+      break;
+    }
+  }
+  return result;
+}
 
 function detectInitialLocale(): LocaleKey {
   const languages = Array.isArray(navigator.languages) ? navigator.languages : [];
@@ -50,16 +81,119 @@ export default function App() {
   const [isOverwriteOpen, setIsOverwriteOpen] = useState(false);
   const [isOverwriteWarnOpen, setIsOverwriteWarnOpen] = useState(false);
   const [pendingAnalyze, setPendingAnalyze] = useState<{ path: string; max: number } | null>(null);
+  const [metadataDrafts, setMetadataDrafts] = useState<Record<string, MetadataDraftState>>({});
+  const [isMetadataOpen, setIsMetadataOpen] = useState(false);
+  const [metadataIntent, setMetadataIntent] = useState<'idle' | 'pack'>('idle');
+  const [metadataSaving, setMetadataSaving] = useState(false);
+  const [userPrefs, setUserPrefs] = useState<{
+    defaultArtist?: string;
+    defaultArtistUrl?: string;
+    defaultContactEmail?: string;
+    recentArtists: string[];
+  }>(() => ({
+    defaultArtist: undefined,
+    defaultArtistUrl: undefined,
+    defaultContactEmail: undefined,
+    recentArtists: []
+  }));
+  const ensureMetadataDraft = useCallback((folder: string) => {
+    setMetadataDrafts((prev) => {
+      if (prev[folder]) {
+        return prev;
+      }
+      return { ...prev, [folder]: createEmptyDraft() };
+    });
+  }, []);
+
+  const updateMetadataDraft = useCallback(
+    (folder: string, updater: (draft: MetadataDraftState) => MetadataDraftState) => {
+      setMetadataDrafts((prev) => {
+        const current = prev[folder] ?? createEmptyDraft();
+        const updated = updater(current);
+        if (updated === current) {
+          if (!prev[folder]) {
+            return { ...prev, [folder]: current };
+          }
+          return prev;
+        }
+        return { ...prev, [folder]: updated };
+      });
+    },
+    []
+  );
   const { show: showToast, dismiss: dismissToast } = useToast();
   const estimateTimeoutRef = useRef<number | null>(null);
   const estimateRequestTokenRef = useRef(0);
   const estimatorErrorLoggedRef = useRef(false);
   const progressStateRef = useRef<PackState>(initialProgress.state);
+  const skipEstimateRef = useRef(false);
 
   const t = useCallback(
     (key: TranslationKey, params: Record<string, string | number> = {}) =>
       formatMessage(locale, key, params),
     [locale]
+  );
+
+  useEffect(() => {
+    if (!window.electronAPI || typeof window.electronAPI.getUserPrefs !== 'function') {
+      return;
+    }
+    window.electronAPI
+      .getUserPrefs({})
+      .then((prefs) => {
+        setUserPrefs({
+          defaultArtist: prefs?.default_artist?.trim() || undefined,
+          defaultArtistUrl: prefs?.default_artist_url?.trim() || undefined,
+          defaultContactEmail: prefs?.default_contact_email?.trim() || undefined,
+          recentArtists: dedupeRecentArtists(prefs?.recent_artists ?? [])
+        });
+      })
+      .catch((error) => {
+        console.warn('Failed to load user preferences', error);
+      });
+  }, []);
+
+  const handleMetadataChange = useCallback(
+    (updates: Partial<MetadataDraftData>) => {
+      if (!folderPath) {
+        return;
+      }
+      updateMetadataDraft(folderPath, (draft) => mergeDraftData(draft, updates));
+    },
+    [folderPath, updateMetadataDraft]
+  );
+
+  const handleRememberDefaultChange = useCallback(
+    (remember: boolean) => {
+      if (!folderPath) {
+        return;
+      }
+      updateMetadataDraft(folderPath, (draft) => ({ ...draft, rememberDefault: remember }));
+    },
+    [folderPath, updateMetadataDraft]
+  );
+
+  const handleAutoAttributionChange = useCallback(
+    (value: string | undefined) => {
+      if (!folderPath) {
+        return;
+      }
+      updateMetadataDraft(folderPath, (draft) => updateAutoAttribution(draft, value));
+    },
+    [folderPath, updateMetadataDraft]
+  );
+
+  const handleOpenMetadata = useCallback(
+    (intent: 'idle' | 'pack' = 'idle') => {
+      if (!folderPath) {
+        return;
+      }
+      ensureMetadataDraft(folderPath);
+      setMetadataIntent(intent);
+      setIsMetadataOpen(true);
+      updateMetadataDraft(folderPath, (draft) => ({ ...draft, everOpened: true }));
+    },
+    [ensureMetadataDraft, folderPath, updateMetadataDraft]
   );
 
   const actionNames = useMemo(
@@ -94,6 +228,7 @@ export default function App() {
         const response = await window.electronAPI.analyzeFolder(targetFolder, currentMaxSize, locale);
         setFiles(response.files);
         setFolderPath(targetFolder);
+        ensureMetadataDraft(targetFolder);
         if (response.maxSizeMb !== currentMaxSize) {
           setMaxSize(response.maxSizeMb);
           setStatusText(
@@ -111,7 +246,7 @@ export default function App() {
         setStatusText(`${t('common_error_title')}: ${(error as Error).message}`);
       }
     },
-    [locale, t]
+    [ensureMetadataDraft, locale, t]
   );
 
   const handleFolderSelection = useCallback(
@@ -159,9 +294,24 @@ export default function App() {
     }
   };
 
-  const performPack = async () => {
+  const performPack = useCallback(async () => {
     if (!folderPath || typeof maxSize !== 'number') {
       setStatusText(t('pack_error_disabled'));
+      return;
+    }
+    const metadataDraft = folderPath ? metadataDrafts[folderPath] : undefined;
+    if (!metadataDraft || !hasRequiredMetadata(metadataDraft.data)) {
+      setStatusText(t('btn_pack_disabled_missing_required'));
+      handleOpenMetadata('pack');
+      return;
+    }
+    let packMetadata;
+    try {
+      packMetadata = buildPackMetadata(metadataDraft.data);
+    } catch (error) {
+      console.warn('Failed to build pack metadata before packing', error);
+      setStatusText(t('btn_pack_disabled_missing_required'));
+      handleOpenMetadata('pack');
       return;
     }
     if (!window.electronAPI || typeof window.electronAPI.startPack !== 'function') {
@@ -174,7 +324,8 @@ export default function App() {
       const total = await window.electronAPI.startPack({
         folderPath,
         maxSizeMb: maxSize,
-        locale
+        locale,
+        packMetadata
       });
       if (total > 0) {
         setStatusText(t('pack_result_success', { count: total }));
@@ -183,6 +334,7 @@ export default function App() {
       } else {
         setStatusText(t('pack_status_no_files'));
       }
+      skipEstimateRef.current = true;
       await analyze(folderPath, maxSize);
     } catch (error) {
       console.error(error);
@@ -190,11 +342,16 @@ export default function App() {
     } finally {
       setIsPacking(false);
     }
-  };
+  }, [analyze, folderPath, handleOpenMetadata, locale, maxSize, metadataDrafts, t]);
 
   const handlePack = async () => {
     if (!folderPath || typeof maxSize !== 'number') {
       setStatusText(t('pack_error_disabled'));
+      return;
+    }
+    if (!currentMetadataDraft || !hasRequiredMetadata(currentMetadataDraft.data)) {
+      setStatusText(t('btn_pack_disabled_missing_required'));
+      handleOpenMetadata('pack');
       return;
     }
     try {
@@ -210,6 +367,82 @@ export default function App() {
     }
     await performPack();
   };
+
+  const handleMetadataSave = useCallback(
+    async (intent: 'save' | 'save_and_pack') => {
+      if (!folderPath) {
+        return;
+      }
+      const draft = metadataDrafts[folderPath] ?? createEmptyDraft();
+      let metadata: PackMetadata;
+      try {
+        metadata = buildPackMetadata(draft.data);
+      } catch (error) {
+        console.warn('Metadata validation failed before saving', error);
+        setStatusText(t('btn_pack_disabled_missing_required'));
+        return;
+      }
+      const sanitized: MetadataDraftData = {
+        title: metadata.title,
+        artist: metadata.artist,
+        licenseId: metadata.license.id,
+        album: metadata.album ?? '',
+        bpm: metadata.bpm ?? '',
+        key: metadata.key ?? '',
+        attribution: metadata.attribution ?? '',
+        artistUrl: metadata.links?.artist_url ?? '',
+        contactEmail: metadata.links?.contact_email ?? ''
+      };
+      setMetadataSaving(true);
+      try {
+        const nextAutoAttribution = sanitized.attribution || `${metadata.artist} — ${metadata.title}`;
+        updateMetadataDraft(folderPath, (current) => ({
+          ...mergeDraftData(current, sanitized),
+          lastAutoAttribution: nextAutoAttribution,
+          everOpened: true,
+          rememberDefault: current.rememberDefault
+        }));
+        if (window.electronAPI && typeof window.electronAPI.setUserPrefs === 'function' && draft.rememberDefault) {
+          await window.electronAPI.setUserPrefs({
+            default_artist: metadata.artist,
+            default_artist_url: metadata.links?.artist_url,
+            default_contact_email: metadata.links?.contact_email
+          });
+        }
+        if (window.electronAPI && typeof window.electronAPI.addRecentArtist === 'function') {
+          await window.electronAPI.addRecentArtist({ artist: metadata.artist });
+        }
+        setUserPrefs((prev) => ({
+          defaultArtist: draft.rememberDefault ? metadata.artist : prev.defaultArtist,
+          defaultArtistUrl: draft.rememberDefault
+            ? metadata.links?.artist_url ?? undefined
+            : prev.defaultArtistUrl,
+          defaultContactEmail: draft.rememberDefault
+            ? metadata.links?.contact_email ?? undefined
+            : prev.defaultContactEmail,
+          recentArtists: dedupeRecentArtists([metadata.artist, ...prev.recentArtists])
+        }));
+        setIsMetadataOpen(false);
+        setMetadataIntent('idle');
+        showToast({
+          id: 'metadata-saved',
+          title: t('panel_pack_metadata_title'),
+          message: t('toast_metadata_saved'),
+          closeLabel: t('common_close'),
+          timeoutMs: 5000
+        });
+        if (intent === 'save_and_pack') {
+          await performPack();
+        }
+      } catch (error) {
+        console.error('Failed to persist metadata preferences', error);
+        setStatusText(t('common_error_title'));
+      } finally {
+        setMetadataSaving(false);
+      }
+    },
+    [folderPath, metadataDrafts, performPack, showToast, t, updateMetadataDraft]
+  );
 
   const handleCreateTestData = async () => {
     if (!window.electronAPI || typeof window.electronAPI.selectFolder !== 'function') {
@@ -329,6 +562,10 @@ export default function App() {
       window.clearTimeout(estimateTimeoutRef.current);
       estimateTimeoutRef.current = null;
     }
+    if (skipEstimateRef.current) {
+      skipEstimateRef.current = false;
+      return;
+    }
     if (progress.state === 'finished') {
       return;
     }
@@ -402,6 +639,19 @@ export default function App() {
     };
   }, [files, locale, maxSize, progress.state, showToast, t]);
 
+  useEffect(() => {
+    if (!folderPath || !files.length || isMetadataOpen) {
+      return;
+    }
+    const draft = metadataDrafts[folderPath];
+    if (!draft) {
+      return;
+    }
+    if (!draft.everOpened && !hasRequiredMetadata(draft.data)) {
+      handleOpenMetadata('idle');
+    }
+  }, [files.length, folderPath, handleOpenMetadata, isMetadataOpen, metadataDrafts]);
+
   const onDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragActive(true);
@@ -423,6 +673,8 @@ export default function App() {
     await handleFolderSelection(itemPath);
   };
 
+  const currentMetadataDraft = folderPath ? metadataDrafts[folderPath] : undefined;
+  const metadataMissingRequired = Boolean(folderPath) && (!currentMetadataDraft || !hasRequiredMetadata(currentMetadataDraft.data));
   const canPack = Boolean(folderPath && files.length > 0 && !isPacking && typeof maxSize === 'number');
   const isDevMode = (window as unknown as { runtimeConfig?: { devMode?: boolean } }).runtimeConfig?.devMode || import.meta.env.DEV;
   const hasElectronAPI = Boolean((window as unknown as { electronAPI?: unknown }).electronAPI);
@@ -473,6 +725,7 @@ export default function App() {
               onExit={() => window.close()}
               onCreateTestData={isDevMode ? handleCreateTestData : undefined}
               onShowInfo={() => setIsInfoOpen(true)}
+              onShowMetadata={() => handleOpenMetadata('idle')}
               canPack={canPack}
               isPacking={isPacking}
               packLabel={t('pack_action_start')}
@@ -480,10 +733,54 @@ export default function App() {
               createTestDataLabel={t('dev_action_create_test_data')}
               devMode={isDevMode}
               infoLabel={t('app_about_label')}
+              metadataLabel={t('btn_metadata_open')}
+              metadataBadgeLabel={t('badge_metadata_missing_required')}
+              showMetadataBadge={metadataMissingRequired}
+              metadataDisabled={!folderPath || isPacking}
             />
           </div>
         </div>
       </main>
+    {isMetadataOpen && folderPath && currentMetadataDraft ? (
+      <MetadataModal
+        modalTitle={t('modal_metadata_title')}
+        draft={currentMetadataDraft.data}
+        rememberDefault={currentMetadataDraft.rememberDefault}
+        lastAutoAttribution={currentMetadataDraft.lastAutoAttribution}
+        defaultArtist={userPrefs.defaultArtist}
+        defaultArtistUrl={userPrefs.defaultArtistUrl}
+        defaultContactEmail={userPrefs.defaultContactEmail}
+        recentArtists={userPrefs.recentArtists}
+        saveLabel={t('modal_save')}
+        saveAndPackLabel={t('modal_save_and_pack')}
+        cancelLabel={t('common_close')}
+        rememberLabel={t('field_artist_remember_label')}
+        requiredHint={t('hint_required')}
+        requiredError={t('error_required')}
+        emailWarning={t('warn_email_invalid')}
+        titleLabel={t('field_title_label')}
+        artistLabel={t('field_artist_label')}
+        licenseLabel={t('field_license_label')}
+        albumLabel={t('field_album_label')}
+        bpmLabel={t('field_bpm_label')}
+        keyLabel={t('field_key_label')}
+        attributionLabel={t('field_attribution_label')}
+        artistUrlLabel={t('field_artist_url_label')}
+        contactEmailLabel={t('field_contact_email_label')}
+        onChange={handleMetadataChange}
+        onRememberDefaultChange={handleRememberDefaultChange}
+        onClose={() => {
+          setIsMetadataOpen(false);
+          setMetadataIntent('idle');
+        }}
+        onSave={handleMetadataSave}
+        onAutoAttributionChange={handleAutoAttributionChange}
+        showSaveAndPack={metadataIntent === 'pack'}
+        saving={metadataSaving}
+        badgeRequiredLabel={t('badge_metadata_missing_required')}
+        prefillKey={folderPath}
+      />
+    ) : null}
     {isInfoOpen ? (
       <InfoModal
         title={`Stem ZIPper v${APP_VERSION}`}

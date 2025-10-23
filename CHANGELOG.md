@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 - Automation contribution guide (`AGENTS.md`) capturing CI discipline, i18n requirements, and reviewer expectations for agents.
 - Renderer toast that surfaces a deterministic ZIP count estimate (with stereo split heuristics) after scans and max-size updates.
 - Lightweight underscore-based i18n policy with flat locale JSONs, helper utilities, and a guard test enforcing mirrored keys and placeholders.
+- Metadata modal in the renderer with required title/artist/license fields, persisted default artist preferences, and automatic `PACK-METADATA.json`, `LICENSE.txt`, and `ATTRIBUTION.txt` generation during packing.
+- Metadata modal now remembers the artist URL and contact email defaults alongside the artist name for faster subsequent runs.
 
 ### Changed
 
@@ -16,10 +18,12 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- Electron preferences service now persists JSON preferences directly via the filesystem, removing the `electron-store` dependency and eliminating the `ERR_REQUIRE_ESM` crash on Node 18+.
 - Electron main and preload TypeScript configs now include locale JSON catalogs, restoring watch mode after expanding the translation set.
 - Development runner now spawns pnpm watchers directly, eliminating the `util._extend` deprecation warning raised by `spawn-command`.
 - Repaired the German localisation catalogue entry so bundlers and the TypeScript compiler can parse the new toast estimate keys without syntax errors.
 - Renderer now dismisses the ZIP estimate toast once packing completes, preventing stale notifications after successful runs.
+- Renderer no longer triggers a fresh ZIP estimate immediately after packing, avoiding redundant toasts during the automatic post-pack rescan.
 ## 1.0.0
 
 ### Added

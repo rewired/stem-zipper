@@ -2,7 +2,11 @@ import type {
   AnalyzeResponse,
   PackProgress,
   PackRequest,
-  TestDataResponse
+  TestDataResponse,
+  UserPrefsAddRecent,
+  UserPrefsGet,
+  UserPrefsResponse,
+  UserPrefsSet
 } from '@common/ipc';
 import type { RuntimeConfig } from '@common/runtime';
 import type { EstimateRequest, EstimateResponse } from '@common/packing/estimator';
@@ -19,6 +23,9 @@ declare global {
       openPath: (path: string) => Promise<void>;
       checkExistingZips: (folderPath: string) => Promise<{ count: number; files: string[] }>;
       estimateZipCount: (request: EstimateRequest) => Promise<EstimateResponse>;
+      getUserPrefs: (request?: UserPrefsGet) => Promise<UserPrefsResponse>;
+      setUserPrefs: (request: UserPrefsSet) => Promise<void>;
+      addRecentArtist: (request: UserPrefsAddRecent) => Promise<void>;
     };
     runtimeConfig: RuntimeConfig;
   }

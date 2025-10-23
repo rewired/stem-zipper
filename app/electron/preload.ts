@@ -3,7 +3,11 @@ import type {
   AnalyzeResponse,
   PackProgress,
   PackRequest,
-  TestDataResponse
+  TestDataResponse,
+  UserPrefsAddRecent,
+  UserPrefsGet,
+  UserPrefsResponse,
+  UserPrefsSet
 } from '../common/ipc';
 import { IPC_CHANNELS } from '../common/ipc';
 import type { RuntimeConfig } from '../common/runtime';
@@ -60,5 +64,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   estimateZipCount(request: EstimateRequest): Promise<EstimateResponse> {
     return ipcRenderer.invoke(IPC_CHANNELS.ESTIMATE, request);
+  },
+  getUserPrefs(request: UserPrefsGet = {}): Promise<UserPrefsResponse> {
+    return ipcRenderer.invoke(IPC_CHANNELS.PREFS_GET, request);
+  },
+  setUserPrefs(request: UserPrefsSet): Promise<void> {
+    return ipcRenderer.invoke(IPC_CHANNELS.PREFS_SET, request);
+  },
+  addRecentArtist(request: UserPrefsAddRecent): Promise<void> {
+    return ipcRenderer.invoke(IPC_CHANNELS.PREFS_ADD_RECENT, request);
   }
 });
