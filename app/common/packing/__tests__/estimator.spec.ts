@@ -5,7 +5,11 @@ import {
   EST_STAMP_BYTES,
   EST_ZIP_OVERHEAD_BYTES
 } from '../constants';
-import { estimateZipCount, type EstimateRequest } from '../estimator';
+import {
+  estimateZipCount,
+  type EstimateFileInput,
+  type EstimateRequest
+} from '../estimator';
 
 const MB = 1024 * 1024;
 
@@ -27,7 +31,7 @@ describe('estimateZipCount', () => {
         { path: 'b.wav', sizeBytes: 20 * MB, kind: 'wav', stereo: true },
         { path: 'c.wav', sizeBytes: 90 * MB, kind: 'wav' },
         { path: 'd.mp3', sizeBytes: 5 * MB, kind: 'mp3', stereo: true }
-      ]
+      ] satisfies EstimateFileInput[]
     });
 
     const result = estimateZipCount(request);
@@ -55,7 +59,7 @@ describe('estimateZipCount', () => {
         targetMB: 0,
         files: [
           { path: 'tiny.wav', sizeBytes: 0, kind: 'wav' }
-        ]
+        ] satisfies EstimateFileInput[]
       })
     );
 
@@ -69,7 +73,7 @@ describe('estimateZipCount', () => {
       { path: 'alpha.wav', sizeBytes: 50 * MB, kind: 'wav', stereo: true },
       { path: 'bravo.flac', sizeBytes: 10.5 * MB, kind: 'flac' },
       { path: 'charlie.mp3', sizeBytes: 4.2 * MB, kind: 'mp3' }
-    ];
+    ] satisfies EstimateFileInput[];
     const request = makeRequest({ targetMB, files });
 
     const result = estimateZipCount(request);
