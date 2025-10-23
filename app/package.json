@@ -139,6 +139,15 @@
     "extraMetadata": {
       "main": "dist-electron/main/electron/main.js"
     },
+    "extraResources": [
+      "LICENSE",
+      "THIRD_PARTY_LICENSES.txt",
+      {
+        "from": "third_party_notices",
+        "to": "third_party_notices",
+        "filter": ["**/*"]
+      }
+    ],
     "win": {
       "target": [
         {
@@ -152,7 +161,8 @@
     "nsis": {
       "oneClick": false,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "license": "LICENSE"
     }
   },
   "packageManager": "pnpm@10.19.0"
