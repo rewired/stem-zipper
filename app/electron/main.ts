@@ -289,13 +289,14 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.PREFS_GET, () => getUserPreferences());
 
   ipcMain.handle(IPC_CHANNELS.PREFS_SET, (_event, request) => {
-    setUserPreferences(request ?? {});
+    return setUserPreferences(request ?? {});
   });
 
   ipcMain.handle(IPC_CHANNELS.PREFS_ADD_RECENT, (_event, request) => {
     if (request && typeof request.artist === 'string') {
-      addRecentArtist(request);
+      return addRecentArtist(request);
     }
+    return undefined;
   });
 
   ipcMain.handle(IPC_CHANNELS.OPEN_EXTERNAL, async (_event, url: string) => {

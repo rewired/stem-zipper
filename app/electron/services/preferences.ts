@@ -1,4 +1,4 @@
-import Store from 'electron-store';
+import type Store from 'electron-store';
 import type { UserPrefsAddRecent, UserPrefsSet } from '../../common/ipc';
 
 interface StoredPreferences {
@@ -6,12 +6,23 @@ interface StoredPreferences {
   recent_artists?: string[];
 }
 
-const store = new Store<StoredPreferences>({
-  name: 'stem-zipper-user-prefs',
-  defaults: {
-    recent_artists: []
+type PreferencesStore = Store<StoredPreferences>;
+
+let storePromise: Promise<PreferencesStore> | null = null;
+
+async function getStore(): Promise<PreferencesStore> {
+  if (!storePromise) {
+    storePromise = import('electron-store').then(({ default: ElectronStore }) =>
+      new ElectronStore<StoredPreferences>({
+        name: 'stem-zipper-user-prefs',
+        defaults: {
+          recent_artists: []
+        }
+      })
+    );
   }
-});
+  return storePromise;
+}
 
 function sanitizeArtist(value: string | undefined): string | undefined {
   if (typeof value !== 'string') {
@@ -21,7 +32,8 @@ function sanitizeArtist(value: string | undefined): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-export function getUserPreferences(): { default_artist?: string; recent_artists: string[] } {
+export async function getUserPreferences(): Promise<{ default_artist?: string; recent_artists: string[] }> {
+  const store = await getStore();
   const defaultArtist = sanitizeArtist(store.get('default_artist'));
   const recentArtistsRaw = store.get('recent_artists') ?? [];
   const recentArtists = recentArtistsRaw
@@ -33,7 +45,8 @@ export function getUserPreferences(): { default_artist?: string; recent_artists:
   };
 }
 
-export function setUserPreferences(request: UserPrefsSet): void {
+export async function setUserPreferences(request: UserPrefsSet): Promise<void> {
+  const store = await getStore();
   const sanitizedDefault = sanitizeArtist(request.default_artist);
   if (sanitizedDefault) {
     store.set('default_artist', sanitizedDefault);
@@ -42,7 +55,8 @@ export function setUserPreferences(request: UserPrefsSet): void {
   }
 }
 
-export function addRecentArtist(request: UserPrefsAddRecent): void {
+export async function addRecentArtist(request: UserPrefsAddRecent): Promise<void> {
+  const store = await getStore();
   const sanitized = sanitizeArtist(request.artist);
   if (!sanitized) {
     return;
