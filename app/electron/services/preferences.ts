@@ -23,7 +23,8 @@ function sanitizeArtist(value: string | undefined): string | undefined {
 
 export function getUserPreferences(): { default_artist?: string; recent_artists: string[] } {
   const defaultArtist = sanitizeArtist(store.get('default_artist'));
-  const recentArtists = (store.get('recent_artists') ?? [])
+  const recentArtistsRaw = store.get('recent_artists') ?? [];
+  const recentArtists = recentArtistsRaw
     .map((artist) => sanitizeArtist(artist))
     .filter((artist): artist is string => Boolean(artist));
   return {
