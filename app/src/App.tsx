@@ -14,20 +14,19 @@ import { Header } from './components/Header';
 import { FileTable } from './components/FileTable';
 import { ProgressPanel } from './components/ProgressPanel';
 import { ActionBar } from './components/ActionBar';
-import { formatMessage, resolveLocale, translations, type LocaleKey } from '@common/i18n';
+import { formatMessage, resolveLocale, type LocaleKey, type TranslationKey } from '@common/i18n';
 import { InfoModal } from './components/InfoModal';
 import { APP_VERSION } from '@common/version';
 import { DiagOverlay } from './components/DiagOverlay';
 import { ChoiceModal } from './components/ChoiceModal';
 import { useToast } from './components/ui/ToastProvider';
-import { tNS } from './i18n';
 
 const initialProgress: PackProgress = {
   state: 'idle',
   current: 0,
   total: 0,
   percent: 0,
-  message: 'ready'
+  message: 'pack_status_ready'
 };
 
 function detectInitialLocale(): LocaleKey {
@@ -42,7 +41,7 @@ export default function App() {
   const [folderPath, setFolderPath] = useState<string | null>(null);
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [progress, setProgress] = useState<PackProgress>(initialProgress);
-  const [statusText, setStatusText] = useState(() => formatMessage(locale, 'ready'));
+  const [statusText, setStatusText] = useState(() => formatMessage(locale, 'pack_status_ready'));
   const [isPacking, setIsPacking] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
@@ -58,16 +57,16 @@ export default function App() {
   const progressStateRef = useRef<PackState>(initialProgress.state);
 
   const t = useCallback(
-    (key: keyof typeof translations.en, params: Record<string, string | number> = {}) =>
+    (key: TranslationKey, params: Record<string, string | number> = {}) =>
       formatMessage(locale, key, params),
     [locale]
   );
 
   const actionNames = useMemo(
     () => ({
-      normal: t('normal'),
-      split_mono: t('split_mono'),
-      split_zip: t('split_zip')
+      normal: t('pack_option_normal'),
+      split_mono: t('pack_option_split_mono'),
+      split_zip: t('pack_option_split_zip')
     }),
     [t]
   );
@@ -81,7 +80,7 @@ export default function App() {
   }, [locale]);
 
   useEffect(() => {
-    document.title = `${tNS('app', 'header_title', undefined, locale)} ${APP_VERSION}`;
+    document.title = `${formatMessage(locale, 'app_title')} ${APP_VERSION}`;
   }, [locale]);
 
   const resetProgress = () => {
@@ -97,15 +96,19 @@ export default function App() {
         setFolderPath(targetFolder);
         if (response.maxSizeMb !== currentMaxSize) {
           setMaxSize(response.maxSizeMb);
-          setStatusText(t('msg_invalid_max_size', { max: MAX_SIZE_LIMIT_MB, reset: response.maxSizeMb }));
+          setStatusText(
+            t('pack_error_invalid_max_size', { max: MAX_SIZE_LIMIT_MB, reset: response.maxSizeMb })
+          );
         } else {
           setStatusText(
-            response.count > 0 ? t('found_files', { count: response.count }) : t('msg_no_files')
+            response.count > 0
+              ? t('pack_status_found_files', { count: response.count })
+              : t('pack_status_no_files')
           );
         }
       } catch (error) {
         console.error(error);
-        setStatusText(`${t('error_title')}: ${(error as Error).message}`);
+        setStatusText(`${t('common_error_title')}: ${(error as Error).message}`);
       }
     },
     [locale, t]
@@ -137,7 +140,7 @@ export default function App() {
 
   const handleSelectFolder = async () => {
     if (!window.electronAPI || typeof window.electronAPI.selectFolder !== 'function') {
-      setStatusText(t('error_title'));
+      setStatusText(t('common_error_title'));
       return;
     }
     const selected = await window.electronAPI.selectFolder();
@@ -149,7 +152,7 @@ export default function App() {
     const sanitized = ensureValidMaxSize(numericValue);
     if (sanitized !== numericValue) {
       setMaxSize(sanitized);
-      setStatusText(t('msg_invalid_max_size', { max: MAX_SIZE_LIMIT_MB, reset: sanitized }));
+      setStatusText(t('pack_error_invalid_max_size', { max: MAX_SIZE_LIMIT_MB, reset: sanitized }));
     }
     if (folderPath) {
       await analyze(folderPath, sanitized);
@@ -158,15 +161,15 @@ export default function App() {
 
   const performPack = async () => {
     if (!folderPath || typeof maxSize !== 'number') {
-      setStatusText(t('pack_disabled'));
+      setStatusText(t('pack_error_disabled'));
       return;
     }
     if (!window.electronAPI || typeof window.electronAPI.startPack !== 'function') {
-      setStatusText(t('error_title'));
+      setStatusText(t('common_error_title'));
       return;
     }
     setIsPacking(true);
-    setStatusText(t('now_packing'));
+    setStatusText(t('pack_status_in_progress'));
     try {
       const total = await window.electronAPI.startPack({
         folderPath,
@@ -174,16 +177,16 @@ export default function App() {
         locale
       });
       if (total > 0) {
-        setStatusText(t('msg_finished', { count: total }));
+        setStatusText(t('pack_result_success', { count: total }));
         setLastPackCount(total);
         setIsRevealOpen(true);
       } else {
-        setStatusText(t('msg_no_files'));
+        setStatusText(t('pack_status_no_files'));
       }
       await analyze(folderPath, maxSize);
     } catch (error) {
       console.error(error);
-      setStatusText(`${t('error_title')}: ${(error as Error).message}`);
+      setStatusText(`${t('common_error_title')}: ${(error as Error).message}`);
     } finally {
       setIsPacking(false);
     }
@@ -191,7 +194,7 @@ export default function App() {
 
   const handlePack = async () => {
     if (!folderPath || typeof maxSize !== 'number') {
-      setStatusText(t('pack_disabled'));
+      setStatusText(t('pack_error_disabled'));
       return;
     }
     try {
@@ -210,7 +213,7 @@ export default function App() {
 
   const handleCreateTestData = async () => {
     if (!window.electronAPI || typeof window.electronAPI.selectFolder !== 'function') {
-      setStatusText(t('error_title'));
+      setStatusText(t('common_error_title'));
       return;
     }
     const target = await window.electronAPI.selectFolder();
@@ -219,14 +222,16 @@ export default function App() {
     }
     try {
       if (!window.electronAPI || typeof window.electronAPI.createTestData !== 'function') {
-        setStatusText(t('error_title'));
+        setStatusText(t('common_error_title'));
         return;
       }
       const response = await window.electronAPI.createTestData(target, locale);
-      setStatusText(t('create_testdata_done', { count: response.count, folder: response.folderPath }));
+      setStatusText(
+        t('dev_message_create_test_data_done', { count: response.count, folder: response.folderPath })
+      );
     } catch (error) {
       console.error(error);
-      setStatusText(`${t('error_title')}: ${(error as Error).message}`);
+      setStatusText(`${t('common_error_title')}: ${(error as Error).message}`);
     }
   };
 
@@ -281,33 +286,35 @@ export default function App() {
         case 'analyzing':
           if (event.message === 'splitting') {
             setStatusText(
-              t('status_splitting_percent', {
+              t('pack_status_splitting_percent', {
                 percent: event.percent
               })
             );
           } else {
-            setStatusText(t('now_packing'));
+            setStatusText(t('pack_status_in_progress'));
           }
           break;
         case 'packing':
           if (event.currentZip) {
             setStatusText(
-              t('status_packing_percent', {
+              t('pack_status_packing_percent', {
                 name: event.currentZip,
                 percent: event.percent
               })
             );
           } else {
-            setStatusText(t('now_packing'));
+            setStatusText(t('pack_status_in_progress'));
           }
           break;
         case 'finished':
-          setStatusText(t('status_done'));
+          setStatusText(t('pack_status_done'));
           dismissToast('estimate');
           break;
         case 'error':
           setStatusText(
-            event.errorMessage ? `${t('error_title')}: ${event.errorMessage}` : t('error_title')
+            event.errorMessage
+              ? `${t('common_error_title')}: ${event.errorMessage}`
+              : t('common_error_title')
           );
           break;
         default:
@@ -372,10 +379,10 @@ export default function App() {
           estimatorErrorLoggedRef.current = false;
           showToast({
             id: 'estimate',
-            title: t('toast.estimate.title'),
-            message: tNS('pack', 'toast_estimate', { count: response.zips }, locale),
-            note: t('toast.estimate.note'),
-            closeLabel: t('close'),
+            title: t('toast_estimate_title'),
+            message: formatMessage(locale, 'pack_toast_estimate', { count: response.zips }),
+            note: t('toast_estimate_note'),
+            closeLabel: formatMessage(locale, 'common_close'),
             timeoutMs: 10_000
           });
         })
@@ -433,28 +440,28 @@ export default function App() {
         title={t('app_title')}
         version={APP_VERSION}
         folderPath={folderPath}
-        selectLabel={t('select_folder')}
-        browseLabel={t('select_hint')}
-        maxSizeLabel={t('max_size_label')}
-        maxSizeTooltip={t('max_size_tooltip')}
+        selectLabel={t('app_select_folder_label')}
+        browseLabel={t('app_select_hint')}
+        maxSizeLabel={t('app_max_size_label')}
+        maxSizeTooltip={t('app_max_size_tooltip')}
         maxSize={maxSize}
         maxSizeLimit={MAX_SIZE_LIMIT_MB}
         onSelectFolder={handleSelectFolder}
         onMaxSizeChange={setMaxSize}
         onMaxSizeBlur={handleMaxSizeBlur}
-        dropHelper={t('drop_helper')}
+        dropHelper={t('app_drop_helper')}
       />
       <main className="flex flex-1 min-h-0 flex-col">
         <div className="flex-1 min-h-0 overflow-y-auto px-8 py-6">
           <FileTable
             files={files}
-            fileLabel={t('table_file')}
-            sizeLabel={t('table_size')}
-            actionLabel={t('table_action')}
+            fileLabel={t('app_table_file')}
+            sizeLabel={t('app_table_size')}
+            actionLabel={t('app_table_action')}
             actionNames={actionNames}
-            emptyLabel={t('select_hint')}
-            helperLabel={t('drop_helper')}
-            sizeUnitLabel={t('size_unit_megabyte')}
+            emptyLabel={t('app_select_hint')}
+            helperLabel={t('app_drop_helper')}
+            sizeUnitLabel={t('common_size_unit_megabyte')}
             formatSize={formatSize}
           />
         </div>
@@ -468,11 +475,11 @@ export default function App() {
               onShowInfo={() => setIsInfoOpen(true)}
               canPack={canPack}
               isPacking={isPacking}
-              packLabel={t('pack_now')}
-              exitLabel={t('exit')}
-              createTestDataLabel={t('create_testdata')}
+              packLabel={t('pack_action_start')}
+              exitLabel={t('common_exit')}
+              createTestDataLabel={t('dev_action_create_test_data')}
               devMode={isDevMode}
-              infoLabel={t('about')}
+              infoLabel={t('app_about_label')}
             />
           </div>
         </div>
@@ -481,16 +488,16 @@ export default function App() {
       <InfoModal
         title={`Stem ZIPper v${APP_VERSION}`}
         text={infoModalContent}
-        closeLabel={t('close')}
+        closeLabel={t('common_close')}
         onClose={() => setIsInfoOpen(false)}
       />
     ) : null}
     {isOverwriteWarnOpen ? (
       <ChoiceModal
-        title={t('overwrite_title')}
-        text={t('overwrite_text')}
-        primaryLabel={t('ignore')}
-        secondaryLabel={t('cancel')}
+        title={t('dialog_overwrite_title')}
+        text={t('dialog_overwrite_text')}
+        primaryLabel={t('common_ignore')}
+        secondaryLabel={t('common_cancel')}
         onPrimary={async () => {
           setIsOverwriteWarnOpen(false);
           const next = pendingAnalyze;
@@ -504,14 +511,14 @@ export default function App() {
           setPendingAnalyze(null);
           setFiles([]);
           setFolderPath(null);
-          setStatusText(t('select_hint'));
+          setStatusText(t('app_select_hint'));
         }}
       />
     ) : null}
       {isDragActive ? (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-blue-500/10 backdrop-blur-sm">
           <div className="rounded-xl border border-blue-400/60 bg-slate-900/90 px-10 py-6 text-center text-lg font-semibold text-blue-100 shadow-xl">
-            {t('drop_helper')}
+            {t('app_drop_helper')}
           </div>
         </div>
       ) : null}
@@ -519,10 +526,10 @@ export default function App() {
     <DiagOverlay hasElectronAPI={hasElectronAPI} hasRuntimeConfig={hasRuntimeConfig} isDev={isDevMode} />
     {isOverwriteOpen ? (
       <ChoiceModal
-        title={t('overwrite_title')}
-        text={t('overwrite_text')}
-        primaryLabel={t('pack_now')}
-        secondaryLabel={t('close')}
+        title={t('dialog_overwrite_title')}
+        text={t('dialog_overwrite_text')}
+        primaryLabel={t('pack_action_start')}
+        secondaryLabel={t('common_close')}
         onPrimary={() => {
           setIsOverwriteOpen(false);
           void performPack();
@@ -532,10 +539,10 @@ export default function App() {
     ) : null}
     {isRevealOpen && folderPath ? (
       <ChoiceModal
-        title={t('status_done')}
-        text={`${t('msg_finished', { count: lastPackCount })}\n${t('open_folder_prompt')}`}
-        primaryLabel={t('browse')}
-        secondaryLabel={t('close')}
+        title={t('pack_status_done')}
+        text={`${t('pack_result_success', { count: lastPackCount })}\n${t('dialog_open_folder_prompt')}`}
+        primaryLabel={t('common_browse')}
+        secondaryLabel={t('common_close')}
         onPrimary={() => {
           setIsRevealOpen(false);
           if (window.electronAPI && typeof window.electronAPI.openPath === 'function') {

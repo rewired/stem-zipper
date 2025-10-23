@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Migrated the shared localisation layer to JSON-based catalogs with typed helpers, updating renderer and Electron callers to use the new key set.
+
 ### Removed
 
 ### Fixed

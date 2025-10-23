@@ -327,7 +327,7 @@ export async function packFolder(
   const maxSizeBytes = maxSizeMb * 1024 * 1024;
   const sizedFiles = scanTargetFolder(folderPath);
   if (sizedFiles.length === 0) {
-    const noFilesMessage = formatMessage(locale, 'msg_no_files');
+    const noFilesMessage = formatMessage(locale, 'pack_status_no_files');
     const error: PackProgress = {
       state: 'error',
       current: 0,
