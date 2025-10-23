@@ -7,7 +7,7 @@ import {
   type DragEvent,
   type MouseEvent
 } from 'react';
-import type { FileEntry, PackProgress } from '@common/ipc';
+import type { FileEntry, PackProgress, PackState } from '@common/ipc';
 import { DEFAULT_MAX_SIZE_MB, MAX_SIZE_LIMIT_MB } from '@common/constants';
 import { ensureValidMaxSize } from '@common/validation';
 import { Header } from './components/Header';
@@ -50,10 +50,11 @@ export default function App() {
   const [isOverwriteOpen, setIsOverwriteOpen] = useState(false);
   const [isOverwriteWarnOpen, setIsOverwriteWarnOpen] = useState(false);
   const [pendingAnalyze, setPendingAnalyze] = useState<{ path: string; max: number } | null>(null);
-  const { show: showToast } = useToast();
+  const { show: showToast, dismiss: dismissToast } = useToast();
   const estimateTimeoutRef = useRef<number | null>(null);
   const estimateRequestTokenRef = useRef(0);
   const estimatorErrorLoggedRef = useRef(false);
+  const progressStateRef = useRef<PackState>(initialProgress.state);
 
   const t = useCallback(
     (key: keyof typeof translations.en, params: Record<string, string | number> = {}) =>
@@ -84,6 +85,7 @@ export default function App() {
 
   const resetProgress = () => {
     setProgress(initialProgress);
+    progressStateRef.current = initialProgress.state;
   };
 
   const analyze = useCallback(
@@ -272,6 +274,7 @@ export default function App() {
       return () => {};
     }
     const removeListener = window.electronAPI.onPackProgress((event) => {
+      progressStateRef.current = event.state;
       setProgress(event);
       switch (event.state) {
         case 'analyzing':
@@ -299,6 +302,7 @@ export default function App() {
           break;
         case 'finished':
           setStatusText(t('status_done'));
+          dismissToast('estimate');
           break;
         case 'error':
           setStatusText(
@@ -310,12 +314,15 @@ export default function App() {
       }
     });
     return removeListener;
-  }, [t]);
+  }, [dismissToast, t]);
 
   useEffect(() => {
     if (estimateTimeoutRef.current !== null) {
       window.clearTimeout(estimateTimeoutRef.current);
       estimateTimeoutRef.current = null;
+    }
+    if (progress.state === 'finished') {
+      return;
     }
     if (!files.length) {
       return;
@@ -349,10 +356,16 @@ export default function App() {
       estimateTimeoutRef.current = null;
       const currentToken = estimateRequestTokenRef.current + 1;
       estimateRequestTokenRef.current = currentToken;
+      if (progressStateRef.current === 'finished') {
+        return;
+      }
       window.electronAPI
         .estimateZipCount(request)
         .then((response) => {
           if (estimateRequestTokenRef.current !== currentToken) {
+            return;
+          }
+          if (progressStateRef.current === 'finished') {
             return;
           }
           estimatorErrorLoggedRef.current = false;
@@ -379,7 +392,7 @@ export default function App() {
         estimateTimeoutRef.current = null;
       }
     };
-  }, [files, maxSize, showToast, t]);
+  }, [files, maxSize, progress.state, showToast, t]);
 
   const onDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
