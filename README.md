@@ -6,12 +6,12 @@ Stem ZIPper is now delivered as an Electron application that combines a Vite pow
 
 ## Highlights
 
-- 🎛️ **Modern desktop UI** built with React, Tailwind CSS and Electron.
-- 🗂️ **Drag & drop** or manual folder selection with live validation of the configured ZIP size target.
-- 📦 **Best-fit packing** into `stems-XX.zip` archives including the classic Stem ZIPper stamp file.
-- 🪄 **Automatic mono-splitting** for stereo WAV files that exceed the configured limit.
-- 🌍 **Multilingual interface** (EN, DE, FR, IT, ES, PT, DA, NO, SV, FI, NL, PL, JA, ZH, TH, KO, CS, RO, UK) that adapts to the operating system locale.
-- 🧪 **Developer utilities** (available in dev mode) to generate dummy audio files for testing the packing workflow.
+- **Modern desktop UI** built with React, Tailwind CSS and Electron.
+- **Drag & drop** or manual folder selection with live validation of the configured ZIP size target.
+- **Best-fit packing** into `stems-XX.zip` archives including the classic Stem ZIPper stamp file.
+- **Automatic mono-splitting** for stereo WAV files that exceed the configured limit.
+- **Multilingual interface** (EN, DE, FR, IT, ES, PT, DA, NO, SV, FI, NL, PL, JA, ZH, TH, KO, CS, RO, UK) that adapts to the operating system locale.
+- **Developer utilities** (available in dev mode) to generate dummy audio files for testing the packing workflow.
 
 Supported formats remain: `.wav`, `.flac`, `.mp3`, `.aiff`, `.ogg`, `.aac`, `.wma`.
 
