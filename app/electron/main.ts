@@ -10,6 +10,7 @@ import type { AnalyzeResponse, PackRequest, TestDataRequest } from '../common/ip
 import { formatMessage, resolveLocale } from '../common/i18n';
 import type { RuntimeConfig } from '../common/runtime';
 import { APP_VERSION } from '../common/version';
+import { estimateZipCount, type EstimateRequest } from '../common/packing/estimator';
 
 let mainWindow: BrowserWindow | null = null;
 let packInProgress = false;
@@ -263,6 +264,15 @@ function registerIpcHandlers(): void {
       count,
       folderPath: formatPathForDisplay(args.folderPath)
     };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.ESTIMATE, async (_event, args: EstimateRequest) => {
+    try {
+      return estimateZipCount(args);
+    } catch (error) {
+      console.error('Failed to compute ZIP estimate', error);
+      throw error;
+    }
   });
 
   ipcMain.handle(IPC_CHANNELS.OPEN_EXTERNAL, async (_event, url: string) => {

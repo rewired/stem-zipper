@@ -5,6 +5,7 @@ import type {
   TestDataResponse
 } from '@common/ipc';
 import type { RuntimeConfig } from '@common/runtime';
+import type { EstimateRequest, EstimateResponse } from '@common/packing/estimator';
 
 declare global {
   interface Window {
@@ -17,6 +18,7 @@ declare global {
       openExternal: (url: string) => Promise<void>;
       openPath: (path: string) => Promise<void>;
       checkExistingZips: (folderPath: string) => Promise<{ count: number; files: string[] }>;
+      estimateZipCount: (request: EstimateRequest) => Promise<EstimateResponse>;
     };
     runtimeConfig: RuntimeConfig;
   }

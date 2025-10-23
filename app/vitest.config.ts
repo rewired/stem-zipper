@@ -7,8 +7,14 @@ export default defineConfig({
     globals: false,
     include: [
       'electron/**/*.test.ts',
-      'electron/**/__tests__/**/*.test.ts',
-      'scripts/**/__tests__/**/*.test.ts'
+      'electron/**/__tests__/**/*.{test,spec}.ts',
+      'scripts/**/__tests__/**/*.{test,spec}.ts',
+      'common/**/__tests__/**/*.{test,spec}.ts',
+      'src/**/__tests__/**/*.{test,spec}.ts',
+      'src/**/__tests__/**/*.{test,spec}.tsx'
+    ],
+    environmentMatchGlobs: [
+      ['src/**', 'jsdom']
     ],
     coverage: {
       reporter: ['text', 'html'],
