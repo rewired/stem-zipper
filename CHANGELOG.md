@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- Electron main and preload TypeScript configs now include locale JSON catalogs, restoring watch mode after expanding the translation set.
+- Development runner now spawns pnpm watchers directly, eliminating the `util._extend` deprecation warning raised by `spawn-command`.
 - Repaired the German localisation catalogue entry so bundlers and the TypeScript compiler can parse the new toast estimate keys without syntax errors.
 - Renderer now dismisses the ZIP estimate toast once packing completes, preventing stale notifications after successful runs.
 ## 1.0.0

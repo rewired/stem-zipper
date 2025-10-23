@@ -9,6 +9,7 @@
     "types/**/*.ts",
     "types/**/*.d.ts",
     "../common/**/*.ts",
+    "../locales/**/*.json",
     "../package.json"
   ]
 }
