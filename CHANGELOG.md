@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## 1.0.1 - unreleased
 
 ### Added
 - Automation contribution guide (`AGENTS.md`) capturing CI discipline, i18n requirements, and reviewer expectations for agents.
 - Renderer toast that surfaces a deterministic ZIP count estimate (with stereo split heuristics) after scans and max-size updates.
+
+### Changed
+
+### Removed
+
+### Fixed
+
+## 1.0.0
+
+### Added
 - Continuous integration workflow validating linting, type safety and test suites on Node 18 with pnpm caching.
 - Expanded the shared localisation catalogue with Danish, Norwegian, Swedish, Finnish, Dutch, Polish, Japanese, Chinese, Thai, Korean, Czech, Romanian and Ukrainian translations.
 - Reusable Material Symbols helper component for consistent inline icons in the renderer UI.
