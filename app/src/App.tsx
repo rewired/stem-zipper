@@ -20,6 +20,7 @@ import { APP_VERSION } from '@common/version';
 import { DiagOverlay } from './components/DiagOverlay';
 import { ChoiceModal } from './components/ChoiceModal';
 import { useToast } from './components/ui/ToastProvider';
+import { tNS } from './i18n';
 
 const initialProgress: PackProgress = {
   state: 'idle',
@@ -80,8 +81,8 @@ export default function App() {
   }, [locale]);
 
   useEffect(() => {
-    document.title = `${t('app_title')} ${APP_VERSION}`;
-  }, [t]);
+    document.title = `${tNS('app', 'header_title', undefined, locale)} ${APP_VERSION}`;
+  }, [locale]);
 
   const resetProgress = () => {
     setProgress(initialProgress);
@@ -372,7 +373,7 @@ export default function App() {
           showToast({
             id: 'estimate',
             title: t('toast.estimate.title'),
-            message: t('toast.estimate.body', { zips: response.zips }),
+            message: tNS('pack', 'toast_estimate', { count: response.zips }, locale),
             note: t('toast.estimate.note'),
             closeLabel: t('close'),
             timeoutMs: 10_000
@@ -392,7 +393,7 @@ export default function App() {
         estimateTimeoutRef.current = null;
       }
     };
-  }, [files, maxSize, progress.state, showToast, t]);
+  }, [files, locale, maxSize, progress.state, showToast, t]);
 
   const onDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();

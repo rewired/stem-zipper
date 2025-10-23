@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Automation contribution guide (`AGENTS.md`) capturing CI discipline, i18n requirements, and reviewer expectations for agents.
 - Renderer toast that surfaces a deterministic ZIP count estimate (with stereo split heuristics) after scans and max-size updates.
+- Lightweight underscore-based i18n policy with flat locale JSONs, helper utilities, and a guard test enforcing mirrored keys and placeholders.
 
 ### Changed
 

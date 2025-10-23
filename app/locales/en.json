@@ -1,0 +1,6 @@
+{
+  "app_header_title": "Stem ZIPper",
+  "pack_toast_estimate": "Estimated archives: {{count}}",
+  "app_status_ready": "Ready",
+  "pack_status_packing": "Creating {{name}}…"
+}
