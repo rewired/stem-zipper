@@ -8,11 +8,15 @@ const MAX_RECENT_ARTISTS = 5;
 
 interface StoredPreferences {
   default_artist?: string;
+  default_artist_url?: string;
+  default_contact_email?: string;
   recent_artists: string[];
 }
 
 type RawStoredPreferences = Partial<{
   default_artist: unknown;
+  default_artist_url: unknown;
+  default_contact_email: unknown;
   recent_artists: unknown;
 }>;
 
@@ -25,6 +29,29 @@ function sanitizeArtist(value: string | undefined): string | undefined {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function sanitizeArtistUrl(value: string | undefined): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(value);
+}
+
+function sanitizeContactEmail(value: string | undefined): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  return isValidEmail(trimmed) ? trimmed : undefined;
 }
 
 function isErrnoException(error: unknown): error is NodeJS.ErrnoException {
@@ -40,8 +67,16 @@ function resolvePreferencesFilePath(): string {
 }
 
 function normaliseStoredPreferences(input?: RawStoredPreferences | null): StoredPreferences {
-  const sanitizedDefault =
+  const sanitizedDefaultArtist =
     typeof input?.default_artist === 'string' ? sanitizeArtist(input.default_artist) : undefined;
+  const sanitizedDefaultArtistUrl =
+    typeof input?.default_artist_url === 'string'
+      ? sanitizeArtistUrl(input.default_artist_url)
+      : undefined;
+  const sanitizedDefaultContactEmail =
+    typeof input?.default_contact_email === 'string'
+      ? sanitizeContactEmail(input.default_contact_email)
+      : undefined;
   const seen = new Set<string>();
   const recentArtists: string[] = [];
   const rawRecent = Array.isArray(input?.recent_artists) ? input.recent_artists : [];
@@ -63,12 +98,17 @@ function normaliseStoredPreferences(input?: RawStoredPreferences | null): Stored
       break;
     }
   }
-
   const result: StoredPreferences = {
     recent_artists: recentArtists
   };
-  if (sanitizedDefault) {
-    result.default_artist = sanitizedDefault;
+  if (sanitizedDefaultArtist) {
+    result.default_artist = sanitizedDefaultArtist;
+  }
+  if (sanitizedDefaultArtistUrl) {
+    result.default_artist_url = sanitizedDefaultArtistUrl;
+  }
+  if (sanitizedDefaultContactEmail) {
+    result.default_contact_email = sanitizedDefaultContactEmail;
   }
   return result;
 }
@@ -114,25 +154,49 @@ function queueMutation(task: () => Promise<void>): Promise<void> {
 
 export async function getUserPreferences(): Promise<{
   default_artist?: string;
+  default_artist_url?: string;
+  default_contact_email?: string;
   recent_artists: string[];
 }> {
   await mutationQueue;
   const stored = await readStoredPreferencesFromDisk();
   return {
     default_artist: stored.default_artist,
+    default_artist_url: stored.default_artist_url,
+    default_contact_email: stored.default_contact_email,
     recent_artists: [...stored.recent_artists]
   };
 }
 
 export async function setUserPreferences(request: UserPrefsSet): Promise<void> {
-  const sanitizedDefault = sanitizeArtist(request.default_artist);
+  const sanitizedDefaultArtist = sanitizeArtist(request.default_artist);
+  const sanitizedDefaultArtistUrl = sanitizeArtistUrl(request.default_artist_url);
+  const sanitizedDefaultContactEmail = sanitizeContactEmail(request.default_contact_email);
   await queueMutation(async () => {
     const stored = await readStoredPreferencesFromDisk();
     const next: StoredPreferences = {
       recent_artists: stored.recent_artists
     };
-    if (sanitizedDefault) {
-      next.default_artist = sanitizedDefault;
+    if ('default_artist' in request) {
+      if (sanitizedDefaultArtist) {
+        next.default_artist = sanitizedDefaultArtist;
+      }
+    } else if (stored.default_artist) {
+      next.default_artist = stored.default_artist;
+    }
+    if ('default_artist_url' in request) {
+      if (sanitizedDefaultArtistUrl) {
+        next.default_artist_url = sanitizedDefaultArtistUrl;
+      }
+    } else if (stored.default_artist_url) {
+      next.default_artist_url = stored.default_artist_url;
+    }
+    if ('default_contact_email' in request) {
+      if (sanitizedDefaultContactEmail) {
+        next.default_contact_email = sanitizedDefaultContactEmail;
+      }
+    } else if (stored.default_contact_email) {
+      next.default_contact_email = stored.default_contact_email;
     }
     await writeStoredPreferencesToDisk(next);
   });
@@ -157,6 +221,12 @@ export async function addRecentArtist(request: UserPrefsAddRecent): Promise<void
     const currentDefault = stored.default_artist;
     if (currentDefault) {
       next.default_artist = currentDefault.toLowerCase() === lowered ? sanitized : currentDefault;
+    }
+    if (stored.default_artist_url) {
+      next.default_artist_url = stored.default_artist_url;
+    }
+    if (stored.default_contact_email) {
+      next.default_contact_email = stored.default_contact_email;
     }
     await writeStoredPreferencesToDisk(next);
   });

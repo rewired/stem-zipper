@@ -57,13 +57,20 @@ afterEach(async () => {
 describe('preferences service', () => {
   it('reads preferences lazily and sanitises results', async () => {
     const emptyResult = await getUserPreferences();
-    expect(emptyResult).toEqual({ default_artist: undefined, recent_artists: [] });
+    expect(emptyResult).toEqual({
+      default_artist: undefined,
+      default_artist_url: undefined,
+      default_contact_email: undefined,
+      recent_artists: []
+    });
 
     await fs.writeFile(
       preferencesFilePath(),
       JSON.stringify(
         {
           default_artist: '  Beyoncé  ',
+          default_artist_url: '  https://beyonce.example  ',
+          default_contact_email: '  contact@example.com  ',
           recent_artists: ['  Beyoncé  ', '', 'Prince', '   ', '  prince  ', 'Extra']
         },
         null,
@@ -75,18 +82,33 @@ describe('preferences service', () => {
     const populated = await getUserPreferences();
     expect(populated).toEqual({
       default_artist: 'Beyoncé',
+      default_artist_url: 'https://beyonce.example',
+      default_contact_email: 'contact@example.com',
       recent_artists: ['Beyoncé', 'Prince', 'Extra']
     });
   });
 
   it('updates the default artist while trimming invalid values', async () => {
-    const request: UserPrefsSet = { default_artist: '  Prince  ' };
+    const request: UserPrefsSet = {
+      default_artist: '  Prince  ',
+      default_artist_url: '  https://prince.example  ',
+      default_contact_email: '  artist@example.com  '
+    };
     await setUserPreferences(request);
 
     const stored = JSON.parse(await fs.readFile(preferencesFilePath(), 'utf8'));
-    expect(stored).toEqual({ default_artist: 'Prince', recent_artists: [] });
+    expect(stored).toEqual({
+      default_artist: 'Prince',
+      default_artist_url: 'https://prince.example',
+      default_contact_email: 'artist@example.com',
+      recent_artists: []
+    });
 
-    await setUserPreferences({ default_artist: '   ' });
+    await setUserPreferences({
+      default_artist: '   ',
+      default_artist_url: '   ',
+      default_contact_email: 'invalid-email'
+    });
     const cleared = JSON.parse(await fs.readFile(preferencesFilePath(), 'utf8'));
     expect(cleared).toEqual({ recent_artists: [] });
   });
@@ -97,6 +119,8 @@ describe('preferences service', () => {
       JSON.stringify(
         {
           default_artist: 'Existing',
+          default_artist_url: 'https://existing.example',
+          default_contact_email: 'existing@example.com',
           recent_artists: ['Existing', 'Other']
         },
         null,
@@ -123,5 +147,7 @@ describe('preferences service', () => {
     const stored = JSON.parse(await fs.readFile(preferencesFilePath(), 'utf8'));
     expect(stored.recent_artists).toEqual(['Fifth', 'Fourth', 'Third', 'Another', 'New One']);
     expect(stored.default_artist).toBe('existing');
+    expect(stored.default_artist_url).toBe('https://existing.example');
+    expect(stored.default_contact_email).toBe('existing@example.com');
   });
 });

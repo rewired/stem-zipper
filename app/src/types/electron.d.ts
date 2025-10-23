@@ -5,6 +5,7 @@ import type {
   TestDataResponse,
   UserPrefsAddRecent,
   UserPrefsGet,
+  UserPrefsResponse,
   UserPrefsSet
 } from '@common/ipc';
 import type { RuntimeConfig } from '@common/runtime';
@@ -22,7 +23,7 @@ declare global {
       openPath: (path: string) => Promise<void>;
       checkExistingZips: (folderPath: string) => Promise<{ count: number; files: string[] }>;
       estimateZipCount: (request: EstimateRequest) => Promise<EstimateResponse>;
-      getUserPrefs: (request?: UserPrefsGet) => Promise<{ default_artist?: string; recent_artists?: string[] }>;
+      getUserPrefs: (request?: UserPrefsGet) => Promise<UserPrefsResponse>;
       setUserPrefs: (request: UserPrefsSet) => Promise<void>;
       addRecentArtist: (request: UserPrefsAddRecent) => Promise<void>;
     };

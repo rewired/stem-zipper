@@ -6,6 +6,7 @@ import type {
   TestDataResponse,
   UserPrefsAddRecent,
   UserPrefsGet,
+  UserPrefsResponse,
   UserPrefsSet
 } from '../common/ipc';
 import { IPC_CHANNELS } from '../common/ipc';
@@ -64,7 +65,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   estimateZipCount(request: EstimateRequest): Promise<EstimateResponse> {
     return ipcRenderer.invoke(IPC_CHANNELS.ESTIMATE, request);
   },
-  getUserPrefs(request: UserPrefsGet = {}): Promise<{ default_artist?: string; recent_artists?: string[] }> {
+  getUserPrefs(request: UserPrefsGet = {}): Promise<UserPrefsResponse> {
     return ipcRenderer.invoke(IPC_CHANNELS.PREFS_GET, request);
   },
   setUserPrefs(request: UserPrefsSet): Promise<void> {
