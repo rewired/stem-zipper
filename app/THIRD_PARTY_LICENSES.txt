@@ -48,7 +48,7 @@
 │  ├─ path: D:\__DEV\stem-zipper\app\node_modules\scheduler
 │  └─ licenseFile: node_modules\scheduler\LICENSE
 ├─ stem-zipper-electron@1.0.0
-│  ├─ licenses: [1m[31mUNLICENSED[39m[22m
+│  ├─ licenses: MIT
 │  ├─ private: true
 │  ├─ publisher: Björn Ahlers
 │  └─ path: D:\__DEV\stem-zipper\app
