@@ -11,6 +11,8 @@ import { formatMessage, resolveLocale } from '../common/i18n';
 import type { RuntimeConfig } from '../common/runtime';
 import { APP_VERSION } from '../common/version';
 import { estimateZipCount, type EstimateRequest } from '../common/packing/estimator';
+import { getUserPreferences, setUserPreferences, addRecentArtist } from './services/preferences';
+import { normalizePackMetadata } from './services/packMetadata';
 
 let mainWindow: BrowserWindow | null = null;
 let packInProgress = false;
@@ -210,6 +212,15 @@ function registerIpcHandlers(): void {
     const sanitizedMax = ensureValidMaxSize(args.maxSizeMb);
     const config = getRuntimeConfig();
     const locale = resolveLocale(args.locale, config.locale);
+    let normalizedMetadata;
+    try {
+      normalizedMetadata = normalizePackMetadata(args.packMetadata);
+    } catch (error) {
+      console.warn('Pack request rejected due to incomplete metadata', error);
+      const friendly = formatMessage(locale, 'btn_pack_disabled_missing_required');
+      packInProgress = false;
+      throw new Error(friendly);
+    }
     try {
       const entries = await fs.promises.readdir(args.folderPath, { withFileTypes: true });
       const existing = entries.filter((e) => e.isFile() && /^stems-.*\.zip$/i.test(e.name));
@@ -233,7 +244,7 @@ function registerIpcHandlers(): void {
       console.warn('Failed to check for existing ZIPs before packing', e);
     }
     try {
-      const total = await packFolder(args.folderPath, sanitizedMax, locale, (progress) => {
+      const total = await packFolder(args.folderPath, sanitizedMax, locale, normalizedMetadata, (progress) => {
         event.sender.send(IPC_CHANNELS.PACK_PROGRESS, progress);
       });
       return total;
@@ -272,6 +283,18 @@ function registerIpcHandlers(): void {
     } catch (error) {
       console.error('Failed to compute ZIP estimate', error);
       throw error;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.PREFS_GET, () => getUserPreferences());
+
+  ipcMain.handle(IPC_CHANNELS.PREFS_SET, (_event, request) => {
+    setUserPreferences(request ?? {});
+  });
+
+  ipcMain.handle(IPC_CHANNELS.PREFS_ADD_RECENT, (_event, request) => {
+    if (request && typeof request.artist === 'string') {
+      addRecentArtist(request);
     }
   });
 

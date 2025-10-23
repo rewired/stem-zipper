@@ -10,7 +10,10 @@ export const IPC_CHANNELS = {
   OPEN_EXTERNAL: 'open-external',
   OPEN_PATH: 'open-path',
   CHECK_EXISTING_ZIPS: 'check-existing-zips',
-  ESTIMATE: 'estimator:estimate'
+  ESTIMATE: 'estimator:estimate',
+  PREFS_GET: 'prefs:get',
+  PREFS_SET: 'prefs:set',
+  PREFS_ADD_RECENT: 'prefs:addRecent'
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
@@ -33,10 +36,24 @@ export interface AnalyzeResponse {
   maxSizeMb: number;
 }
 
+export type LicenseId = 'CC0-1.0' | 'CC-BY-4.0' | 'CC-BY-SA-4.0' | 'CC-BY-NC-4.0';
+
+export interface PackMetadata {
+  title: string;
+  artist: string;
+  license: { id: LicenseId };
+  album?: string;
+  bpm?: string;
+  key?: string;
+  attribution?: string;
+  links?: { artist_url?: string; contact_email?: string };
+}
+
 export interface PackRequest {
   folderPath: string;
   maxSizeMb: number;
   locale: string;
+  packMetadata: PackMetadata;
 }
 
 export type PackState = 'idle' | 'analyzing' | 'packing' | 'finished' | 'error';
@@ -70,3 +87,9 @@ export interface CheckExistingZipsResponse {
   count: number;
   files: string[];
 }
+
+export type UserPrefsGet = Record<string, never>;
+
+export type UserPrefsSet = { default_artist?: string };
+
+export type UserPrefsAddRecent = { artist: string };
