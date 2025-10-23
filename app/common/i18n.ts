@@ -76,80 +76,26 @@ export const translations = {
   de: {
     app_title: 'Stem ZIPper',
     about: 'Info',
-    testdata_dev_only: 'Das Erstellen von Testdaten ist nur im Entwicklermodus verfügbar.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'La génération de données de test est uniquement disponible en mode développeur.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'La generazione di dati di test è disponibile solo in modalità sviluppatore.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'La generación de datos de prueba solo está disponible en modo desarrollador.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'A geração de dados de teste está disponível apenas no modo desenvolvedor.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'Generering af testdata er kun tilgængelig i udviklertilstand.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'Generering av testdata er kun tilgjengelig i utviklermodus.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'Generering av testdata är endast tillgänglig i utvecklarläge.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'Testiaineiston luonti on käytettävissä vain kehittäjätilassa.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'Het genereren van testgegevens is alleen beschikbaar in ontwikkelaarsmodus.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'Generowanie danych testowych jest dostępne tylko w trybie deweloperskim.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'テストデータの生成は開発者モードでのみ利用できます。',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: '仅在开发者模式下可生成测试数据。',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'การสร้างข้อมูลทดสอบใช้ได้เฉพาะในโหมดนักพัฒนา.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: '테스트 데이터 생성은 개발자 모드에서만 사용할 수 있습니다.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'Generování testovacích dat je dostupné pouze v režimu vývojáře.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'Generarea datelor de test este disponibilă doar în modul dezvoltator.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    testdata_dev_only: 'Створення тестових даних доступне лише в режимі розробника.',
-    'toast.estimate.title': 'Estimate',
-    'toast.estimate.body': 'This run will likely produce ≈ {zips} ZIP archive(s).',
-    'toast.estimate.note': 'Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.'
-    msg_invalid_max_size: 'Bitte einen Wert gr枚脽er als 0 und h枚chstens {max} MB eingeben. Zur眉cksetzen auf {reset} MB.',
-    choose_folder: 'Ordner w盲hlen',
+    close: 'Schließen',
+    about_text: 'Stem ZIPper Version {version}. Verwalten und packen Sie Ihre Audio-Stems mühelos.',
+    select_folder: 'Ordner auswählen',
+    header_label: 'Ordner auswählen oder hineinziehen:',
+    max_size_label: 'Max. ZIP-Größe (MB):',
+    max_size_tooltip: 'Zielgröße pro ZIP-Archiv festlegen.',
+    table_file: 'Datei',
+    table_size: 'Größe',
+    size_unit_megabyte: 'MB',
+    table_action: 'Aktion',
+    ready: 'Bereit',
+    found_files: '{count} Dateien gefunden.',
+    pack_now: 'Jetzt packen',
+    status_packing: '{name} wird erstellt...',
+    status_done: 'Fertig.',
+    status_packing_percent: '{name} wird erstellt... ({percent}%)',
+    msg_no_files: 'Keine unterstützten Audiodateien gefunden.',
+    msg_finished: '{count} ZIP-Dateien erfolgreich erstellt.',
+    msg_invalid_max_size: 'Bitte einen Wert größer als 0 und höchstens {max} MB eingeben. Zurücksetzen auf {reset} MB.',
+    choose_folder: 'Ordner wählen',
     create_testdata: 'Testdaten erstellen (DEV)',
     exit: 'Beenden',
     split_mono: 'Mono-Split',
@@ -158,8 +104,8 @@ export const translations = {
     drop_helper: 'Ordner irgendwo im Fenster ablegen',
     dev_label: 'Entwicklermodus',
     now_packing: 'Wird gepackt...',
-    select_hint: 'Ordner ziehen oder ausw盲hlen, um zu starten',
-    pack_disabled: 'Ordner w盲hlen, um Packen zu aktivieren',
+    select_hint: 'Ordner ziehen oder auswählen, um zu starten',
+    pack_disabled: 'Ordner wählen, um Packen zu aktivieren',
     create_testdata_done: '{count} Dummy-Dateien erstellt in\n{folder}',
     error_title: 'Es ist ein Fehler aufgetreten',
     browse: 'Durchsuchen',
@@ -168,9 +114,12 @@ export const translations = {
     ignore: 'Ignorieren',
     cancel: 'Abbrechen',
     overwrite_title: 'Vorhandene ZIPs gefunden',
-    overwrite_text: 'In diesem Ordner befinden sich bereits stems-*.zip-Dateien. Bestehende Dateien werden 眉berschrieben. Fortfahren?',
-    open_folder_prompt: 'Ordner mit den erstellten ZIP-Dateien 枚ffnen?',
-    testdata_dev_only: 'Das Erstellen von Testdaten ist nur im Entwicklermodus verf眉gbar.'
+    overwrite_text: 'In diesem Ordner befinden sich bereits stems-*.zip-Dateien. Bestehende Dateien werden überschrieben. Fortfahren?',
+    open_folder_prompt: 'Ordner mit den erstellten ZIP-Dateien öffnen?',
+    testdata_dev_only: 'Das Erstellen von Testdaten ist nur im Entwicklermodus verfügbar.',
+    'toast.estimate.title': 'Schätzung',
+    'toast.estimate.body': 'Dieser Durchlauf erzeugt voraussichtlich ≈ {zips} ZIP-Archiv(e).',
+    'toast.estimate.note': 'Die Schätzung berücksichtigt Mono-Splitting übergroßer Stereo-WAVs sowie Archiv-Overhead. Die endgültige Anzahl kann leicht abweichen.'
   },
   fr: {
     app_title: 'Stem ZIPper',

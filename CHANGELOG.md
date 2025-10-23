@@ -13,7 +13,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
-
+- Repaired the German localisation catalogue entry so bundlers and the TypeScript compiler can parse the new toast estimate keys without syntax errors.
 ## 1.0.0
 
 ### Added
