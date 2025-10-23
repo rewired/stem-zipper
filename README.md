@@ -144,7 +144,7 @@ The cleanup task removes the `dist-electron/`, `dist-renderer/` and `release/` d
 ## Usage tips
 
 1. Choose or drop a folder containing supported audio files.
-2. Adjust the **Max ZIP size (MB)** field if required (defaults to 48 MB, capped at 500 MB).
+2. Adjust the **Max ZIP size (MB)** field if required (defaults to 48 MB, capped at 50 MB).
 3. Review the analysed files in the table – the action column highlights when mono splitting or multi-archive packaging will occur.
 4. Click **Pack Now** to create `stems-XX.zip` files in the source folder. Progress updates mirror the classic Tkinter interface.
 5. In development builds, a **Create Test Data (DEV)** button generates random dummy audio files in a chosen directory.
