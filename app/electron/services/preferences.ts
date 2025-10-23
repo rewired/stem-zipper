@@ -1,24 +1,26 @@
-import type Store from 'electron-store';
 import type { UserPrefsAddRecent, UserPrefsSet } from '../../common/ipc';
+import { loadElectronStore } from './electronStoreLoader';
+import type { ElectronPreferencesStore } from './electronStoreLoader';
 
 interface StoredPreferences {
   default_artist?: string;
   recent_artists?: string[];
 }
 
-type PreferencesStore = Store<StoredPreferences>;
+type PreferencesStore = ElectronPreferencesStore<StoredPreferences>;
 
 let storePromise: Promise<PreferencesStore> | null = null;
 
 async function getStore(): Promise<PreferencesStore> {
   if (!storePromise) {
-    storePromise = import('electron-store').then(({ default: ElectronStore }) =>
-      new ElectronStore<StoredPreferences>({
-        name: 'stem-zipper-user-prefs',
-        defaults: {
-          recent_artists: []
-        }
-      })
+    storePromise = loadElectronStore().then(
+      (ElectronStore) =>
+        new ElectronStore<StoredPreferences>({
+          name: 'stem-zipper-user-prefs',
+          defaults: {
+            recent_artists: []
+          }
+        })
     );
   }
   return storePromise;
@@ -71,4 +73,8 @@ export async function addRecentArtist(request: UserPrefsAddRecent): Promise<void
   if (currentDefault.toLowerCase() === sanitized.toLowerCase()) {
     store.set('default_artist', sanitized);
   }
+}
+
+export function __resetPreferencesForTests(): void {
+  storePromise = null;
 }
