@@ -1,8 +1,8 @@
 import type { ChangeEvent } from 'react';
 import { clsx } from 'clsx';
-import { MaterialIcon } from './icons/MaterialIcon';
+import { MaterialIcon } from '../../components/icons/MaterialIcon';
 
-interface HeaderProps {
+interface FileToolbarProps {
   title: string;
   version: string;
   folderPath: string | null;
@@ -18,7 +18,7 @@ interface HeaderProps {
   dropHelper: string;
 }
 
-export function Header({
+export function FileToolbar({
   title,
   version,
   folderPath,
@@ -31,8 +31,8 @@ export function Header({
   onSelectFolder,
   onMaxSizeChange,
   onMaxSizeBlur,
-  dropHelper: _dropHelper
-}: HeaderProps) {
+  dropHelper
+}: FileToolbarProps) {
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     if (value === '') {
@@ -73,6 +73,9 @@ export function Header({
           <MaterialIcon icon="folder_open" />
           {selectLabel}
         </button>
+        <div className="flex flex-col gap-1 text-xs text-slate-400 md:col-start-1 md:row-start-3">
+          <span>{dropHelper}</span>
+        </div>
         <div className="flex items-center gap-3 text-sm text-slate-200 md:col-start-2 md:row-start-2 md:justify-self-end">
           <label htmlFor="max-size" className="font-medium">
             {maxSizeLabel}

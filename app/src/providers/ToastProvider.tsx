@@ -9,7 +9,7 @@ import {
   useState
 } from 'react';
 import { createPortal } from 'react-dom';
-import { MaterialIcon } from '../icons/MaterialIcon';
+import { MaterialIcon } from '../components/icons/MaterialIcon';
 
 export interface ShowToastOptions {
   id?: string;

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { LicenseId } from '@common/ipc';
-import { MaterialIcon } from './icons/MaterialIcon';
-import type { MetadataDraftData } from '../state/metadataStore';
+import { MaterialIcon } from '../../components/icons/MaterialIcon';
+import type { MetadataDraftData } from '../../state/metadataStore';
 
 const LICENSE_IDS: LicenseId[] = ['CC0-1.0', 'CC-BY-4.0', 'CC-BY-SA-4.0', 'CC-BY-NC-4.0'];
 

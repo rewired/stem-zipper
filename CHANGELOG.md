@@ -9,12 +9,14 @@ All notable changes to this project will be documented in this file.
   about unsupported audio during packing.
 - Renderer batch table now surfaces localized warning badges for lossy files that would exceed the configured max ZIP size or
   trigger extra volumes.
+- Renderer adds a front-end pack method selector (ZIP vs 7z) ahead of the upcoming multi-archive backend work.
 
 ### Changed
 - Renderer now debounces ZIP estimate requests and pairs them with the latest analysis token to prevent stale toasts.
 - Renderer toast estimates now use underscore keys with concise start/result/error copy shared across locales.
 - Development workflow now delegates to `concurrently` with named stream prefixes and signal-aware teardown so `pnpm run dev` exits cleanly across platforms.
 - Repository root now exposes pnpm workspace scripts, enabling `pnpm run dev|build|lint|typecheck|test|package` without `cd app` and aligning CI with the monorepo layout.
+- Renderer shell split into feature-focused providers and routes, shrinking `App.tsx` while clarifying pack and metadata flows.
 
 ### Removed
 

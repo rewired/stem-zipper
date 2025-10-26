@@ -1,47 +1,56 @@
 import { clsx } from 'clsx';
-import { MaterialIcon } from './icons/MaterialIcon';
-import { MetadataButton } from './MetadataButton';
+import { MaterialIcon } from '../../components/icons/MaterialIcon';
+import { MetadataButton } from '../../components/MetadataButton';
+import type { PackMethod } from '@common/ipc';
 
-interface ActionBarProps {
-  onPack: () => void;
-  onExit: () => void;
-  onCreateTestData?: () => void;
-  onShowInfo?: () => void;
-  onShowMetadata?: () => void;
+interface PackControlsProps {
   canPack: boolean;
   isPacking: boolean;
   packLabel: string;
+  onPack: () => void;
+  onExit: () => void;
   exitLabel: string;
-  createTestDataLabel: string;
-  devMode: boolean;
   infoLabel: string;
+  onShowInfo?: () => void;
   metadataLabel: string;
   metadataBadgeLabel: string;
   showMetadataBadge: boolean;
   metadataDisabled: boolean;
+  onShowMetadata?: () => void;
+  devMode: boolean;
+  onCreateTestData?: () => void;
+  createTestDataLabel: string;
+  packMethod: PackMethod;
+  packMethodLabel: string;
+  packMethodOptions: Array<{ value: PackMethod; label: string }>;
+  onPackMethodChange: (method: PackMethod) => void;
 }
 
-export function ActionBar({
-  onPack,
-  onExit,
-  onCreateTestData,
-  onShowInfo,
-  onShowMetadata,
+export function PackControls({
   canPack,
   isPacking,
   packLabel,
+  onPack,
+  onExit,
   exitLabel,
-  createTestDataLabel,
-  devMode,
   infoLabel,
+  onShowInfo,
   metadataLabel,
   metadataBadgeLabel,
   showMetadataBadge,
-  metadataDisabled
-}: ActionBarProps) {
+  metadataDisabled,
+  onShowMetadata,
+  devMode,
+  onCreateTestData,
+  createTestDataLabel,
+  packMethod,
+  packMethodLabel,
+  packMethodOptions,
+  onPackMethodChange
+}: PackControlsProps) {
   return (
-    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -57,6 +66,20 @@ export function ActionBar({
             <MaterialIcon icon="inventory_2" />
             {isPacking ? `${packLabel}…` : packLabel}
           </button>
+          <label className="flex items-center gap-2 text-sm text-slate-200">
+            <span className="font-medium">{packMethodLabel}</span>
+            <select
+              className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              value={packMethod}
+              onChange={(event) => onPackMethodChange(event.target.value as PackMethod)}
+            >
+              {packMethodOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
           {onShowMetadata ? (
             <MetadataButton
               onClick={onShowMetadata}

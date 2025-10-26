@@ -50,11 +50,14 @@ export interface PackMetadata {
   links?: { artist_url?: string; contact_email?: string };
 }
 
+export type PackMethod = 'zip_best_fit' | 'seven_z_split';
+
 export interface PackRequest {
   folderPath: string;
   maxSizeMb: number;
   locale: string;
   packMetadata: PackMetadata;
+  method?: PackMethod;
 }
 
 export type PackState = 'idle' | 'analyzing' | 'packing' | 'finished' | 'error';
