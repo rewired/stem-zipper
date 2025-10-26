@@ -14,6 +14,7 @@
   "pack_status_ready": "Připraveno",
   "pack_status_found_files": "Nalezeno {{count}} souborů.",
   "pack_action_start": "Zabalit nyní",
+  "app_btn_pack_now": "Zabalit nyní",
   "pack_status_packing": "Vytváření {{name}}...",
   "pack_status_done": "Hotovo.",
   "pack_status_packing_percent": "Vytváření {{name}}... ({{percent}}%)",

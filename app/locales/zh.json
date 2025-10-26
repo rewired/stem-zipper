@@ -14,6 +14,7 @@
   "pack_status_ready": "就绪",
   "pack_status_found_files": "找到 {{count}} 个文件。",
   "pack_action_start": "立即打包",
+  "app_btn_pack_now": "立即打包",
   "pack_status_packing": "正在创建 {{name}}...",
   "pack_status_done": "完成。",
   "pack_status_packing_percent": "正在创建 {{name}}... ({{percent}}%)",

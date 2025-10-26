@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type DragEvent, type JSX } from 'react';
-import { formatMessage, type TranslationKey } from '@common/i18n';
+import { formatMessage, tNS, type TranslationKey } from '@common/i18n';
 import type { PackMethod } from '@common/ipc';
 import { APP_VERSION } from '@common/version';
 import { MAX_SIZE_LIMIT_MB } from '@common/constants';
@@ -91,6 +91,11 @@ export function AppShell() {
   const noZipGainHint = useMemo(() => t('badge_no_zip_gain_hint'), [t]);
   const considerVolumesLabel = useMemo(() => t('badge_consider_7z_volumes'), [t]);
 
+  const packLabel = useMemo(
+    () => tNS('app', 'btn_pack_now', undefined, locale),
+    [locale]
+  );
+
   const renderFileBadges = useCallback(
     (file: FileEntry) => {
       const flags = badges.get(file.path);
@@ -100,7 +105,13 @@ export function AppShell() {
       const elements: JSX.Element[] = [];
       if (flags.noZipGain) {
         elements.push(
-          <FileBadge key="no-zip-gain" label={noZipGainLabel} tooltip={noZipGainHint} />
+          <FileBadge
+            key="no-zip-gain"
+            label={noZipGainLabel}
+            tooltip={noZipGainHint}
+            variant="info"
+            icon="info"
+          />
         );
       }
       if (flags.consider7zVolumes) {
@@ -270,7 +281,7 @@ export function AppShell() {
             <PackControls
               canPack={canPack}
               isPacking={isPacking}
-              packLabel={t('pack_action_start')}
+              packLabel={packLabel}
               onPack={performPack}
               onExit={() => window.close()}
               exitLabel={t('common_exit')}

@@ -13,3 +13,19 @@ body {
 a {
   @apply text-blue-400 hover:text-blue-300;
 }
+
+.btn {
+  @apply inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.btn-success {
+  @apply bg-emerald-500 text-white shadow hover:bg-emerald-400 focus-visible:ring-emerald-300 disabled:bg-emerald-700 disabled:text-emerald-100;
+}
+
+.badge {
+  @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold;
+}
+
+.badge-info {
+  @apply border border-sky-500/40 bg-sky-500/20 text-sky-100;
+}

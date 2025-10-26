@@ -14,6 +14,7 @@
   "pack_status_ready": "Prêt",
   "pack_status_found_files": "{{count}} fichiers trouvés.",
   "pack_action_start": "Compresser maintenant",
+  "app_btn_pack_now": "Compresser maintenant",
   "pack_status_packing": "Création de {{name}}...",
   "pack_status_done": "Terminé.",
   "pack_status_packing_percent": "Création de {{name}}... ({{percent}} %)",

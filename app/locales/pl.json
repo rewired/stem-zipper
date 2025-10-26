@@ -14,6 +14,7 @@
   "pack_status_ready": "Gotowe",
   "pack_status_found_files": "Znaleziono {{count}} plików.",
   "pack_action_start": "Pakuj teraz",
+  "app_btn_pack_now": "Pakuj teraz",
   "pack_status_packing": "Tworzenie {{name}}...",
   "pack_status_done": "Gotowe.",
   "pack_status_packing_percent": "Tworzenie {{name}}... ({{percent}}%)",

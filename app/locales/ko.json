@@ -14,6 +14,7 @@
   "pack_status_ready": "준비 완료",
   "pack_status_found_files": "{{count}}개의 파일을 찾았습니다.",
   "pack_action_start": "지금 압축",
+  "app_btn_pack_now": "지금 압축",
   "pack_status_packing": "{{name}} 생성 중...",
   "pack_status_done": "완료.",
   "pack_status_packing_percent": "{{name}} 생성 중... ({{percent}}%)",

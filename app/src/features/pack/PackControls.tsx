@@ -1,4 +1,3 @@
-import { clsx } from 'clsx';
 import { MaterialIcon } from '../../components/icons/MaterialIcon';
 import { MetadataButton } from '../../components/MetadataButton';
 import type { PackMethod } from '@common/ipc';
@@ -56,12 +55,8 @@ export function PackControls({
             type="button"
             onClick={onPack}
             disabled={!canPack || isPacking}
-            className={clsx(
-              'inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold shadow transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
-              canPack && !isPacking
-                ? 'bg-blue-500 text-white hover:bg-blue-400 focus-visible:outline-blue-300'
-                : 'cursor-not-allowed bg-slate-700 text-slate-300 opacity-70'
-            )}
+            className="btn btn-success focus-visible:ring-offset-slate-950"
+            aria-label={packLabel}
           >
             <MaterialIcon icon="inventory_2" />
             {isPacking ? `${packLabel}…` : packLabel}

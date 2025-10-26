@@ -14,6 +14,7 @@
   "pack_status_ready": "Gata",
   "pack_status_found_files": "{{count}} fișiere găsite.",
   "pack_action_start": "Împachetează acum",
+  "app_btn_pack_now": "Împachetează acum",
   "pack_status_packing": "Se creează {{name}}...",
   "pack_status_done": "Gata.",
   "pack_status_packing_percent": "Se creează {{name}}... ({{percent}}%)",
