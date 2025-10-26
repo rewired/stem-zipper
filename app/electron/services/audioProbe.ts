@@ -41,7 +41,8 @@ export async function probeAudio(filePath: string): Promise<AudioProbeResult> {
       try {
         const buffer = await fs.readFile(filePath);
         const wav = new WaveFile(buffer);
-        const channels = typeof wav.fmt?.numChannels === 'number' ? wav.fmt.numChannels : undefined;
+        const fmtChunk = wav.fmt as { numChannels?: unknown } | undefined;
+        const channels = typeof fmtChunk?.numChannels === 'number' ? fmtChunk.numChannels : undefined;
         return {
           kind: 'wav',
           stereo: channels === 2 ? true : channels === undefined ? undefined : false
