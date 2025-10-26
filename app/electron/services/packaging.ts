@@ -48,6 +48,8 @@ const EXTENSION_KIND_MAP: Record<SupportedExtension, EstimateFileKind> = {
   '.aiff': 'aiff',
   '.ogg': 'ogg',
   '.aac': 'aac',
+  '.m4a': 'm4a',
+  '.opus': 'opus',
   '.wma': 'wma'
 };
 
@@ -134,6 +136,86 @@ function isLikelyStereoWav(file: SizedFile): boolean {
     }
   }
   return false;
+}
+
+const HEADER_READ_BYTES = 64;
+const ASF_HEADER_GUID = Buffer.from([
+  0x30,
+  0x26,
+  0xb2,
+  0x75,
+  0x8e,
+  0x66,
+  0xcf,
+  0x11,
+  0xa6,
+  0xd9,
+  0x00,
+  0xaa,
+  0x00,
+  0x62,
+  0xce,
+  0x6c
+]);
+const OPUS_HEAD_SIGNATURE = Buffer.from('OpusHead', 'ascii');
+
+function sniffFileKind(file: SizedFile): EstimateFileKind {
+  let handle: number | undefined;
+  try {
+    handle = fs.openSync(file.path, 'r');
+    const header = Buffer.alloc(HEADER_READ_BYTES);
+    const bytesRead = fs.readSync(handle, header, 0, HEADER_READ_BYTES, 0);
+
+    if (bytesRead <= 0) {
+      return EXTENSION_KIND_MAP[file.extension];
+    }
+
+    const signature = header.toString('ascii', 0, Math.min(bytesRead, HEADER_READ_BYTES));
+    if (signature.startsWith('RIFF') && header.toString('ascii', 8, 12) === 'WAVE') {
+      return 'wav';
+    }
+    if (signature.startsWith('ID3') || (header[0] === 0xff && (header[1] & 0xe0) === 0xe0)) {
+      return 'mp3';
+    }
+    if (signature.startsWith('OggS')) {
+      if (header.subarray(0, bytesRead).includes(OPUS_HEAD_SIGNATURE)) {
+        return 'opus';
+      }
+      return 'ogg';
+    }
+    if (bytesRead >= 4 && header.toString('ascii', 0, 4) === 'fLaC') {
+      return 'flac';
+    }
+    if (bytesRead >= 12 && header.toString('ascii', 0, 4) === 'FORM') {
+      const formType = header.toString('ascii', 8, 12);
+      if (formType === 'AIFF' || formType === 'AIFC') {
+        return 'aiff';
+      }
+    }
+    if (bytesRead >= 4 && header[0] === 0xff && (header[1] & 0xf6) === 0xf0) {
+      return 'aac';
+    }
+    if (bytesRead >= 12 && header.toString('ascii', 4, 8) === 'ftyp') {
+      const brand = header.toString('ascii', 8, 12);
+      if (brand.startsWith('M4A') || brand.startsWith('isom') || brand.startsWith('mp42')) {
+        return 'm4a';
+      }
+    }
+    if (bytesRead >= ASF_HEADER_GUID.length && ASF_HEADER_GUID.compare(header, 0, ASF_HEADER_GUID.length, 0, ASF_HEADER_GUID.length) === 0) {
+      return 'wma';
+    }
+  } catch (error) {
+    console.warn('Failed to sniff audio header for kind detection', file.path, error);
+  } finally {
+    if (handle !== undefined) {
+      try {
+        fs.closeSync(handle);
+      } catch (closeError) {
+        console.warn('Failed to close header sniff handle', file.path, closeError);
+      }
+    }
+  }
+  return EXTENSION_KIND_MAP[file.extension];
 }
 
 export function scanTargetFolder(folderPath: string): SizedFile[] {
@@ -234,13 +316,14 @@ export function analyzeFolder(folderPath: string, maxSizeMb: number): FileEntry[
     const action = resolveAction(file.size, file.extension, maxSizeBytes);
     const shouldInspectStereo = file.extension === '.wav' && file.size > maxSizeBytes;
     const stereo = shouldInspectStereo && isLikelyStereoWav(file) ? true : undefined;
+    const kind = sniffFileKind(file);
     return {
       name: path.basename(file.path),
       sizeMb: toMb(file.size),
       action,
       path: file.path,
       sizeBytes: file.size,
-      kind: EXTENSION_KIND_MAP[file.extension],
+      kind,
       stereo
     };
   });

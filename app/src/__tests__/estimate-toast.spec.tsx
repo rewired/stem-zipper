@@ -54,7 +54,13 @@ function createElectronAPIMock() {
     estimateZipCount: vi.fn().mockResolvedValue({
       zips: 7,
       bytesLogical: 12_345_678,
-      bytesCapacity: 50_000_000
+      bytesCapacity: 50_000_000,
+      packing: {
+        maxZipSize: 0,
+        capacityBytes: 0,
+        perZipOverheadBytes: 0,
+        files: []
+      }
     }),
     startPack: vi.fn().mockResolvedValue(1),
     onPackProgress: vi.fn((listener: ProgressListener) => progressBus.register(listener)),

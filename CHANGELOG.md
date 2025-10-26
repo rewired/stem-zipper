@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Electron packer now emits localized info/warning toasts (10s minimum) when stereo splitting is skipped, keeping users informed
   about unsupported audio during packing.
+- Renderer batch table now surfaces localized warning badges for lossy files that would exceed the configured max ZIP size or
+  trigger extra volumes.
 
 ### Changed
 - Renderer now debounces ZIP estimate requests and pairs them with the latest analysis token to prevent stale toasts.

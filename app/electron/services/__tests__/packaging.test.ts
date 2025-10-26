@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   STAMP_FILENAME,
   STEM_ZIPPER_STAMP,
+  analyzeFolder,
   bestFitPack,
   createBrandedZip,
   packFolder,
@@ -41,6 +42,25 @@ describe('bestFitPack', () => {
     expect(bins[0].map((file) => path.basename(file.path))).toEqual(['alpha.wav', 'echo.wav']);
     expect(bins[1].map((file) => path.basename(file.path))).toEqual(['bravo.wav', 'charlie.wav']);
     expect(bins[2].map((file) => path.basename(file.path))).toEqual(['delta.wav']);
+  });
+});
+
+describe('analyzeFolder', () => {
+  it('sniffs lossy headers even when the extension suggests WAV', async () => {
+    const tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'stem-zipper-analyze-'));
+
+    try {
+      const disguisedPath = path.join(tempRoot, 'disguised.wav');
+      const id3Header = Buffer.from([0x49, 0x44, 0x33, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21]);
+      const payload = Buffer.concat([id3Header, Buffer.alloc(2048, 0)]);
+      await fs.promises.writeFile(disguisedPath, payload);
+
+      const entries = analyzeFolder(tempRoot, 50);
+      expect(entries).toHaveLength(1);
+      expect(entries[0].kind).toBe('mp3');
+    } finally {
+      await fs.promises.rm(tempRoot, { recursive: true, force: true });
+    }
   });
 });
 

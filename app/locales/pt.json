@@ -69,5 +69,8 @@
   "toast_info_title": "Heads up",
   "toast_warning_title": "Warning",
   "pack_info_skip_stereo_split_non_wav": "Skipped stereo split for {{file}} (not a WAV or unsupported format).",
-  "pack_warn_file_skipped": "Skipped {{file}} due to an error."
+  "pack_warn_file_skipped": "Skipped {{file}} due to an error.",
+  "batch_warn_lossy_zip_gain_low": "Lossy file compresses poorly (~0–5%): may exceed {{max_zip_size}}.",
+  "batch_warn_file_exceeds_max_zip": "File is larger than max archive size {{max_zip_size}}.",
+  "badge_label_zip_poor_gain": "~no zip gain"
 }

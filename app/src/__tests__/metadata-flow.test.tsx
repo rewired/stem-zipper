@@ -51,7 +51,17 @@ function createElectronAPIMock() {
     openExternal: vi.fn(),
     openPath: vi.fn(),
     checkExistingZips: vi.fn().mockResolvedValue({ count: 0, files: [] }),
-    estimateZipCount: vi.fn().mockResolvedValue({ zips: 1, bytesLogical: 1_500_000, bytesCapacity: 50_000_000 }),
+    estimateZipCount: vi.fn().mockResolvedValue({
+      zips: 1,
+      bytesLogical: 1_500_000,
+      bytesCapacity: 50_000_000,
+      packing: {
+        maxZipSize: 0,
+        capacityBytes: 0,
+        perZipOverheadBytes: 0,
+        files: []
+      }
+    }),
     getUserPrefs: vi.fn().mockResolvedValue({
       default_artist: 'Saved Artist',
       default_artist_url: 'https://saved.example',

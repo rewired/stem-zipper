@@ -21,6 +21,8 @@ import { DiagOverlay } from './components/DiagOverlay';
 import { ChoiceModal } from './components/ChoiceModal';
 import { useToast } from './components/ui/ToastProvider';
 import { MetadataModal } from './components/MetadataModal';
+import { LossyBadge } from './components/LossyBadge';
+import { useZipEstimator } from './hooks/useZipEstimator';
 import {
   buildPackMetadata,
   createEmptyDraft,
@@ -257,6 +259,33 @@ export default function App() {
     });
     return (value: number) => formatter.format(value);
   }, [locale]);
+
+  const { warnings: lossyWarnings } = useZipEstimator(files, { maxSizeMb: maxSize });
+  const badgeLabel = useMemo(() => t('badge_label_zip_poor_gain'), [t]);
+  const maxZipSizeLabel = useMemo(() => {
+    if (typeof maxSize !== 'number' || !Number.isFinite(maxSize) || maxSize <= 0) {
+      return undefined;
+    }
+    return `${formatSize(maxSize)} ${t('common_size_unit_megabyte')}`;
+  }, [formatSize, maxSize, t]);
+  const renderLossyBadge = useCallback(
+    (file: FileEntry) => {
+      if (!maxZipSizeLabel) {
+        return null;
+      }
+      const warning = lossyWarnings.get(file.path);
+      if (!warning) {
+        return null;
+      }
+      const tooltipKey =
+        warning.reason === 'file_exceeds_limit'
+          ? 'batch_warn_file_exceeds_max_zip'
+          : 'batch_warn_lossy_zip_gain_low';
+      const tooltip = t(tooltipKey, { max_zip_size: maxZipSizeLabel });
+      return <LossyBadge label={badgeLabel} tooltip={tooltip} />;
+    },
+    [badgeLabel, lossyWarnings, maxZipSizeLabel, t]
+  );
 
   const formatInteger = useMemo(() => {
     const formatter = new Intl.NumberFormat(locale, {
@@ -827,6 +856,7 @@ export default function App() {
             helperLabel={t('app_drop_helper')}
             sizeUnitLabel={t('common_size_unit_megabyte')}
             formatSize={formatSize}
+            renderBadge={renderLossyBadge}
           />
         </div>
         <div className="sticky bottom-0 z-30 border-t border-slate-800 bg-slate-950/90 px-8 py-4 backdrop-blur">
