@@ -3,7 +3,7 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import App from '../App';
 import { ToastProvider } from '../components/ui/ToastProvider';
-import type { PackMetadata } from '@common/ipc';
+import type { PackMetadata, PackProgress } from '@common/ipc';
 
 const mockFileEntry = {
   name: 'alpha.wav',
@@ -17,11 +17,20 @@ const mockFileEntry = {
 function createElectronAPIMock() {
   const analyzeFolder = vi.fn().mockResolvedValue({ files: [mockFileEntry], count: 1, maxSizeMb: 100 });
   const startPack = vi.fn().mockResolvedValue(1);
+  const progressListeners = new Set<(event: PackProgress) => void>();
   return {
     selectFolder: vi.fn().mockResolvedValue('/tmp/project'),
     analyzeFolder,
     startPack,
-    onPackProgress: vi.fn().mockReturnValue(() => {}),
+    onPackProgress: vi.fn((listener: (event: PackProgress) => void) => {
+      progressListeners.add(listener);
+      return () => {
+        progressListeners.delete(listener);
+      };
+    }),
+    emitProgress: (event: PackProgress) => {
+      progressListeners.forEach((listener) => listener(event));
+    },
     createTestData: vi.fn(),
     openExternal: vi.fn(),
     openPath: vi.fn(),
@@ -203,5 +212,71 @@ describe('metadata modal integration', () => {
     await new Promise((resolve) => setTimeout(resolve, 200));
 
     expect(electronAPI.estimateZipCount).toHaveBeenCalledTimes(initialEstimateCalls);
+  });
+
+  it('dismisses the estimate toast once packing finishes', async () => {
+    render(
+      <ToastProvider>
+        <App />
+      </ToastProvider>
+    );
+    const user = userEvent.setup();
+
+    const selectFolderButton = await screen.findByRole('button', { name: /Select Folder/i });
+    await user.click(selectFolderButton);
+
+    await screen.findByText(/This run will likely produce/);
+
+    electronAPI.emitProgress({
+      state: 'finished',
+      current: 0,
+      total: 1,
+      percent: 100,
+      message: 'done'
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/This run will likely produce/)).toBeNull();
+    });
+  });
+
+  it('requests a fresh estimate after packing when the max size changes', async () => {
+    render(
+      <ToastProvider>
+        <App />
+      </ToastProvider>
+    );
+    const user = userEvent.setup();
+
+    const selectFolderButton = await screen.findByRole('button', { name: /Select Folder/i });
+    await user.click(selectFolderButton);
+
+    await waitFor(() => {
+      expect(electronAPI.estimateZipCount).toHaveBeenCalledTimes(1);
+    });
+
+    const maxSizeInput = await screen.findByLabelText(/Max ZIP size/i);
+
+    const initialEstimateCalls = electronAPI.estimateZipCount.mock.calls.length;
+
+    electronAPI.emitProgress({
+      state: 'finished',
+      current: 0,
+      total: 1,
+      percent: 100,
+      message: 'done'
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/This run will likely produce/)).toBeNull();
+    });
+
+    await user.clear(maxSizeInput);
+    await user.type(maxSizeInput, '120');
+    await user.tab();
+
+    await waitFor(() => {
+      expect(electronAPI.estimateZipCount).toHaveBeenCalledTimes(initialEstimateCalls + 1);
+    });
   });
 });

@@ -126,7 +126,7 @@ export default function App() {
   const estimateRequestTokenRef = useRef(0);
   const estimatorErrorLoggedRef = useRef(false);
   const progressStateRef = useRef<PackState>(initialProgress.state);
-  const skipEstimateRef = useRef(false);
+  const estimateModeRef = useRef<'auto' | 'silent'>('auto');
 
   const t = useCallback(
     (key: TranslationKey, params: Record<string, string | number> = {}) =>
@@ -318,6 +318,7 @@ export default function App() {
       setStatusText(t('common_error_title'));
       return;
     }
+    estimateModeRef.current = 'silent';
     setIsPacking(true);
     setStatusText(t('pack_status_in_progress'));
     try {
@@ -334,13 +335,13 @@ export default function App() {
       } else {
         setStatusText(t('pack_status_no_files'));
       }
-      skipEstimateRef.current = true;
       await analyze(folderPath, maxSize);
     } catch (error) {
       console.error(error);
       setStatusText(`${t('common_error_title')}: ${(error as Error).message}`);
     } finally {
       setIsPacking(false);
+      estimateModeRef.current = 'auto';
     }
   }, [analyze, folderPath, handleOpenMetadata, locale, maxSize, metadataDrafts, t]);
 
@@ -549,6 +550,7 @@ export default function App() {
               ? `${t('common_error_title')}: ${event.errorMessage}`
               : t('common_error_title')
           );
+          dismissToast('estimate');
           break;
         default:
           break;
@@ -562,11 +564,7 @@ export default function App() {
       window.clearTimeout(estimateTimeoutRef.current);
       estimateTimeoutRef.current = null;
     }
-    if (skipEstimateRef.current) {
-      skipEstimateRef.current = false;
-      return;
-    }
-    if (progress.state === 'finished') {
+    if (estimateModeRef.current !== 'auto') {
       return;
     }
     if (!files.length) {
@@ -601,16 +599,10 @@ export default function App() {
       estimateTimeoutRef.current = null;
       const currentToken = estimateRequestTokenRef.current + 1;
       estimateRequestTokenRef.current = currentToken;
-      if (progressStateRef.current === 'finished') {
-        return;
-      }
       window.electronAPI
         .estimateZipCount(request)
         .then((response) => {
           if (estimateRequestTokenRef.current !== currentToken) {
-            return;
-          }
-          if (progressStateRef.current === 'finished') {
             return;
           }
           estimatorErrorLoggedRef.current = false;
@@ -637,7 +629,7 @@ export default function App() {
         estimateTimeoutRef.current = null;
       }
     };
-  }, [files, locale, maxSize, progress.state, showToast, t]);
+  }, [files, locale, maxSize, showToast, t]);
 
   useEffect(() => {
     if (!folderPath || !files.length || isMetadataOpen) {
