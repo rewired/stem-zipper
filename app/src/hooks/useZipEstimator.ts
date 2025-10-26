@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { useMemo } from 'react';
 import type { FileEntry } from '@common/ipc';
 import {
@@ -7,6 +6,7 @@ import {
   isLossyKind,
   type PackingOverflowReason
 } from '@common/packing/estimator';
+import { getFileExtension } from '../utils/path';
 
 interface ZipEstimatorWarning {
   reason: PackingOverflowReason;
@@ -40,7 +40,7 @@ export function useZipEstimator(
     const badges = new Map<string, FileBadgeFlags>();
 
     for (const file of files) {
-      const extension = path.extname(file.path ?? '').toLowerCase();
+      const extension = getFileExtension(file.path ?? '');
       if (!isCompressedExt(extension)) {
         continue;
       }
