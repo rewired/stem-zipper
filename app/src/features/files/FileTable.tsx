@@ -1,5 +1,6 @@
 import type { FileEntry } from '@common/ipc';
 import type { ReactNode } from 'react';
+import { FileRow } from './FileRow';
 
 interface FileTableProps {
   files: FileEntry[];
@@ -44,19 +45,19 @@ export function FileTable({
           <tr>
             <th
               scope="col"
-              className="w-7/12 px-4 py-3 text-left font-semibold uppercase tracking-wide text-xs text-slate-400"
+              className="w-7/12 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400"
             >
               {fileLabel}
             </th>
             <th
               scope="col"
-              className="w-24 px-4 py-3 text-left font-semibold uppercase tracking-wide text-xs text-slate-400"
+              className="w-24 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400"
             >
               {actionLabel}
             </th>
             <th
               scope="col"
-              className="w-32 px-4 py-3 text-right font-semibold uppercase tracking-wide text-xs text-slate-400"
+              className="w-32 px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-400"
             >
               {sizeLabel}
             </th>
@@ -64,18 +65,14 @@ export function FileTable({
         </thead>
         <tbody className="divide-y divide-slate-800/60">
           {files.map((file) => (
-            <tr key={file.path} className="hover:bg-slate-800/50">
-              <td className="w-7/12 px-4 py-3 text-slate-100">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate">{file.name}</span>
-                  {renderBadge ? renderBadge(file) : null}
-                </div>
-              </td>
-              <td className="w-24 px-4 py-3 text-slate-300">{actionNames[file.action]}</td>
-              <td className="w-32 px-4 py-3 text-right tabular-nums text-slate-200">
-                {formatSize(file.sizeMb)} {sizeUnitLabel}
-              </td>
-            </tr>
+            <FileRow
+              key={file.path}
+              file={file}
+              actionName={actionNames[file.action]}
+              sizeUnitLabel={sizeUnitLabel}
+              formatSize={formatSize}
+              renderBadge={renderBadge}
+            />
           ))}
         </tbody>
       </table>

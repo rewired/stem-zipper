@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { FileEntry } from '@common/ipc';
-import { FileTable } from '../components/FileTable';
+import { FileTable } from '../features/files/FileTable';
 import { LossyBadge } from '../components/LossyBadge';
 import { useZipEstimator } from '../hooks/useZipEstimator';
 import { formatMessage, type TranslationKey } from '@common/i18n';
