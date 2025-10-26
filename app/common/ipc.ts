@@ -1,6 +1,14 @@
 import type { LocaleKey, TranslationKey } from './i18n';
 import type { EstimateFileKind } from './packing/estimator';
 
+export type {
+  PackingEstimatorMethod,
+  PackingPlanEntry,
+  PackingPlanFileInput,
+  PackingPlanRequest,
+  PackingPlanResponse
+} from './ipc/contracts';
+
 export const IPC_CHANNELS = {
   SELECT_FOLDER: 'dialog:select-folder',
   ANALYZE_FOLDER: 'analyze-folder',
@@ -14,6 +22,7 @@ export const IPC_CHANNELS = {
   OPEN_PATH: 'open-path',
   CHECK_EXISTING_ZIPS: 'check-existing-zips',
   ESTIMATE: 'estimator:estimate',
+  ESTIMATE_PLAN: 'estimator:plan',
   PREFS_GET: 'prefs:get',
   PREFS_SET: 'prefs:set',
   PREFS_ADD_RECENT: 'prefs:addRecent'

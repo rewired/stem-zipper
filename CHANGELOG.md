@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 ## [1.0.2 unreleased]
 
 ### Added
+- Renderer file table now includes selection checkboxes, a master toggle, and per-row archive estimate badges with ZIP gating
+  feedback.
+- Renderer estimated archive column now exposes a localized screen-reader label for improved accessibility.
+- Electron main process exposes a deterministic `estimatePackingPlan` IPC endpoint for renderer archive badge planning and ZIP
+  eligibility checks.
 - Electron packer now emits localized info/warning toasts (10s minimum) when stereo splitting is skipped, keeping users informed
   about unsupported audio during packing.
 - Renderer batch table now surfaces localized warning badges for lossy files that would exceed the configured max ZIP size or

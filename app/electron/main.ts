@@ -11,6 +11,8 @@ import { formatMessage, resolveLocale, type TranslationKey } from '../common/i18
 import type { RuntimeConfig } from '../common/runtime';
 import { APP_VERSION } from '../common/version';
 import { estimateZipCount, type EstimateRequest } from '../common/packing/estimator';
+import type { PackingPlanRequest } from '../common/ipc/contracts';
+import { estimatePackingPlan } from './services/packEstimator';
 import { getUserPreferences, setUserPreferences, addRecentArtist } from './services/preferences';
 import { normalizePackMetadata } from './services/packMetadata';
 import { installGracefulExit } from './gracefulExit';
@@ -302,6 +304,15 @@ function registerIpcHandlers(): void {
       return estimateZipCount(args);
     } catch (error) {
       console.error('Failed to compute ZIP estimate', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.ESTIMATE_PLAN, async (_event, args: PackingPlanRequest) => {
+    try {
+      return estimatePackingPlan(args);
+    } catch (error) {
+      console.error('Failed to compute packing plan', error);
       throw error;
     }
   });

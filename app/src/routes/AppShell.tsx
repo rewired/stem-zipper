@@ -3,7 +3,6 @@ import { formatMessage, tNS, type TranslationKey } from '@common/i18n';
 import type { PackMethod } from '@common/ipc';
 import { APP_VERSION } from '@common/version';
 import { MAX_SIZE_LIMIT_MB } from '@common/constants';
-import type { FileEntry } from '@common/ipc';
 import { FileToolbar } from '../features/files/FileToolbar';
 import { FileTable } from '../features/files/FileTable';
 import { PackControls } from '../features/pack/PackControls';
@@ -18,9 +17,10 @@ import { InfoModal } from '../components/InfoModal';
 import { FileBadge } from '../components/FileBadge';
 import { DiagOverlay } from '../components/DiagOverlay';
 import { useZipEstimator } from '../hooks/useZipEstimator';
+import type { FileRow } from '../types/fileRow';
 
 export function AppShell() {
-  const { locale, files, folderPath, maxSize, setMaxSize, statusText } = useAppStore();
+  const { locale, files, folderPath, maxSize, setMaxSize, statusText, setFiles } = useAppStore();
   const {
     progress,
     isPacking,
@@ -97,7 +97,7 @@ export function AppShell() {
   );
 
   const renderFileBadges = useCallback(
-    (file: FileEntry) => {
+    (file: FileRow) => {
       const flags = badges.get(file.path);
       if (!flags) {
         return null;
@@ -123,6 +123,88 @@ export function AppShell() {
       return <span className="flex flex-wrap justify-end gap-1">{elements}</span>;
     },
     [badges, considerVolumesLabel, noZipGainHint, noZipGainLabel]
+  );
+
+  const handleToggleRow = useCallback(
+    (fileId: string) => {
+      setFiles((previous) =>
+        previous.map((file) => {
+          if (file.id !== fileId || !file.selectable) {
+            return file;
+          }
+          const nextSelected = !file.selected;
+          return {
+            ...file,
+            selected: nextSelected,
+            userIntendedSelected: nextSelected
+          };
+        })
+      );
+    },
+    [setFiles]
+  );
+
+  const handleToggleAll = useCallback(() => {
+    setFiles((previous) => {
+      const eligible = previous.filter((file) => file.selectable);
+      if (eligible.length === 0) {
+        return previous;
+      }
+      const shouldSelect = eligible.some((file) => !file.selected);
+      return previous.map((file) => {
+        if (!file.selectable) {
+          return file;
+        }
+        return {
+          ...file,
+          selected: shouldSelect,
+          userIntendedSelected: shouldSelect
+        };
+      });
+    });
+  }, [setFiles]);
+
+  const eligibleCount = useMemo(
+    () => files.reduce((count, file) => (file.selectable ? count + 1 : count), 0),
+    [files]
+  );
+  const selectedEligibleCount = useMemo(
+    () => files.reduce((count, file) => (file.selectable && file.selected ? count + 1 : count), 0),
+    [files]
+  );
+  const masterChecked = eligibleCount > 0 && selectedEligibleCount === eligibleCount;
+  const masterIndeterminate = selectedEligibleCount > 0 && selectedEligibleCount < eligibleCount;
+  const masterDisabled = eligibleCount === 0;
+
+  const selectColumnLabel = useMemo(() => tNS('pack', 'table_col_select', undefined, locale), [locale]);
+  const toggleAllLabel = useMemo(() => tNS('pack', 'table_header_toggle_all', undefined, locale), [locale]);
+  const estimateColumnLabel = useMemo(() => tNS('pack', 'table_col_estimate', undefined, locale), [locale]);
+  const formatTooltipReason = useCallback(
+    (reason: string) => tNS('pack', 'tooltip_unselectable', { reason }, locale),
+    [locale]
+  );
+  const badgePrefix = useMemo(() => tNS('pack', 'badge_estimate_prefix', undefined, locale), [locale]);
+  const formatEstimateLabel = useCallback(
+    (index: number) => {
+      const padded = String(Math.max(1, index)).padStart(2, '0');
+      const key = packMethod === 'seven_z_split' ? 'badge_estimate_7z' : 'badge_estimate_zip';
+      return tNS('pack', key, { index: padded }, locale);
+    },
+    [locale, packMethod]
+  );
+  const renderEstimateBadge = useCallback(
+    (file: FileRow) => {
+      if (!file.estimate) {
+        return null;
+      }
+      const label = formatEstimateLabel(file.estimate.archiveIndex);
+      return (
+        <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-800 px-2 py-1 text-xs font-medium text-slate-200">
+          {badgePrefix} {label}
+        </span>
+      );
+    },
+    [badgePrefix, formatEstimateLabel]
   );
 
   const packMethodLabel = t('pack_method_label');
@@ -180,7 +262,7 @@ export function AppShell() {
     openMetadata('idle');
   }, [folderPath, openMetadata]);
 
-  const canPack = Boolean(folderPath && files.length > 0 && !isPacking && typeof maxSize === 'number');
+  const canPack = Boolean(folderPath && selectedEligibleCount > 0 && !isPacking && typeof maxSize === 'number');
   const isDevMode =
     (window as unknown as { runtimeConfig?: { devMode?: boolean } }).runtimeConfig?.devMode ||
     import.meta.env.DEV;
@@ -273,6 +355,16 @@ export function AppShell() {
             sizeUnitLabel={t('common_size_unit_megabyte')}
             formatSize={formatSize}
             renderBadge={renderFileBadges}
+            renderEstimate={renderEstimateBadge}
+            onToggleRow={handleToggleRow}
+            onToggleAll={handleToggleAll}
+            selectLabel={selectColumnLabel}
+            toggleAllLabel={toggleAllLabel}
+            estimateLabel={estimateColumnLabel}
+            masterChecked={masterChecked}
+            masterIndeterminate={masterIndeterminate}
+            masterDisabled={masterDisabled}
+            formatTooltip={formatTooltipReason}
           />
         </div>
         <div className="sticky bottom-0 z-30 border-t border-slate-800 bg-slate-950/90 px-8 py-4 backdrop-blur">
