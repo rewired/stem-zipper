@@ -258,6 +258,13 @@ export default function App() {
     return (value: number) => formatter.format(value);
   }, [locale]);
 
+  const formatInteger = useMemo(() => {
+    const formatter = new Intl.NumberFormat(locale, {
+      maximumFractionDigits: 0
+    });
+    return (value: number) => formatter.format(value);
+  }, [locale]);
+
   useEffect(() => {
     document.title = `${formatMessage(locale, 'app_title')} ${APP_VERSION}`;
   }, [locale]);
@@ -672,9 +679,8 @@ export default function App() {
 
       showToast({
         id: 'estimate',
-        title: t('toast_estimate_title'),
-        message: formatMessage(locale, 'pack_toast_estimate_pending'),
-        note: t('toast_estimate_note'),
+        title: t('toast_info_title'),
+        message: t('toast_estimate_start'),
         closeLabel: formatMessage(locale, 'common_close'),
         timeoutMs: 10_000
       });
@@ -686,11 +692,15 @@ export default function App() {
             return;
           }
           estimatorErrorLoggedRef.current = false;
+          const formattedCount = formatInteger(response.zips);
+          const formattedSize = `${formatSize(response.bytesLogical / (1024 * 1024))} ${formatMessage(
+            locale,
+            'common_size_unit_megabyte'
+          )}`;
           showToast({
             id: 'estimate',
-            title: t('toast_estimate_title'),
-            message: formatMessage(locale, 'pack_toast_estimate', { count: response.zips }),
-            note: t('toast_estimate_note'),
+            title: t('toast_info_title'),
+            message: t('toast_estimate_result', { count: formattedCount, size: formattedSize }),
             closeLabel: formatMessage(locale, 'common_close'),
             timeoutMs: 10_000
           });
@@ -703,12 +713,20 @@ export default function App() {
             console.error('Failed to estimate ZIP count', error);
             estimatorErrorLoggedRef.current = true;
           }
-          dismissToast('estimate');
+          showToast({
+            id: 'estimate',
+            title: t('toast_warning_title'),
+            message: t('toast_estimate_error'),
+            closeLabel: formatMessage(locale, 'common_close'),
+            timeoutMs: 10_000
+          });
         });
     }, 150);
   }, [
     dismissToast,
     files,
+    formatInteger,
+    formatSize,
     isLatestEstimateToken,
     locale,
     maxSize,

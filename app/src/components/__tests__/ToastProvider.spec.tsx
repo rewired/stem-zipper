@@ -16,9 +16,8 @@ function createHarness() {
       showEstimate: (zips: number) => {
         show({
           id: 'estimate',
-          title: 'Estimate',
-          message: `This run will likely produce ≈ ${zips} ZIP archive(s).`,
-          note: 'Note text',
+          title: 'Heads up',
+          message: `Estimated: ${zips} pack(s) ~ 12.34 MB`,
           closeLabel: 'Close',
           timeoutMs: 10_000
         });
@@ -59,31 +58,31 @@ describe('ToastProvider', () => {
       api?.showEstimate(3);
     });
 
-    expect(screen.getByText('Estimate')).toBeTruthy();
-    expect(screen.getByText(/≈ 3 ZIP archive/)).toBeTruthy();
+    expect(screen.getByText('Heads up')).toBeTruthy();
+    expect(screen.getByText(/Estimated: 3 pack\(s\)/)).toBeTruthy();
 
     act(() => {
       vi.advanceTimersByTime(9_000);
     });
-    expect(screen.getByText(/≈ 3 ZIP archive/)).toBeTruthy();
+    expect(screen.getByText(/Estimated: 3 pack\(s\)/)).toBeTruthy();
 
     act(() => {
       api?.showEstimate(5);
     });
 
-    const messages = screen.getAllByText(/This run will likely produce/);
+    const messages = screen.getAllByText(/Estimated:/);
     expect(messages).toHaveLength(1);
     expect(messages[0].textContent).toContain('5');
 
     act(() => {
       vi.advanceTimersByTime(9_999);
     });
-    expect(screen.queryByText(/≈ 5 ZIP archive/)).not.toBeNull();
+    expect(screen.queryByText(/Estimated: 5 pack\(s\)/)).not.toBeNull();
 
     act(() => {
       vi.advanceTimersByTime(1);
     });
-    expect(screen.queryByText(/This run will likely produce/)).toBeNull();
+    expect(screen.queryByText(/Estimated:/)).toBeNull();
   });
 
   it('dismisses estimate toasts via the toast context', () => {
@@ -102,18 +101,18 @@ describe('ToastProvider', () => {
       api?.showEstimate(7);
     });
 
-    expect(screen.getByText(/≈ 7 ZIP archive/)).toBeTruthy();
+    expect(screen.getByText(/Estimated: 7 pack\(s\)/)).toBeTruthy();
 
     act(() => {
       api?.dismissEstimate();
     });
 
-    expect(screen.queryByText(/This run will likely produce/)).toBeNull();
+    expect(screen.queryByText(/Estimated:/)).toBeNull();
 
     act(() => {
       vi.advanceTimersByTime(20_000);
     });
 
-    expect(screen.queryByText(/This run will likely produce/)).toBeNull();
+    expect(screen.queryByText(/Estimated:/)).toBeNull();
   });
 });

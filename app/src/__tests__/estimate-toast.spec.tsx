@@ -51,7 +51,11 @@ function createElectronAPIMock() {
   return {
     selectFolder: vi.fn().mockResolvedValue('/tmp/project'),
     analyzeFolder: vi.fn().mockResolvedValue({ files: [mockFileEntry], count: 1, maxSizeMb: 100 }),
-    estimateZipCount: vi.fn().mockResolvedValue({ zips: 7 }),
+    estimateZipCount: vi.fn().mockResolvedValue({
+      zips: 7,
+      bytesLogical: 12_345_678,
+      bytesCapacity: 50_000_000
+    }),
     startPack: vi.fn().mockResolvedValue(1),
     onPackProgress: vi.fn((listener: ProgressListener) => progressBus.register(listener)),
     emitProgress: progressBus.emit,
@@ -173,7 +177,7 @@ describe('estimate toast lifecycle', () => {
 
     await seedFiles(user, locale);
 
-    await screen.findByText(/This run will likely produce ≈ 7 ZIP archive\(s\)\./i);
+    await screen.findByText(/Estimated: 7 pack\(s\) ~ 11\.77 MB/i);
     expect(getEstimateToast()).toBeInstanceOf(HTMLElement);
   });
 
@@ -181,7 +185,7 @@ describe('estimate toast lifecycle', () => {
     const { user, locale } = await renderApp('en');
 
     await seedFiles(user, locale);
-    await screen.findByText(/This run will likely produce ≈ 7 ZIP archive\(s\)\./i);
+    await screen.findByText(/Estimated: 7 pack\(s\) ~ 11\.77 MB/i);
 
     const initialEstimateCalls = electronAPI.estimateZipCount.mock.calls.length;
 
@@ -244,7 +248,7 @@ describe('estimate toast lifecycle', () => {
 
     await seedFiles(user, locale);
 
-    await screen.findByText(/This run will likely produce ≈ 7 ZIP archive\(s\)\./i);
+    await screen.findByText(/Estimated: 7 pack\(s\) ~ 11\.77 MB/i);
     expect(countEstimateToasts()).toBe(1);
 
     rerender(
@@ -255,7 +259,7 @@ describe('estimate toast lifecycle', () => {
 
     await seedFiles(user, 'de');
 
-    await screen.findByText(/≈ 7 ZIP-Archiv/i);
+    await screen.findByText(/Geschätzt: 7 Paket\(e\) ~ 11,77 MB/i);
     expect(countEstimateToasts()).toBe(1);
   });
 });
