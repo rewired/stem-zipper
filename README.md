@@ -148,6 +148,11 @@ The cleanup task removes the `dist-electron/`, `dist-renderer/` and `release/` d
 4. Click **Pack Now** to create `stems-XX.zip` files in the source folder. Progress updates mirror the classic Tkinter interface.
 5. In development builds, a **Create Test Data (DEV)** button generates random dummy audio files in a chosen directory.
 
+### Packing: what the badges mean
+
+- `~ no zip gain` appears next to already-compressed formats (MP3, AAC, M4A, MP4, OGG, OPUS, WMA, WEBM, FLAC). ZIP archives rarely shrink these files.
+- `try 7z volumes` highlights compressed files that exceed the configured max ZIP size, nudging you toward the 7z split-volume pack method when needed.
+
 ---
 
 ## Packaging & distribution

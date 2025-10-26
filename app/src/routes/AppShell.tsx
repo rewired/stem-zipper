@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type DragEvent, type JSX } from 'react';
 import { formatMessage, type TranslationKey } from '@common/i18n';
 import type { PackMethod } from '@common/ipc';
 import { APP_VERSION } from '@common/version';
@@ -15,7 +15,7 @@ import { MetadataModal } from '../features/metadata/MetadataModal';
 import { ProgressPanel } from '../components/ProgressPanel';
 import { ChoiceModal } from '../components/ChoiceModal';
 import { InfoModal } from '../components/InfoModal';
-import { LossyBadge } from '../components/LossyBadge';
+import { FileBadge } from '../components/FileBadge';
 import { DiagOverlay } from '../components/DiagOverlay';
 import { useZipEstimator } from '../hooks/useZipEstimator';
 
@@ -86,31 +86,32 @@ export function AppShell() {
     return (value: number) => formatter.format(value);
   }, [locale]);
 
-  const { warnings } = useZipEstimator(files, { maxSizeMb: maxSize });
-  const badgeLabel = useMemo(() => t('badge_label_zip_poor_gain'), [t]);
-  const maxZipSizeLabel = useMemo(() => {
-    if (typeof maxSize !== 'number' || !Number.isFinite(maxSize) || maxSize <= 0) {
-      return undefined;
-    }
-    return `${formatSize(maxSize)} ${t('common_size_unit_megabyte')}`;
-  }, [formatSize, maxSize, t]);
+  const { badges } = useZipEstimator(files, { maxSizeMb: maxSize });
+  const noZipGainLabel = useMemo(() => t('badge_no_zip_gain'), [t]);
+  const noZipGainHint = useMemo(() => t('badge_no_zip_gain_hint'), [t]);
+  const considerVolumesLabel = useMemo(() => t('badge_consider_7z_volumes'), [t]);
 
-  const renderLossyBadge = useCallback(
+  const renderFileBadges = useCallback(
     (file: FileEntry) => {
-      if (!maxZipSizeLabel) {
+      const flags = badges.get(file.path);
+      if (!flags) {
         return null;
       }
-      const warning = warnings.get(file.path);
-      if (!warning) {
+      const elements: JSX.Element[] = [];
+      if (flags.noZipGain) {
+        elements.push(
+          <FileBadge key="no-zip-gain" label={noZipGainLabel} tooltip={noZipGainHint} />
+        );
+      }
+      if (flags.consider7zVolumes) {
+        elements.push(<FileBadge key="consider-7z" label={considerVolumesLabel} />);
+      }
+      if (elements.length === 0) {
         return null;
       }
-      const tooltipKey =
-        warning.reason === 'file_exceeds_limit'
-          ? 'batch_warn_file_exceeds_max_zip'
-          : 'batch_warn_lossy_zip_gain_low';
-      return <LossyBadge label={badgeLabel} tooltip={t(tooltipKey, { max_zip_size: maxZipSizeLabel })} />;
+      return <span className="flex flex-wrap justify-end gap-1">{elements}</span>;
     },
-    [badgeLabel, maxZipSizeLabel, t, warnings]
+    [badges, considerVolumesLabel, noZipGainHint, noZipGainLabel]
   );
 
   const packMethodLabel = t('pack_method_label');
@@ -260,7 +261,7 @@ export function AppShell() {
             helperLabel={t('app_drop_helper')}
             sizeUnitLabel={t('common_size_unit_megabyte')}
             formatSize={formatSize}
-            renderBadge={renderLossyBadge}
+            renderBadge={renderFileBadges}
           />
         </div>
         <div className="sticky bottom-0 z-30 border-t border-slate-800 bg-slate-950/90 px-8 py-4 backdrop-blur">

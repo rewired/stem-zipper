@@ -1,7 +1,9 @@
+import path from 'node:path';
 import { useMemo } from 'react';
 import type { FileEntry } from '@common/ipc';
 import {
   estimatePacking,
+  isCompressedExt,
   isLossyKind,
   type PackingOverflowReason
 } from '@common/packing/estimator';
@@ -16,8 +18,14 @@ interface UseZipEstimatorOptions {
   allowMultiVolume?: boolean;
 }
 
+export interface FileBadgeFlags {
+  noZipGain?: boolean;
+  consider7zVolumes?: boolean;
+}
+
 interface UseZipEstimatorResult {
   warnings: Map<string, ZipEstimatorWarning>;
+  badges: Map<string, FileBadgeFlags>;
   maxZipSizeBytes?: number;
 }
 
@@ -27,13 +35,29 @@ export function useZipEstimator(
 ): UseZipEstimatorResult {
   const { maxSizeMb, allowMultiVolume } = options;
   return useMemo(() => {
-    if (typeof maxSizeMb !== 'number' || !Number.isFinite(maxSizeMb) || maxSizeMb <= 0) {
-      return { warnings: new Map<string, ZipEstimatorWarning>() };
+    const normalizedMaxSize =
+      typeof maxSizeMb === 'number' && Number.isFinite(maxSizeMb) && maxSizeMb > 0 ? maxSizeMb : undefined;
+    const badges = new Map<string, FileBadgeFlags>();
+
+    for (const file of files) {
+      const extension = path.extname(file.path ?? '').toLowerCase();
+      if (!isCompressedExt(extension)) {
+        continue;
+      }
+      const flags: FileBadgeFlags = { noZipGain: true };
+      if (typeof normalizedMaxSize === 'number' && file.sizeMb > normalizedMaxSize) {
+        flags.consider7zVolumes = true;
+      }
+      badges.set(file.path, flags);
     }
 
-    const maxZipSizeBytes = Math.floor(maxSizeMb * 1024 * 1024);
+    if (typeof normalizedMaxSize !== 'number') {
+      return { warnings: new Map<string, ZipEstimatorWarning>(), badges };
+    }
+
+    const maxZipSizeBytes = Math.floor(normalizedMaxSize * 1024 * 1024);
     if (maxZipSizeBytes <= 0) {
-      return { warnings: new Map<string, ZipEstimatorWarning>() };
+      return { warnings: new Map<string, ZipEstimatorWarning>(), badges };
     }
 
     const packing = estimatePacking(
@@ -70,6 +94,6 @@ export function useZipEstimator(
       });
     }
 
-    return { warnings, maxZipSizeBytes };
+    return { warnings, maxZipSizeBytes, badges };
   }, [allowMultiVolume, files, maxSizeMb]);
 }

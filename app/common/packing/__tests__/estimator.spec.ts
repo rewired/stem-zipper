@@ -8,6 +8,7 @@ import {
 import {
   estimateZipCount,
   estimatePacking,
+  isCompressedExt,
   type EstimateFileInput,
   type EstimateRequest
 } from '../estimator';
@@ -89,6 +90,21 @@ describe('estimateZipCount', () => {
 
     expect(result.bytesLogical).toBe(logical);
     expect(result.zips).toBe(expectedZips);
+  });
+});
+
+describe('isCompressedExt', () => {
+  it('detects already compressed audio formats regardless of case', () => {
+    const compressedExtensions = ['.mp3', '.AAC', 'm4a', 'MP4', '.ogg', 'OpUs', 'wma', 'WEBM', '.flac'];
+    for (const ext of compressedExtensions) {
+      expect(isCompressedExt(ext)).toBe(true);
+    }
+  });
+
+  it('rejects uncompressed audio formats', () => {
+    expect(isCompressedExt('.wav')).toBe(false);
+    expect(isCompressedExt('aiff')).toBe(false);
+    expect(isCompressedExt('')).toBe(false);
   });
 });
 
