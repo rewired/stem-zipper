@@ -2,7 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.0.1 - unreleased
+## 1.0.2 unreleased
+
+### Added
+
+### Changed
+
+### Removed
+
+### Fixed
+- Renderer silences the ZIP estimate toast during the post-pack analysis cycle, preventing the notification from reappearing until the next manual scan or size change.
+- 
+## 1.0.1
 
 ### Added
 - Automation contribution guide (`AGENTS.md`) capturing CI discipline, i18n requirements, and reviewer expectations for agents.
@@ -24,7 +35,7 @@ All notable changes to this project will be documented in this file.
 - Repaired the German localisation catalogue entry so bundlers and the TypeScript compiler can parse the new toast estimate keys without syntax errors.
 - Renderer now dismisses the ZIP estimate toast once packing completes, preventing stale notifications after successful runs.
 - Renderer no longer triggers a fresh ZIP estimate immediately after packing, avoiding redundant toasts during the automatic post-pack rescan.
-- Renderer silences the ZIP estimate toast during the post-pack analysis cycle, preventing the notification from reappearing until the next manual scan or size change.
+
 ## 1.0.0
 
 ### Added
