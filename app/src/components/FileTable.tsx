@@ -1,4 +1,5 @@
 import type { FileEntry } from '@common/ipc';
+import type { ReactNode } from 'react';
 
 interface FileTableProps {
   files: FileEntry[];
@@ -10,6 +11,7 @@ interface FileTableProps {
   helperLabel: string;
   sizeUnitLabel: string;
   formatSize: (value: number) => string;
+  renderBadge?: (file: FileEntry) => ReactNode;
 }
 
 export function FileTable({
@@ -21,7 +23,8 @@ export function FileTable({
   emptyLabel,
   helperLabel,
   sizeUnitLabel,
-  formatSize
+  formatSize,
+  renderBadge
 }: FileTableProps) {
   if (files.length === 0) {
     return (
@@ -62,7 +65,12 @@ export function FileTable({
         <tbody className="divide-y divide-slate-800/60">
           {files.map((file) => (
             <tr key={file.path} className="hover:bg-slate-800/50">
-              <td className="w-7/12 px-4 py-3 text-slate-100">{file.name}</td>
+              <td className="w-7/12 px-4 py-3 text-slate-100">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate">{file.name}</span>
+                  {renderBadge ? renderBadge(file) : null}
+                </div>
+              </td>
               <td className="w-24 px-4 py-3 text-slate-300">{actionNames[file.action]}</td>
               <td className="w-32 px-4 py-3 text-right tabular-nums text-slate-200">
                 {formatSize(file.sizeMb)} {sizeUnitLabel}

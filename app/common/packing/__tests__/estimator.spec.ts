@@ -7,6 +7,7 @@ import {
 } from '../constants';
 import {
   estimateZipCount,
+  estimatePacking,
   type EstimateFileInput,
   type EstimateRequest
 } from '../estimator';
@@ -88,5 +89,31 @@ describe('estimateZipCount', () => {
 
     expect(result.bytesLogical).toBe(logical);
     expect(result.zips).toBe(expectedZips);
+  });
+});
+
+describe('estimatePacking', () => {
+  it('marks lossy files that individually exceed the max ZIP size', () => {
+    const files: EstimateFileInput[] = [
+      { path: 'large.mp3', sizeBytes: 52 * MB, kind: 'mp3' }
+    ];
+
+    const result = estimatePacking(files, { maxZipSize: 50 * MB });
+    expect(result.files).toHaveLength(1);
+    const entry = result.files[0];
+    expect(entry.overflowReason).toBe('file_exceeds_limit');
+  });
+
+  it('flags lossy files that require a new volume while sparing compressible WAV files', () => {
+    const files: EstimateFileInput[] = [
+      { path: 'stem.wav', sizeBytes: 40 * MB, kind: 'wav' },
+      { path: 'vocals.mp3', sizeBytes: 12 * MB, kind: 'mp3' }
+    ];
+
+    const result = estimatePacking(files, { maxZipSize: 50 * MB });
+    const wavEntry = result.files.find((entry) => entry.path === 'stem.wav');
+    const mp3Entry = result.files.find((entry) => entry.path === 'vocals.mp3');
+    expect(wavEntry?.overflowReason).toBeNull();
+    expect(mp3Entry?.overflowReason).toBe('needs_new_volume');
   });
 });
