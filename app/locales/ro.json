@@ -75,5 +75,15 @@
   "badge_label_zip_poor_gain": "~no zip gain",
   "pack_method_label": "Pack method",
   "pack_method_zip_best_fit": "ZIP — best fit",
-  "pack_method_seven_z_split": "7z — split volumes"
+  "pack_method_seven_z_split": "7z — split volumes",
+  "pack_progress_preparing": "Preparing files ({{percent}}%)",
+  "pack_progress_packing": "Packing {{name}} ({{percent}}%)",
+  "pack_progress_packing_generic": "Packing archive ({{percent}}%)",
+  "pack_progress_finalizing": "Finalizing archive…",
+  "pack_progress_done": "Packing complete",
+  "pack_progress_error": "Packing failed",
+  "pack_error_no_files": "No supported audio files were found.",
+  "error_7z_binary_missing": "7z binary is missing. Install the platform binary under resources/bin.",
+  "error_7z_spawn_failed": "7z compression failed. Verify the bundled binary and file permissions.",
+  "pack_error_unknown": "Packing failed due to an unknown error."
 }

@@ -17,11 +17,11 @@ import { useAppStore } from '../../store/appStore';
 import { useMetadata } from '../metadata/useMetadata';
 
 const initialProgress: PackProgress = {
-  state: 'idle',
+  state: 'done',
   current: 0,
   total: 0,
   percent: 0,
-  message: 'pack_status_ready'
+  message: 'pack_progress_done'
 };
 
 const PACK_METHOD_STORAGE_KEY = 'stem-zipper.pack-method';
@@ -251,20 +251,14 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
     emit({ type: 'dismiss', id: 'estimate' });
     setStatusText(t('pack_status_in_progress'));
     try {
-      const total = await window.electronAPI.startPack({
+      await window.electronAPI.startPack({
         folderPath,
         maxSizeMb: maxSize,
         locale,
         packMetadata: metadata,
-        method: packMethod
+        method: packMethod,
+        files: files.map((file) => file.path)
       });
-      if (total > 0) {
-        setStatusText(t('pack_result_success', { count: total }));
-        setLastPackCount(total);
-        setIsRevealOpen(true);
-      } else {
-        setStatusText(t('pack_status_no_files'));
-      }
       await analyze(folderPath, maxSize);
     } catch (error: unknown) {
       console.error(error);
@@ -273,7 +267,7 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
       setIsPacking(false);
       estimateModeRef.current = 'auto';
     }
-  }, [analyze, emit, folderPath, getPackMetadata, locale, maxSize, openMetadata, packMethod, setStatusText, t]);
+  }, [analyze, emit, files, folderPath, getPackMetadata, locale, maxSize, openMetadata, packMethod, setStatusText, t]);
 
   const confirmOverwriteAndPack = useCallback(async () => {
     setIsOverwriteOpen(false);
@@ -360,32 +354,32 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
       progressStateRef.current = event.state;
       setProgress(event);
       switch (event.state) {
-        case 'analyzing':
+        case 'preparing':
           emit({ type: 'dismiss', id: 'estimate' });
-          if (event.message === 'splitting') {
-            setStatusText(
-              t('pack_status_splitting_percent', {
-                percent: event.percent
-              })
-            );
-          } else {
-            setStatusText(t('pack_status_in_progress'));
-          }
+          setStatusText(
+            t(event.message, {
+              percent: event.percent
+            })
+          );
           break;
         case 'packing':
           emit({ type: 'dismiss', id: 'estimate' });
-          if (event.currentZip) {
+          if (event.currentArchive) {
             setStatusText(
-              t('pack_status_packing_percent', {
-                name: event.currentZip,
+              t(event.message, {
+                name: event.currentArchive,
                 percent: event.percent
               })
             );
           } else {
-            setStatusText(t('pack_status_in_progress'));
+            setStatusText(t('pack_progress_packing_generic', { percent: event.percent }));
           }
           break;
-        case 'finished':
+        case 'finalizing':
+          setStatusText(t(event.message));
+          emit({ type: 'dismiss', id: 'estimate' });
+          break;
+        case 'done':
           setStatusText(t('pack_status_done'));
           emit({ type: 'dismiss', id: 'estimate' });
           break;
@@ -426,6 +420,29 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
     });
     return removeListener;
   }, [emit, locale, t]);
+  useEffect(() => {
+    if (!window.electronAPI || typeof window.electronAPI.onPackDone !== 'function') {
+      return () => {};
+    }
+    const removeListener = window.electronAPI.onPackDone((result) => {
+      setLastPackCount(result.archives.length);
+      setStatusText(t('pack_result_success', { count: result.archives.length }));
+      setIsRevealOpen(true);
+    });
+    return removeListener;
+  }, [setIsRevealOpen, setLastPackCount, setStatusText, t]);
+
+  useEffect(() => {
+    if (!window.electronAPI || typeof window.electronAPI.onPackError !== 'function') {
+      return () => {};
+    }
+    const removeListener = window.electronAPI.onPackError((payload) => {
+      setStatusText(`${t('common_error_title')}: ${payload.message}`);
+      emit({ type: 'dismiss', id: 'estimate' });
+    });
+    return removeListener;
+  }, [emit, setStatusText, t]);
+
 
   const formatInteger = useMemo(() => {
     const formatter = new Intl.NumberFormat(locale, {

@@ -1,7 +1,9 @@
 import type {
   AnalyzeResponse,
+  PackErrorPayload,
   PackProgress,
   PackRequest,
+  PackResult,
   PackStatusEvent,
   TestDataResponse,
   UserPrefsAddRecent,
@@ -17,9 +19,11 @@ declare global {
     electronAPI: {
       selectFolder: () => Promise<string | null>;
       analyzeFolder: (folderPath: string, maxSizeMb: number, locale: string) => Promise<AnalyzeResponse>;
-      startPack: (request: PackRequest) => Promise<number>;
+      startPack: (request: PackRequest) => Promise<void>;
       onPackProgress: (callback: (progress: PackProgress) => void) => () => void;
       onPackStatus: (callback: (status: PackStatusEvent) => void) => () => void;
+      onPackDone: (callback: (result: PackResult) => void) => () => void;
+      onPackError: (callback: (error: PackErrorPayload) => void) => () => void;
       createTestData: (folderPath: string, locale: string) => Promise<TestDataResponse>;
       openExternal: (url: string) => Promise<void>;
       openPath: (path: string) => Promise<void>;

@@ -7,6 +7,8 @@ export const IPC_CHANNELS = {
   PACK_FOLDER: 'pack-folder',
   PACK_PROGRESS: 'pack-progress',
   PACK_STATUS: 'pack-status',
+  PACK_DONE: 'pack-done',
+  PACK_ERROR: 'pack-error',
   CREATE_TESTDATA: 'create-testdata',
   OPEN_EXTERNAL: 'open-external',
   OPEN_PATH: 'open-path',
@@ -54,13 +56,15 @@ export type PackMethod = 'zip_best_fit' | 'seven_z_split';
 
 export interface PackRequest {
   folderPath: string;
+  files?: string[];
   maxSizeMb: number;
   locale: string;
   packMetadata: PackMetadata;
   method?: PackMethod;
+  splitStereoThresholdMb?: number;
 }
 
-export type PackState = 'idle' | 'analyzing' | 'packing' | 'finished' | 'error';
+export type PackState = 'preparing' | 'packing' | 'finalizing' | 'done' | 'error';
 
 export type PackToastLevel = 'info' | 'warning';
 
@@ -76,8 +80,8 @@ export interface PackProgress {
   current: number;
   total: number;
   percent: number;
-  message: string;
-  currentZip?: string;
+  message: TranslationKey;
+  currentArchive?: string;
   errorMessage?: string;
 }
 
@@ -86,6 +90,16 @@ export type PackStatusEvent =
       type: 'toast';
       toast: PackToast;
     };
+
+export interface PackResult {
+  archives: string[];
+  method: PackMethod;
+}
+
+export interface PackErrorPayload {
+  message: string;
+  code: string;
+}
 
 export interface TestDataRequest {
   folderPath: string;

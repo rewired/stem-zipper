@@ -1,8 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type {
   AnalyzeResponse,
+  PackErrorPayload,
   PackProgress,
   PackRequest,
+  PackResult,
   PackStatusEvent,
   TestDataResponse,
   UserPrefsAddRecent,
@@ -16,6 +18,8 @@ import { resolveLocale } from '../common/i18n';
 import type { EstimateRequest, EstimateResponse } from '../common/packing/estimator';
 
 type ProgressListener = (progress: PackProgress) => void;
+type ResultListener = (result: PackResult) => void;
+type ErrorListener = (error: PackErrorPayload) => void;
 
 const runtimeConfig: RuntimeConfig = {
   locale: resolveLocale(process.env.STEM_ZIPPER_LANG, process.env.LC_ALL, process.env.LANG),
@@ -40,7 +44,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       locale
     });
   },
-  startPack(request: PackRequest): Promise<number> {
+  startPack(request: PackRequest): Promise<void> {
     return ipcRenderer.invoke(IPC_CHANNELS.PACK_FOLDER, request);
   },
   onPackProgress(callback: ProgressListener): () => void {
@@ -52,6 +56,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const listener = (_event: Electron.IpcRendererEvent, status: PackStatusEvent) => callback(status);
     ipcRenderer.on(IPC_CHANNELS.PACK_STATUS, listener);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.PACK_STATUS, listener);
+  },
+  onPackDone(callback: ResultListener): () => void {
+    const listener = (_event: Electron.IpcRendererEvent, result: PackResult) => callback(result);
+    ipcRenderer.on(IPC_CHANNELS.PACK_DONE, listener);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.PACK_DONE, listener);
+  },
+  onPackError(callback: ErrorListener): () => void {
+    const listener = (_event: Electron.IpcRendererEvent, error: PackErrorPayload) => callback(error);
+    ipcRenderer.on(IPC_CHANNELS.PACK_ERROR, listener);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.PACK_ERROR, listener);
   },
   createTestData(folderPath: string, locale: string): Promise<TestDataResponse> {
     return ipcRenderer.invoke(IPC_CHANNELS.CREATE_TESTDATA, {
