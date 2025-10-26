@@ -13,7 +13,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Renderer now debounces ZIP estimate requests and pairs them with the latest analysis token to prevent stale toasts.
 - Renderer toast estimates now use underscore keys with concise start/result/error copy shared across locales.
-- Development workflow now delegates to `concurrently` with named stream prefixes and signal-aware teardown so `pnpm dev` exits cleanly across platforms.
+- Development workflow now delegates to `concurrently` with named stream prefixes and signal-aware teardown so `pnpm run dev` exits cleanly across platforms.
+- Repository root now exposes pnpm workspace scripts, enabling `pnpm run dev|build|lint|typecheck|test|package` without `cd app` and aligning CI with the monorepo layout.
 
 ### Removed
 
@@ -61,7 +62,7 @@ All notable changes to this project will be documented in this file.
 - Renderer info modal links now open in the system browser via a dedicated `open-external` IPC bridge helper.
 
 ### Changed
-- Development runner now accepts an optional locale argument (e.g. `pnpm dev de` or `--lang=fr`) and auto-detects the operating system language when no input is provided, falling back to English only when the locale is unsupported.
+- Development runner now accepts an optional locale argument (e.g. `pnpm run dev de` or `--lang=fr`) and auto-detects the operating system language when no input is provided, falling back to English only when the locale is unsupported.
 - Renderer header now displays the application version alongside the product name and the Electron window title mirrors the versioned label.
 - Renderer header now uses a Material icon instead of the headphone emoji, drops the duplicate folder instruction copy and widens the selected-path display for long directories.
 - Renderer header, action bar and modal controls now render Material Symbols icons instead of emojis while preserving layout and accessibility.

@@ -38,25 +38,21 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pnpm-store
-          key: pnpm-store-${{ runner.os }}-${{ hashFiles('app/pnpm-lock.yaml') }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-store-${{ runner.os }}-
 
       - name: Install dependencies
-        working-directory: app
         run: pnpm install --frozen-lockfile
 
       - name: Lint
-        working-directory: app
-        run: pnpm lint
+        run: pnpm run lint
 
       - name: Typecheck
-        working-directory: app
-        run: pnpm typecheck
+        run: pnpm run typecheck
 
       - name: Test
-        working-directory: app
-        run: pnpm test
+        run: pnpm run test
 
   build-windows:
     name: Build (Windows)
@@ -85,16 +81,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pnpm-store
-          key: pnpm-store-${{ runner.os }}-${{ hashFiles('app/pnpm-lock.yaml') }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-store-${{ runner.os }}-
 
       - name: Install dependencies
-        working-directory: app
         run: pnpm install --frozen-lockfile
 
       - name: Package Windows (x64)
-        working-directory: app
         run: pnpm run package:win
 
       - name: Upload Windows artifacts
@@ -130,16 +124,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pnpm-store
-          key: pnpm-store-${{ runner.os }}-${{ hashFiles('app/pnpm-lock.yaml') }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-store-${{ runner.os }}-
 
       - name: Install dependencies
-        working-directory: app
         run: pnpm install --frozen-lockfile
 
       - name: Package Linux (x64)
-        working-directory: app
         run: pnpm run package:linux
 
       - name: Upload Linux artifacts

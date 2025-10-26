@@ -1,3 +1,5 @@
+packages:
+  - app
 ignoredBuiltDependencies:
   - electron
   - esbuild

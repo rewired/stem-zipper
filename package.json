@@ -1,0 +1,20 @@
+{
+  "name": "stem-zipper-monorepo",
+  "private": true,
+  "packageManager": "pnpm@10.19.0",
+  "workspaces": [
+    "app"
+  ],
+  "scripts": {
+    "dev": "pnpm -C app dev",
+    "build": "pnpm -C app build",
+    "typecheck": "pnpm -C app typecheck",
+    "lint": "pnpm -C app lint",
+    "test": "pnpm -C app test",
+    "package": "pnpm -C app package",
+    "package:win": "pnpm -C app run package:win",
+    "package:linux": "pnpm -C app run package:linux",
+    "preview": "pnpm -C app preview",
+    "clean": "pnpm -C app clean"
+  }
+}
