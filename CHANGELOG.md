@@ -21,6 +21,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- Preview launcher now reinstalls Electron binaries automatically, preventing `Electron failed to install correctly` crashes
+  after fresh dependency installs.
 - Electron main TypeScript config now includes the `gracefulExit` helper, restoring `pnpm run dev` on Windows by keeping the
   main-process watcher aware of the new source file.
 - Renderer now force-dismisses the ZIP estimate toast when analysis or packing begins, keeping the notification hidden during

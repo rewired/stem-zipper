@@ -23,7 +23,7 @@
     "build:main": "tsc --project electron/tsconfig.main.json",
     "build:preload": "tsc --project electron/tsconfig.preload.json",
     "lint": "eslint \"{src,electron}/**/*.{ts,tsx}\"",
-    "preview": "pnpm run build && electron .",
+    "preview": "pnpm run build && node scripts/launch-electron.cjs .",
     "test": "vitest run",
     "licenses:txt": "pnpm dlx license-checker-rseidelsohn --production --relativeLicensePath --out THIRD_PARTY_LICENSES.txt",
     "licenses:guard": "pnpm dlx license-checker-rseidelsohn --production --onlyAllow='MIT;BSD-2-Clause;BSD-3-Clause;Apache-2.0;ISC;CC0-1.0'",
