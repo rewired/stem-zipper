@@ -115,7 +115,10 @@ export const sevenZSplitStrategy: PackStrategy = async (context) => {
       throw new Error(result.stderr || 'error_7z_spawn_failed');
     }
   } catch (error) {
-    context.progress.error({ error, message: 'pack_progress_error' });
+    context.progress.error({
+      error: error instanceof Error ? error : String(error),
+      message: 'pack_progress_error'
+    });
     await cleanupExtras(writtenExtras);
     if (error instanceof Error && error.message === 'error_7z_binary_missing') {
       throw error;

@@ -196,7 +196,7 @@ function registerIpcHandlers(): void {
     IPC_CHANNELS.ANALYZE_FOLDER,
     async (_event, args: { folderPath: string; maxSizeMb: number; locale: string }) => {
       const sanitizedMax = ensureValidMaxSize(args.maxSizeMb);
-      const files = analyzeFolder(args.folderPath, sanitizedMax);
+      const files = await analyzeFolder(args.folderPath, sanitizedMax);
       const response: AnalyzeResponse = {
         files,
         count: files.length,
