@@ -6,7 +6,9 @@ settings:
 
 importers:
 
-  .:
+  .: {}
+
+  app:
     dependencies:
       buffer-crc32:
         specifier: ^1.0.0

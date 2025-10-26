@@ -19,6 +19,6 @@ We will rebuild the desktop application around an Electron runtime:
 ## Consequences
 
 - Node.js (18+) becomes the primary runtime dependency for development and distribution.
-- The build workflow now involves `pnpm dev` / `pnpm build` inside `app/`, producing compiled Electron bundles.
+- The build workflow now involves `pnpm run dev` / `pnpm run build` from the repository root, producing compiled Electron bundles inside `app/`.
 - Future enhancements (e.g., packaging installers via Electron Builder) can build upon the new TypeScript codebase without touching Python.
 - Documentation, onboarding materials and automation scripts need to reflect the Electron project structure.
