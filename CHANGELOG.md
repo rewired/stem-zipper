@@ -21,6 +21,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- `pnpm run dev` now registers the Electron launcher script again, restoring the
+  development workflow after the missing `dev:electron` target regression.
 - Preview launcher now reinstalls Electron binaries automatically, preventing `Electron failed to install correctly` crashes
   after fresh dependency installs.
 - Electron main TypeScript config now includes the `gracefulExit` helper, restoring `pnpm run dev` on Windows by keeping the
