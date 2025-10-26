@@ -152,6 +152,7 @@ export default function App() {
   const estimatorErrorLoggedRef = useRef(false);
   const progressStateRef = useRef<PackState>(initialProgress.state);
   const estimateModeRef = useRef<'auto' | 'silent'>('auto');
+  const triggerEstimateRef = useRef<DebouncedFunction<() => void> | null>(null);
 
   const nextAnalyzeToken = useCallback(() => {
     const next = analyzeTokenRef.current + 1;
@@ -572,6 +573,7 @@ export default function App() {
       setProgress(event);
       switch (event.state) {
         case 'analyzing':
+          dismissToast('estimate');
           if (event.message === 'splitting') {
             setStatusText(
               t('pack_status_splitting_percent', {
@@ -583,6 +585,7 @@ export default function App() {
           }
           break;
         case 'packing':
+          dismissToast('estimate');
           if (event.currentZip) {
             setStatusText(
               t('pack_status_packing_percent', {
@@ -715,11 +718,20 @@ export default function App() {
   ]);
 
   useEffect(() => {
-    triggerEstimate();
-    return () => {
-      triggerEstimate.cancel();
-    };
+    triggerEstimateRef.current?.cancel();
+    triggerEstimateRef.current = triggerEstimate;
   }, [triggerEstimate]);
+
+  useEffect(() => {
+    const fn = triggerEstimateRef.current;
+    if (!fn) {
+      return;
+    }
+    fn();
+    return () => {
+      fn.cancel();
+    };
+  }, [files, locale, maxSize]);
 
   useEffect(() => {
     if (!folderPath || !files.length || isMetadataOpen) {
