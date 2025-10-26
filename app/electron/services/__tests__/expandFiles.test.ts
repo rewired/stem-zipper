@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { expandFiles, UnsupportedWavError, type SizedFile } from '../packaging';
+import { expandFiles } from '../pack/expandFiles';
+import { UnsupportedWavError } from '../pack/splitStereo';
+import type { SizedFile } from '../pack/types';
 import { formatPathForDisplay } from '../../../common/paths';
 
 vi.mock('../audioProbe', () => ({
@@ -28,21 +30,20 @@ describe('expandFiles', () => {
     ];
     const splitter = vi.fn().mockResolvedValue(splitResult);
     const emitToast = vi.fn();
-    const onProgress = vi.fn();
+    const progress = {
+      start: vi.fn(),
+      tick: vi.fn(),
+      fileDone: vi.fn(),
+      done: vi.fn(),
+      error: vi.fn()
+    };
 
-    const result = await expandFiles([file], {
-      maxSizeBytes: 1,
-      onProgress,
-      emitToast,
-      splitter
-    });
+    const result = await expandFiles([file], { maxSizeBytes: 1, progress, emitToast, splitter });
 
     expect(result).toEqual(splitResult);
     expect(splitter).toHaveBeenCalledWith(file.path);
     expect(emitToast).not.toHaveBeenCalled();
-    expect(onProgress).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'analyzing', message: 'splitting' })
-    );
+    expect(progress.tick).toHaveBeenCalledWith(expect.objectContaining({ state: 'preparing' }));
   });
 
   it('skips splitting when the probe indicates a non-WAV payload', async () => {

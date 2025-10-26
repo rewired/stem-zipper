@@ -6,7 +6,7 @@ import { AppStoreProvider } from '../store/appStore';
 import { MetadataProvider } from '../features/metadata/useMetadata';
 import { PackStateProvider } from '../features/pack/usePackState';
 import { AppShell } from '../routes/AppShell';
-import type { FileEntry, PackProgress, PackStatusEvent } from '@common/ipc';
+import type { FileEntry, PackErrorPayload, PackProgress, PackResult, PackStatusEvent } from '@common/ipc';
 import type { RuntimeConfig } from '@common/runtime';
 
 const MB = 1024 * 1024;
@@ -22,6 +22,10 @@ const mockFile: FileEntry = {
 
 type ProgressListener = (event: PackProgress) => void;
 type StatusListener = (event: PackStatusEvent) => void;
+type ResultListener = (event: PackResult) => void;
+type ErrorListener = (event: PackErrorPayload) => void;
+
+const nextTick = (delay = 20) => new Promise<void>((resolve) => setTimeout(resolve, delay));
 
 function createProgressBus() {
   const listeners = new Set<ProgressListener>();
@@ -48,10 +52,38 @@ function createStatusBus() {
     }
   };
 }
+function createResultBus() {
+  const listeners = new Set<ResultListener>();
+  return {
+    register(listener: ResultListener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    emit(event: PackResult) {
+      listeners.forEach((listener) => listener(event));
+    }
+  };
+}
+
+function createErrorBus() {
+  const listeners = new Set<ErrorListener>();
+  return {
+    register(listener: ErrorListener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    emit(event: PackErrorPayload) {
+      listeners.forEach((listener) => listener(event));
+    }
+  };
+}
+
 
 function createElectronMock() {
   const progressBus = createProgressBus();
   const statusBus = createStatusBus();
+  const resultBus = createResultBus();
+  const errorBus = createErrorBus();
 
   const api = {
     selectFolder: vi.fn().mockResolvedValue('/tmp/session'),
@@ -63,22 +95,41 @@ function createElectronMock() {
       packing: { maxZipSize: 0, capacityBytes: 0, perZipOverheadBytes: 0, files: [] }
     }),
     startPack: vi.fn().mockImplementation(async () => {
-      await Promise.resolve();
+      api.emitProgress({
+        state: 'preparing',
+        current: 0,
+        total: 2,
+        percent: 0,
+        message: 'pack_progress_preparing'
+      });
+      await nextTick();
       api.emitProgress({
         state: 'packing',
         current: 1,
         total: 2,
         percent: 50,
-        message: 'pack_status_in_progress',
-        currentZip: 'session-1.zip'
+        message: 'pack_progress_packing',
+        currentArchive: 'session-1.zip'
       });
-      return 1;
+      await nextTick();
+      api.emitProgress({
+        state: 'done',
+        current: 2,
+        total: 2,
+        percent: 100,
+        message: 'pack_progress_done'
+      });
+      api.emitDone({ archives: ['/tmp/session/stems-01.zip'], method: 'zip_best_fit' });
     }),
     checkExistingZips: vi.fn().mockResolvedValue({ count: 0, files: [] }),
     onPackProgress: vi.fn((listener: ProgressListener) => progressBus.register(listener)),
     emitProgress: progressBus.emit,
     onPackStatus: vi.fn((listener: StatusListener) => statusBus.register(listener)),
     emitStatus: statusBus.emit,
+    onPackDone: vi.fn((listener: ResultListener) => resultBus.register(listener)),
+    emitDone: resultBus.emit,
+    onPackError: vi.fn((listener: ErrorListener) => errorBus.register(listener)),
+    emitError: errorBus.emit,
     getUserPrefs: vi.fn().mockResolvedValue({
       default_artist: 'Default Artist',
       default_artist_url: 'https://example.com',
@@ -162,7 +213,7 @@ describe('AppShell integration', () => {
     await waitFor(() => {
       expect(screen.queryByText('Estimating packs…')).toBeNull();
     });
-    await screen.findByText('50%');
+    await screen.findByText('Packing session-1.zip (50%)');
     expect(window.electronAPI?.startPack).toHaveBeenCalledWith(
       expect.objectContaining({ method: expect.any(String) })
     );

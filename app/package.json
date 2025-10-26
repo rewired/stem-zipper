@@ -2,7 +2,7 @@
   "name": "stem-zipper-electron",
   "version": "1.0.2",
   "description": "Electron desktop app for preparing ccMixter-ready stem ZIP archives.",
-  "author": "Björn Ahlers",
+  "author": "Bj\u00f6rn Ahlers",
   "private": true,
   "main": "dist-electron/main/electron/main.js",
   "license": "MIT",
@@ -151,6 +151,13 @@
       {
         "from": "third_party_notices",
         "to": "third_party_notices",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "resources/bin",
+        "to": "bin",
         "filter": [
           "**/*"
         ]

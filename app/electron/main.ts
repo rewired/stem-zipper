@@ -2,12 +2,12 @@ import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
-import { analyzeFolder, createTestData, packFolder } from './services/packaging';
+import { analyzeFolder, createTestData, pack } from './services/pack';
 import { ensureValidMaxSize } from '../common/validation';
 import { formatPathForDisplay } from '../common/paths';
 import { IPC_CHANNELS } from '../common/ipc';
 import type { AnalyzeResponse, PackRequest, TestDataRequest } from '../common/ipc';
-import { formatMessage, resolveLocale } from '../common/i18n';
+import { formatMessage, resolveLocale, type TranslationKey } from '../common/i18n';
 import type { RuntimeConfig } from '../common/runtime';
 import { APP_VERSION } from '../common/version';
 import { estimateZipCount, type EstimateRequest } from '../common/packing/estimator';
@@ -208,7 +208,7 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.PACK_FOLDER, async (event, args: PackRequest) => {
     if (packInProgress) {
-      return 0;
+      return;
     }
 
     packInProgress = true;
@@ -226,7 +226,7 @@ function registerIpcHandlers(): void {
     }
     try {
       const entries = await fs.promises.readdir(args.folderPath, { withFileTypes: true });
-      const existing = entries.filter((e) => e.isFile() && /^stems-.*\.zip$/i.test(e.name));
+      const existing = entries.filter((entry) => entry.isFile() && /^stems-.*\.(zip|7z(\.\d{3})?)$/i.test(entry.name));
       if (existing.length > 0) {
         const window = getWindow();
         const { response } = await dialog.showMessageBox(window, {
@@ -240,38 +240,46 @@ function registerIpcHandlers(): void {
         });
         if (response !== 0) {
           packInProgress = false;
-          return 0;
+          return;
         }
       }
-    } catch (e) {
-      console.warn('Failed to check for existing ZIPs before packing', e);
+    } catch (error) {
+      console.warn('Failed to check for existing archives before packing', error);
     }
+
     try {
-      const total = await packFolder(
-        args.folderPath,
-        sanitizedMax,
-        locale,
-        normalizedMetadata,
-        (progress) => {
+      const result = await pack({
+        options: {
+          method: args.method ?? 'zip_best_fit',
+          maxArchiveSizeMB: sanitizedMax,
+          outputDir: args.folderPath,
+          files: Array.isArray(args.files) ? args.files : [],
+          locale,
+          metadata: normalizedMetadata,
+          splitStereoThresholdMB: args.splitStereoThresholdMb
+        },
+        onProgress: (progress) => {
           event.sender.send(IPC_CHANNELS.PACK_PROGRESS, progress);
         },
-        (status) => {
+        emitStatus: (status) => {
           event.sender.send(IPC_CHANNELS.PACK_STATUS, status);
         }
-      );
-      return total;
-    } catch (error) {
-      const fallback = formatMessage(locale, 'common_error_title');
-      const message = error instanceof Error && error.message ? error.message : fallback;
-      event.sender.send(IPC_CHANNELS.PACK_PROGRESS, {
-        state: 'error',
-        current: 0,
-        total: 0,
-        percent: 0,
-        message: 'error',
-        errorMessage: message
       });
-      throw error;
+      event.sender.send(IPC_CHANNELS.PACK_DONE, {
+        archives: result.archives.map((archivePath) => formatPathForDisplay(archivePath)),
+        method: args.method ?? 'zip_best_fit'
+      });
+    } catch (error) {
+      const code = error instanceof Error && error.message ? error.message : 'pack_error_unknown';
+      let message: string;
+      try {
+        message = formatMessage(locale, code as TranslationKey);
+      } catch (formatError) {
+        console.warn('Failed to localize pack error message', code, formatError);
+        message = code;
+      }
+      event.sender.send(IPC_CHANNELS.PACK_ERROR, { message, code });
+      console.error('Packing failed', error);
     } finally {
       packInProgress = false;
     }
