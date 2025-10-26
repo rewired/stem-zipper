@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Renderer exposes a shared `getFileExtension` helper for consistent lowercase extension parsing across platforms.
+
 ### Fixed
 - Router shell now opts the React Router `RouterProvider` into the `v7_startTransition` future flag, eliminating the transition
   mode warning ahead of the v7 release.
