@@ -15,33 +15,48 @@ const mockFileEntry = {
   kind: 'wav' as const
 };
 
+type ProgressListener = (event: PackProgress) => void;
+type StatusListener = (event: PackStatusEvent) => void;
+
+function createProgressBus() {
+  const listeners = new Set<ProgressListener>();
+  return {
+    register(listener: ProgressListener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    emit(event: PackProgress) {
+      listeners.forEach((listener) => listener(event));
+    }
+  };
+}
+
+function createStatusBus() {
+  const listeners = new Set<StatusListener>();
+  return {
+    register(listener: StatusListener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    emit(event: PackStatusEvent) {
+      listeners.forEach((listener) => listener(event));
+    }
+  };
+}
+
 function createElectronAPIMock() {
-  const progressListeners = new Set<(event: PackProgress) => void>();
-  const statusListeners = new Set<(event: PackStatusEvent) => void>();
+  const progressBus = createProgressBus();
+  const statusBus = createStatusBus();
 
   return {
     selectFolder: vi.fn().mockResolvedValue('/tmp/project'),
     analyzeFolder: vi.fn().mockResolvedValue({ files: [mockFileEntry], count: 1, maxSizeMb: 100 }),
     estimateZipCount: vi.fn().mockResolvedValue({ zips: 7 }),
     startPack: vi.fn().mockResolvedValue(1),
-    onPackProgress: vi.fn((listener: (event: PackProgress) => void) => {
-      progressListeners.add(listener);
-      return () => {
-        progressListeners.delete(listener);
-      };
-    }),
-    emitProgress: (event: PackProgress) => {
-      progressListeners.forEach((listener) => listener(event));
-    },
-    onPackStatus: vi.fn((listener: (event: PackStatusEvent) => void) => {
-      statusListeners.add(listener);
-      return () => {
-        statusListeners.delete(listener);
-      };
-    }),
-    emitStatus: (event: PackStatusEvent) => {
-      statusListeners.forEach((listener) => listener(event));
-    },
+    onPackProgress: vi.fn((listener: ProgressListener) => progressBus.register(listener)),
+    emitProgress: progressBus.emit,
+    onPackStatus: vi.fn((listener: StatusListener) => statusBus.register(listener)),
+    emitStatus: statusBus.emit,
     checkExistingZips: vi.fn().mockResolvedValue({ count: 0, files: [] }),
     getUserPrefs: vi.fn().mockResolvedValue({
       default_artist: 'Saved Artist',
@@ -58,6 +73,7 @@ function createElectronAPIMock() {
 }
 
 type ElectronAPIMock = ReturnType<typeof createElectronAPIMock>;
+type TestUser = ReturnType<typeof userEvent.setup>;
 
 let electronAPI: ElectronAPIMock;
 
@@ -73,8 +89,33 @@ async function advanceEstimateTimers() {
   await Promise.resolve();
 }
 
+function getSelectFolderLabel(locale: LocaleKey) {
+  return locale === 'de' ? /Ordner auswählen/i : /Select Folder/i;
+}
+
+function getPackButtonLabel(locale: LocaleKey) {
+  return locale === 'de' ? /Jetzt packen/i : /Pack Now/i;
+}
+
+function getEstimateToast() {
+  const toast = document.querySelector('[data-toast-id="estimate"]');
+  if (!toast) {
+    throw new Error('Expected estimate toast to be present');
+  }
+  return toast as HTMLElement;
+}
+
+function queryEstimateToast() {
+  return document.querySelector('[data-toast-id="estimate"]') as HTMLElement | null;
+}
+
+function countEstimateToasts() {
+  return document.querySelectorAll('[data-toast-id="estimate"]').length;
+}
+
 describe('estimate toast lifecycle', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     electronAPI = createElectronAPIMock();
     window.electronAPI = electronAPI as unknown as Window['electronAPI'];
     window.runtimeConfig = { locale: 'en', devMode: false };
@@ -86,33 +127,81 @@ describe('estimate toast lifecycle', () => {
     vi.useRealTimers();
   });
 
-  it('shows estimate after analyze with files', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+  async function renderApp(locale: LocaleKey = 'en') {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-
-    render(
+    const utils = render(
       <ToastProvider>
-        <TestHarness locale="en" />
+        <TestHarness locale={locale} />
       </ToastProvider>
     );
+    return { user, locale, ...utils };
+  }
 
-    const selectFolderButton = screen.getByRole('button', { name: /Select Folder/i });
+  async function seedFiles(user: TestUser, locale: LocaleKey = 'en') {
+    const previousCalls = electronAPI.analyzeFolder.mock.calls.length;
+    const selectFolderButton = screen.getByRole('button', { name: getSelectFolderLabel(locale) });
     await user.click(selectFolderButton);
+    await waitFor(() => {
+      expect(electronAPI.analyzeFolder).toHaveBeenCalledTimes(previousCalls + 1);
+    });
+    await advanceEstimateTimers();
+  }
+
+  async function completeMetadataAndPack(user: TestUser, locale: LocaleKey = 'en') {
+    const packButton = screen.getByRole('button', { name: getPackButtonLabel(locale) });
+    await user.click(packButton);
+
+    const modal = await screen.findByRole('dialog', { name: /Pack metadata/i });
+    const titleInput = within(modal).getByLabelText((content: string) => content.startsWith('Title')) as HTMLInputElement;
+    await user.clear(titleInput);
+    await user.type(titleInput, 'Pack Title');
+    const [artistInput] = within(modal).getAllByLabelText(/Artist/i) as HTMLInputElement[];
+    await user.clear(artistInput);
+    await user.type(artistInput, 'Artist Name');
+    const licenseSelect = within(modal).getByLabelText((content: string) => content.startsWith('License'));
+    await user.selectOptions(licenseSelect, 'CC-BY-4.0');
+    const saveAndPack = within(modal).getByRole('button', { name: /Save & Pack/i });
+    await user.click(saveAndPack);
 
     await waitFor(() => {
-      expect(electronAPI.analyzeFolder).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole('dialog', { name: /Pack metadata/i })).toBeNull();
     });
+  }
 
-    await advanceEstimateTimers();
+  it('shows estimate after analyze with files', async () => {
+    const { user, locale } = await renderApp('en');
+
+    await seedFiles(user, locale);
 
     await screen.findByText(/This run will likely produce ≈ 7 ZIP archive\(s\)\./i);
+    expect(getEstimateToast()).toBeInstanceOf(HTMLElement);
   });
 
   it('does not re-show estimate after pack flow triggers re-analyze', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const { user, locale } = await renderApp('en');
 
-    electronAPI.startPack.mockImplementation(async () => {
+    await seedFiles(user, locale);
+    await screen.findByText(/This run will likely produce ≈ 7 ZIP archive\(s\)\./i);
+
+    const initialEstimateCalls = electronAPI.estimateZipCount.mock.calls.length;
+
+    const packDeferred = (() => {
+      let resolve!: (value: number) => void;
+      const promise = new Promise<number>((res) => {
+        resolve = res;
+      });
+      return { promise, resolve };
+    })();
+
+    electronAPI.startPack.mockImplementation(async () => packDeferred.promise);
+
+    await completeMetadataAndPack(user, locale);
+
+    await waitFor(() => {
+      expect(electronAPI.startPack).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
       electronAPI.emitProgress({
         state: 'packing',
         current: 0,
@@ -120,6 +209,17 @@ describe('estimate toast lifecycle', () => {
         percent: 0,
         message: 'packing'
       });
+    });
+
+    await waitFor(() => {
+      expect(queryEstimateToast()).toBeNull();
+    });
+
+    await act(async () => {
+      packDeferred.resolve(1);
+    });
+
+    await act(async () => {
       electronAPI.emitProgress({
         state: 'finished',
         current: 1,
@@ -127,51 +227,6 @@ describe('estimate toast lifecycle', () => {
         percent: 100,
         message: 'done'
       });
-      return 1;
-    });
-
-    render(
-      <ToastProvider>
-        <TestHarness locale="en" />
-      </ToastProvider>
-    );
-
-    const selectFolderButton = screen.getByRole('button', { name: /Select Folder/i });
-    await user.click(selectFolderButton);
-
-    await waitFor(() => {
-      expect(electronAPI.analyzeFolder).toHaveBeenCalledTimes(1);
-    });
-
-    await advanceEstimateTimers();
-
-    await screen.findByText(/This run will likely produce ≈ 7 ZIP archive\(s\)\./i);
-
-    const initialEstimateCalls = electronAPI.estimateZipCount.mock.calls.length;
-
-    const initialModal = await screen.findByRole('dialog', { name: /Pack metadata/i });
-    const closeButton = within(initialModal).getByRole('button', { name: /^Close$/i });
-    await user.click(closeButton);
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: /Pack metadata/i })).toBeNull();
-    });
-    await user.click(screen.getByRole('button', { name: /Pack Now/i }));
-
-    const metadataModal = await screen.findByRole('dialog', { name: /Pack metadata/i });
-    const titleInput = within(metadataModal).getByLabelText((content: string) => content.startsWith('Title')) as HTMLInputElement;
-    await user.clear(titleInput);
-    await user.type(titleInput, 'Pack Title');
-    const licenseSelect = within(metadataModal).getByLabelText((content: string) => content.startsWith('License'));
-    await user.selectOptions(licenseSelect, 'CC-BY-4.0');
-    const saveAndPack = within(metadataModal).getByRole('button', { name: /Save & Pack/i });
-    await user.click(saveAndPack);
-
-    await waitFor(() => {
-      expect(electronAPI.startPack).toHaveBeenCalledTimes(1);
-    });
-
-    await waitFor(() => {
-      expect(screen.queryByText(/This run will likely produce/)).toBeNull();
     });
 
     await waitFor(() => {
@@ -181,31 +236,16 @@ describe('estimate toast lifecycle', () => {
     await advanceEstimateTimers();
 
     expect(electronAPI.estimateZipCount).toHaveBeenCalledTimes(initialEstimateCalls);
-    expect(screen.queryByText(/Calculating ZIP estimate/i)).toBeNull();
-    expect(screen.queryByText(/This run will likely produce/)).toBeNull();
+    expect(queryEstimateToast()).toBeNull();
   });
 
   it('replaces the estimate toast instead of stacking on locale changes', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const { user, locale, rerender } = await renderApp('en');
 
-    const { rerender } = render(
-      <ToastProvider>
-        <TestHarness locale="en" />
-      </ToastProvider>
-    );
-
-    const selectFolderButton = screen.getByRole('button', { name: /Select Folder/i });
-    await user.click(selectFolderButton);
-
-    await waitFor(() => {
-      expect(electronAPI.analyzeFolder).toHaveBeenCalledTimes(1);
-    });
-
-    await advanceEstimateTimers();
+    await seedFiles(user, locale);
 
     await screen.findByText(/This run will likely produce ≈ 7 ZIP archive\(s\)\./i);
-    expect(document.querySelectorAll('[role="status"]')).toHaveLength(1);
+    expect(countEstimateToasts()).toBe(1);
 
     rerender(
       <ToastProvider>
@@ -213,16 +253,9 @@ describe('estimate toast lifecycle', () => {
       </ToastProvider>
     );
 
-    const germanSelectFolder = screen.getByRole('button', { name: /Ordner auswählen/i });
-    await user.click(germanSelectFolder);
-
-    await waitFor(() => {
-      expect(electronAPI.analyzeFolder).toHaveBeenCalledTimes(2);
-    });
-
-    await advanceEstimateTimers();
+    await seedFiles(user, 'de');
 
     await screen.findByText(/≈ 7 ZIP-Archiv/i);
-    expect(document.querySelectorAll('[role="status"]')).toHaveLength(1);
+    expect(countEstimateToasts()).toBe(1);
   });
 });

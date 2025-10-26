@@ -107,6 +107,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <div
               key={toast.id}
               role="status"
+              data-toast-id={toast.id}
               className="pointer-events-auto rounded-lg border border-slate-700 bg-slate-900/95 p-4 text-sm text-slate-100 shadow-lg backdrop-blur"
               title={toast.note ?? undefined}
             >
