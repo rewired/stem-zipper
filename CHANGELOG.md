@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- Router shell now opts the React Router `RouterProvider` into the `v7_startTransition` future flag, eliminating the transition
+  mode warning ahead of the v7 release.
+
 ## 1.0.2 unreleased
 
 ### Added
