@@ -43,6 +43,7 @@
   "dialog_overwrite_text": "Deze map bevat al stems-*.zip-bestanden. Bestaande bestanden worden overschreven. Doorgaan?",
   "dev_error_dev_only": "Het genereren van testgegevens is alleen beschikbaar in de ontwikkelaarsmodus.",
   "toast_estimate_title": "Schatting",
+  "pack_toast_estimate_pending": "Calculating ZIP estimate…",
   "pack_toast_estimate": "Deze run zal waarschijnlijk ≈ {{count}} ZIP-archief(en) opleveren.",
   "toast_estimate_note": "De schatting houdt rekening met het splitsen naar mono van grote stereo-WAV's en de overhead van archiveren. Het uiteindelijke aantal kan iets afwijken.",
   "panel_pack_metadata_title": "Pack metadata",

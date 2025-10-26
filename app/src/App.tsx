@@ -66,6 +66,30 @@ function detectInitialLocale(): LocaleKey {
   return resolveLocale(runtime?.locale, languages, navigator.language);
 }
 
+type DebouncedFunction<T extends (...args: unknown[]) => void> = ((...args: Parameters<T>) => void) & {
+  cancel: () => void;
+};
+
+function debounce<T extends (...args: unknown[]) => void>(fn: T, delayMs: number): DebouncedFunction<T> {
+  let handle: number | null = null;
+  const debounced = ((...args: Parameters<T>) => {
+    if (handle !== null) {
+      window.clearTimeout(handle);
+    }
+    handle = window.setTimeout(() => {
+      handle = null;
+      fn(...args);
+    }, delayMs);
+  }) as DebouncedFunction<T>;
+  debounced.cancel = () => {
+    if (handle !== null) {
+      window.clearTimeout(handle);
+      handle = null;
+    }
+  };
+  return debounced;
+}
+
 export default function App() {
   const [locale] = useState<LocaleKey>(() => detectInitialLocale());
   const [maxSize, setMaxSize] = useState<number | ''>(DEFAULT_MAX_SIZE_MB);
@@ -122,11 +146,31 @@ export default function App() {
     []
   );
   const { show: showToast, dismiss: dismissToast } = useToast();
-  const estimateTimeoutRef = useRef<number | null>(null);
-  const estimateRequestTokenRef = useRef(0);
+  const analyzeTokenRef = useRef(0);
+  const estimateRequestCounterRef = useRef(0);
+  const estimateTokenRef = useRef('0-0');
   const estimatorErrorLoggedRef = useRef(false);
   const progressStateRef = useRef<PackState>(initialProgress.state);
   const estimateModeRef = useRef<'auto' | 'silent'>('auto');
+
+  const nextAnalyzeToken = useCallback(() => {
+    const next = analyzeTokenRef.current + 1;
+    analyzeTokenRef.current = next;
+    estimateRequestCounterRef.current = 0;
+    estimateTokenRef.current = `${next}-0`;
+    return next;
+  }, []);
+
+  const isLatestAnalyzeToken = useCallback((token: number) => analyzeTokenRef.current === token, []);
+
+  const nextEstimateTokenFromAnalyze = useCallback((analyzeToken: number) => {
+    estimateRequestCounterRef.current += 1;
+    const token = `${analyzeToken}-${estimateRequestCounterRef.current}`;
+    estimateTokenRef.current = token;
+    return token;
+  }, []);
+
+  const isLatestEstimateToken = useCallback((token: string) => estimateTokenRef.current === token, []);
 
   const t = useCallback(
     (key: TranslationKey, params: Record<string, string | number> = {}) =>
@@ -224,8 +268,16 @@ export default function App() {
 
   const analyze = useCallback(
     async (targetFolder: string, currentMaxSize: number) => {
+      if (!window.electronAPI || typeof window.electronAPI.analyzeFolder !== 'function') {
+        setStatusText(t('common_error_title'));
+        return;
+      }
+      const analyzeToken = nextAnalyzeToken();
       try {
         const response = await window.electronAPI.analyzeFolder(targetFolder, currentMaxSize, locale);
+        if (!isLatestAnalyzeToken(analyzeToken)) {
+          return;
+        }
         setFiles(response.files);
         setFolderPath(targetFolder);
         ensureMetadataDraft(targetFolder);
@@ -243,10 +295,12 @@ export default function App() {
         }
       } catch (error) {
         console.error(error);
-        setStatusText(`${t('common_error_title')}: ${(error as Error).message}`);
+        if (isLatestAnalyzeToken(analyzeToken)) {
+          setStatusText(`${t('common_error_title')}: ${(error as Error).message}`);
+        }
       }
     },
-    [ensureMetadataDraft, locale, t]
+    [ensureMetadataDraft, isLatestAnalyzeToken, locale, nextAnalyzeToken, t]
   );
 
   const handleFolderSelection = useCallback(
@@ -559,50 +613,53 @@ export default function App() {
     return removeListener;
   }, [dismissToast, t]);
 
-  useEffect(() => {
-    if (estimateTimeoutRef.current !== null) {
-      window.clearTimeout(estimateTimeoutRef.current);
-      estimateTimeoutRef.current = null;
-    }
-    if (estimateModeRef.current !== 'auto') {
-      return;
-    }
-    if (!files.length) {
-      return;
-    }
-    if (typeof maxSize !== 'number' || Number.isNaN(maxSize)) {
-      return;
-    }
-    if (!window.electronAPI || typeof window.electronAPI.estimateZipCount !== 'function') {
-      return;
-    }
+  const triggerEstimate = useMemo(() => {
+    return debounce(() => {
+      if (estimateModeRef.current !== 'auto') {
+        return;
+      }
+      if (!files.length) {
+        dismissToast('estimate');
+        return;
+      }
+      if (typeof maxSize !== 'number' || Number.isNaN(maxSize)) {
+        dismissToast('estimate');
+        return;
+      }
+      if (!window.electronAPI || typeof window.electronAPI.estimateZipCount !== 'function') {
+        return;
+      }
 
-    const requestFiles = files
-      .filter((file) => Number.isFinite(file.sizeBytes) && file.sizeBytes >= 0)
-      .map((file) => ({
-        path: file.path,
-        sizeBytes: file.sizeBytes,
-        kind: file.kind,
-        stereo: file.stereo === true ? true : undefined
-      }));
+      const requestFiles = files
+        .filter((file) => Number.isFinite(file.sizeBytes) && file.sizeBytes >= 0)
+        .map((file) => ({
+          path: file.path,
+          sizeBytes: file.sizeBytes,
+          kind: file.kind,
+          stereo: file.stereo === true ? true : undefined
+        }));
 
-    if (requestFiles.length === 0) {
-      return;
-    }
+      if (requestFiles.length === 0) {
+        dismissToast('estimate');
+        return;
+      }
 
-    const request = {
-      files: requestFiles,
-      targetMB: maxSize
-    };
+      const estimateToken = nextEstimateTokenFromAnalyze(analyzeTokenRef.current);
+      estimatorErrorLoggedRef.current = false;
 
-    estimateTimeoutRef.current = window.setTimeout(() => {
-      estimateTimeoutRef.current = null;
-      const currentToken = estimateRequestTokenRef.current + 1;
-      estimateRequestTokenRef.current = currentToken;
+      showToast({
+        id: 'estimate',
+        title: t('toast_estimate_title'),
+        message: formatMessage(locale, 'pack_toast_estimate_pending'),
+        note: t('toast_estimate_note'),
+        closeLabel: formatMessage(locale, 'common_close'),
+        timeoutMs: 10_000
+      });
+
       window.electronAPI
-        .estimateZipCount(request)
+        .estimateZipCount({ files: requestFiles, targetMB: maxSize, token: estimateToken })
         .then((response) => {
-          if (estimateRequestTokenRef.current !== currentToken) {
+          if (!isLatestEstimateToken(estimateToken)) {
             return;
           }
           estimatorErrorLoggedRef.current = false;
@@ -616,20 +673,33 @@ export default function App() {
           });
         })
         .catch((error) => {
+          if (!isLatestEstimateToken(estimateToken)) {
+            return;
+          }
           if (!estimatorErrorLoggedRef.current) {
             console.error('Failed to estimate ZIP count', error);
             estimatorErrorLoggedRef.current = true;
           }
+          dismissToast('estimate');
         });
-    }, 100);
+    }, 150);
+  }, [
+    dismissToast,
+    files,
+    isLatestEstimateToken,
+    locale,
+    maxSize,
+    nextEstimateTokenFromAnalyze,
+    showToast,
+    t
+  ]);
 
+  useEffect(() => {
+    triggerEstimate();
     return () => {
-      if (estimateTimeoutRef.current !== null) {
-        window.clearTimeout(estimateTimeoutRef.current);
-        estimateTimeoutRef.current = null;
-      }
+      triggerEstimate.cancel();
     };
-  }, [files, locale, maxSize, showToast, t]);
+  }, [triggerEstimate]);
 
   useEffect(() => {
     if (!folderPath || !files.length || isMetadataOpen) {

@@ -43,6 +43,7 @@
   "dialog_overwrite_text": "Ten folder zawiera już pliki stems-*.zip. Istniejące pliki zostaną nadpisane. Kontynuować?",
   "dev_error_dev_only": "Generowanie danych testowych jest dostępne tylko w trybie programisty.",
   "toast_estimate_title": "Oszacowanie",
+  "pack_toast_estimate_pending": "Calculating ZIP estimate…",
   "pack_toast_estimate": "To uruchomienie prawdopodobnie utworzy ≈ {{count}} archiwów ZIP.",
   "toast_estimate_note": "Oszacowanie uwzględnia podział na mono zbyt dużych plików stereo WAV oraz narzut archiwum. Ostateczna liczba może się nieznacznie różnić.",
   "panel_pack_metadata_title": "Pack metadata",

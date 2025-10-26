@@ -43,6 +43,7 @@
   "dialog_overwrite_text": "Tato složka již obsahuje soubory stems-*.zip. Existující soubory budou přepsány. Pokračovat?",
   "dev_error_dev_only": "Generování testovacích dat je dostupné pouze v režimu pro vývojáře.",
   "toast_estimate_title": "Odhad",
+  "pack_toast_estimate_pending": "Calculating ZIP estimate…",
   "pack_toast_estimate": "Tento běh pravděpodobně vytvoří ≈ {{count}} ZIP archivů.",
   "toast_estimate_note": "Odhad zohledňuje rozdělení velkých stereo WAV na mono i režii archivu. Konečný počet se může mírně lišit.",
   "panel_pack_metadata_title": "Pack metadata",

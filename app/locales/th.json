@@ -43,6 +43,7 @@
   "dialog_overwrite_text": "โฟลเดอร์นี้มีไฟล์ stems-*.zip อยู่แล้ว ไฟล์ที่มีอยู่จะถูกเขียนทับ ดำเนินการต่อหรือไม่",
   "dev_error_dev_only": "การสร้างข้อมูลทดสอบใช้ได้เฉพาะในโหมดนักพัฒนาเท่านั้น",
   "toast_estimate_title": "ประมาณการ",
+  "pack_toast_estimate_pending": "Calculating ZIP estimate…",
   "pack_toast_estimate": "การทำงานครั้งนี้น่าจะสร้างไฟล์ ZIP ประมาณ {{count}} ไฟล์",
   "toast_estimate_note": "ประมาณการคำนึงถึงการแยกเป็นโมโนของ WAV สเตอริโอขนาดใหญ่และค่าใช้จ่ายในการจัดเก็บ ข้อมูลจริงอาจแตกต่างเล็กน้อย",
   "panel_pack_metadata_title": "Pack metadata",

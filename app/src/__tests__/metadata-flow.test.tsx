@@ -14,6 +14,16 @@ const mockFileEntry = {
   kind: 'wav' as const
 };
 
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
 function createElectronAPIMock() {
   const analyzeFolder = vi.fn().mockResolvedValue({ files: [mockFileEntry], count: 1, maxSizeMb: 100 });
   const startPack = vi.fn().mockResolvedValue(1);
@@ -58,6 +68,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  vi.useRealTimers();
 });
 
 describe('metadata modal integration', () => {
@@ -238,6 +249,46 @@ describe('metadata modal integration', () => {
     await waitFor(() => {
       expect(screen.queryByText(/This run will likely produce/)).toBeNull();
     });
+  });
+
+  it('ignores stale estimate responses when inputs change quickly', async () => {
+    const firstEstimate = createDeferred<{ zips: number }>();
+    const secondEstimate = createDeferred<{ zips: number }>();
+    electronAPI.estimateZipCount
+      .mockReturnValueOnce(firstEstimate.promise)
+      .mockReturnValueOnce(secondEstimate.promise);
+
+    render(
+      <ToastProvider>
+        <App />
+      </ToastProvider>
+    );
+    const user = userEvent.setup();
+
+    const selectFolderButton = await screen.findByRole('button', { name: /Select Folder/i });
+    await user.click(selectFolderButton);
+
+    await waitFor(() => {
+      expect(electronAPI.estimateZipCount).toHaveBeenCalledTimes(1);
+    });
+
+    const maxSizeInput = await screen.findByLabelText(/Max ZIP size/i);
+    await user.clear(maxSizeInput);
+    await user.type(maxSizeInput, '50');
+
+    await waitFor(() => {
+      expect(electronAPI.estimateZipCount).toHaveBeenCalledTimes(2);
+    });
+
+    secondEstimate.resolve({ zips: 5 });
+    await Promise.resolve();
+    firstEstimate.resolve({ zips: 3 });
+    await Promise.resolve();
+
+    await waitFor(() => {
+      expect(screen.getByText(/≈ 5 ZIP/i)).toBeTruthy();
+    });
+    expect(screen.queryByText(/≈ 3 ZIP/i)).toBeNull();
   });
 
   it('requests a fresh estimate after packing when the max size changes', async () => {
