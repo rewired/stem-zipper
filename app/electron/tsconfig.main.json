@@ -5,6 +5,7 @@
     "rootDir": ".."
   },
   "include": [
+    "gracefulExit.ts",
     "main.ts",
     "services/**/*.ts",
     "types/**/*.ts",
