@@ -2,16 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
-
-### Added
-- Renderer exposes a shared `getFileExtension` helper for consistent lowercase extension parsing across platforms.
-
-### Fixed
-- Router shell now opts the React Router `RouterProvider` into the `v7_startTransition` future flag, eliminating the transition
-  mode warning ahead of the v7 release.
-
-## 1.0.2 unreleased
+## [1.0.2 unreleased]
 
 ### Added
 - Electron packer now emits localized info/warning toasts (10s minimum) when stereo splitting is skipped, keeping users informed
@@ -19,7 +10,7 @@ All notable changes to this project will be documented in this file.
 - Renderer batch table now surfaces localized warning badges for lossy files that would exceed the configured max ZIP size or
   trigger extra volumes.
 - Renderer adds a front-end pack method selector (ZIP vs 7z) ahead of the upcoming multi-archive backend work.- Electron packer can now produce 7z archives with configurable volume splitting via bundled native binaries.
-
+- Renderer exposes a shared `getFileExtension` helper for consistent lowercase extension parsing across platforms.
 
 ### Changed
 - Renderer now debounces ZIP estimate requests and pairs them with the latest analysis token to prevent stale toasts.
@@ -27,7 +18,6 @@ All notable changes to this project will be documented in this file.
 - Development workflow now delegates to `concurrently` with named stream prefixes and signal-aware teardown so `pnpm run dev` exits cleanly across platforms.
 - Repository root now exposes pnpm workspace scripts, enabling `pnpm run dev|build|lint|typecheck|test|package` without `cd app` and aligning CI with the monorepo layout.
 - Renderer shell split into feature-focused providers and routes, shrinking `App.tsx` while clarifying pack and metadata flows.- Electron packaging pipeline refactored into modular pack strategies with a single progress stream for renderer updates.
-
 
 ### Removed
 
@@ -44,8 +34,10 @@ All notable changes to this project will be documented in this file.
 - Renderer silences the ZIP estimate toast during the post-pack analysis cycle, preventing the notification from reappearing until the next manual scan or size change.
 - Electron pack routines now await folder analysis, normalize 7z error reporting, and validate stereo split outputs to satisfy strict TypeScript checks and keep progress feedback reliable.
 - Renderer now detects all already-compressed audio formats when flagging "~ no zip gain" and suggests 7z volumes for oversized compressed files.
+- Router shell now opts the React Router `RouterProvider` into the `v7_startTransition` future flag, eliminating the transition
+  mode warning ahead of the v7 release.
 
-## 1.0.1
+## [1.0.1]
 
 ### Added
 - Automation contribution guide (`AGENTS.md`) capturing CI discipline, i18n requirements, and reviewer expectations for agents.
@@ -68,7 +60,7 @@ All notable changes to this project will be documented in this file.
 - Renderer now dismisses the ZIP estimate toast once packing completes, preventing stale notifications after successful runs.
 - Renderer no longer triggers a fresh ZIP estimate immediately after packing, avoiding redundant toasts during the automatic post-pack rescan.
 
-## 1.0.0
+## [1.0.0]
 
 ### Added
 - Continuous integration workflow validating linting, type safety and test suites on Node 18 with pnpm caching.
