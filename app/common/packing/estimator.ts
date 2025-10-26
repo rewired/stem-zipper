@@ -63,6 +63,26 @@ const LOSSY_KIND_SET = new Set<EstimateFileKind>([
   'wma'
 ]);
 
+const COMPRESSED_EXTENSIONS = new Set<string>([
+  '.mp3',
+  '.aac',
+  '.m4a',
+  '.mp4',
+  '.ogg',
+  '.opus',
+  '.wma',
+  '.webm',
+  '.flac'
+]);
+
+export function isCompressedExt(extension: string): boolean {
+  if (!extension) {
+    return false;
+  }
+  const normalized = extension.startsWith('.') ? extension.toLowerCase() : `.${extension.toLowerCase()}`;
+  return COMPRESSED_EXTENSIONS.has(normalized);
+}
+
 export function isLossyKind(kind: EstimateFileKind): boolean {
   return LOSSY_KIND_SET.has(kind);
 }

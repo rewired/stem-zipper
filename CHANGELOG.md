@@ -34,6 +34,7 @@ All notable changes to this project will be documented in this file.
 - Electron packaging probes audio headers to split only real stereo WAV (PCM/IEEE float) files, logging and skipping malformed inputs without crashing the pack flow.
 - Renderer silences the ZIP estimate toast during the post-pack analysis cycle, preventing the notification from reappearing until the next manual scan or size change.
 - Electron pack routines now await folder analysis, normalize 7z error reporting, and validate stereo split outputs to satisfy strict TypeScript checks and keep progress feedback reliable.
+- Renderer now detects all already-compressed audio formats when flagging "~ no zip gain" and suggests 7z volumes for oversized compressed files.
 
 ## 1.0.1
 

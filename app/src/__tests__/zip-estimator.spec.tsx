@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { FileEntry } from '@common/ipc';
+import { Fragment, type JSX } from 'react';
 import { FileTable } from '../features/files/FileTable';
-import { LossyBadge } from '../components/LossyBadge';
+import { FileBadge } from '../components/FileBadge';
 import { useZipEstimator } from '../hooks/useZipEstimator';
-import { formatMessage, type TranslationKey } from '@common/i18n';
+import { formatMessage } from '@common/i18n';
 import { DEFAULT_MAX_SIZE_MB } from '@common/constants';
-import { Fragment } from 'react';
 
 const MB = 1024 * 1024;
 
@@ -16,12 +16,10 @@ type HarnessProps = {
 };
 
 function TestHarness({ files, maxSizeMb }: HarnessProps) {
-  const { warnings } = useZipEstimator(files, { maxSizeMb });
-  const badgeLabel = formatMessage('en', 'badge_label_zip_poor_gain');
-  const maxLabel = `${new Intl.NumberFormat('en', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(maxSizeMb)} ${formatMessage('en', 'common_size_unit_megabyte')}`;
+  const { badges } = useZipEstimator(files, { maxSizeMb });
+  const badgeLabel = formatMessage('en', 'badge_no_zip_gain');
+  const badgeHint = formatMessage('en', 'badge_no_zip_gain_hint');
+  const volumeLabel = formatMessage('en', 'badge_consider_7z_volumes');
 
   return (
     <FileTable
@@ -35,23 +33,30 @@ function TestHarness({ files, maxSizeMb }: HarnessProps) {
       sizeUnitLabel="MB"
       formatSize={(value) => value.toFixed(2)}
       renderBadge={(file) => {
-        const warning = warnings.get(file.path);
-        if (!warning) {
+        const flags = badges.get(file.path);
+        if (!flags) {
           return null;
         }
-        const key: TranslationKey =
-          warning.reason === 'file_exceeds_limit'
-            ? 'batch_warn_file_exceeds_max_zip'
-            : 'batch_warn_lossy_zip_gain_low';
-        const tooltip = formatMessage('en', key, { max_zip_size: maxLabel });
-        return <LossyBadge label={badgeLabel} tooltip={tooltip} />;
+        const elements: JSX.Element[] = [];
+        if (flags.noZipGain) {
+          elements.push(
+            <FileBadge key="no-zip" label={badgeLabel} tooltip={badgeHint} />
+          );
+        }
+        if (flags.consider7zVolumes) {
+          elements.push(<FileBadge key="7z" label={volumeLabel} />);
+        }
+        if (elements.length === 0) {
+          return null;
+        }
+        return <span className="flex gap-1">{elements}</span>;
       }}
     />
   );
 }
 
 describe('useZipEstimator integration', () => {
-  it('renders a badge for lossy files that overflow and includes the max size in the tooltip', () => {
+  it('renders badges for compressed formats and suggests 7z volumes when they exceed the limit', () => {
     const files: FileEntry[] = [
       {
         name: 'bass.wav',
@@ -63,11 +68,27 @@ describe('useZipEstimator integration', () => {
       },
       {
         name: 'vocals.mp3',
-        sizeMb: 12,
+        sizeMb: 30,
         action: 'normal',
         path: '/vocals.mp3',
-        sizeBytes: 12 * MB,
+        sizeBytes: 30 * MB,
         kind: 'mp3'
+      },
+      {
+        name: 'drums.flac',
+        sizeMb: 60,
+        action: 'normal',
+        path: '/drums.flac',
+        sizeBytes: 60 * MB,
+        kind: 'flac'
+      },
+      {
+        name: 'fx.ogg',
+        sizeMb: 10,
+        action: 'normal',
+        path: '/fx.ogg',
+        sizeBytes: 10 * MB,
+        kind: 'ogg'
       }
     ];
 
@@ -77,12 +98,17 @@ describe('useZipEstimator integration', () => {
       </Fragment>
     );
 
-    const badgeNode = screen.getByText('~no zip gain');
-    const badge = badgeNode.closest('span[title]');
-    expect(badge).not.toBeNull();
-    expect(badge?.getAttribute('title')).toContain(`${DEFAULT_MAX_SIZE_MB.toFixed(2)} MB`);
+    const badges = screen.getAllByText('~ no zip gain');
+    expect(badges).toHaveLength(3);
+    for (const badge of badges) {
+      expect(badge.closest('span[title]')?.getAttribute('title')).toBe(
+        "Already compressed; ZIP usually won't shrink it."
+      );
+    }
+
+    expect(screen.queryByText('try 7z volumes')).not.toBeNull();
 
     const wavRow = screen.getByText('bass.wav');
-    expect(wavRow.parentElement?.textContent).not.toContain('~no zip gain');
+    expect(wavRow.parentElement?.textContent).not.toContain('~ no zip gain');
   });
 });
