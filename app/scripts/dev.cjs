@@ -187,114 +187,54 @@ function resolvePnpmInvocation(baseArgs) {
 
 function runDevServer(locale, passthroughArgs) {
   process.env.STEM_ZIPPER_LANG = locale;
+  process.env.STEM_ZIPPER_DEV_MODE = '1';
   console.log(`[dev] Starting Vite/Electron in locale "${locale}".`);
 
   const forwardedArgs = Array.isArray(passthroughArgs) ? passthroughArgs : [];
-
-  const managedChildren = new Set();
-  let shuttingDown = false;
-  let exitCode;
-  let exitSignal;
-
-  function maybeExitProcess() {
-    if (managedChildren.size > 0) {
-      return;
-    }
-
-    if (exitSignal) {
-      process.kill(process.pid, exitSignal);
-      return;
-    }
-
-    process.exit(exitCode ?? 0);
+  if (forwardedArgs.length > 0) {
+    process.env.STEM_ZIPPER_ELECTRON_ARGS = JSON.stringify(forwardedArgs);
+  } else {
+    delete process.env.STEM_ZIPPER_ELECTRON_ARGS;
   }
 
-  function stopAllChildren(signal) {
-    if (!shuttingDown) {
-      shuttingDown = true;
-      exitSignal = exitSignal ?? signal;
-      for (const child of managedChildren) {
-        if (!child.killed) {
-          child.kill(signal ?? 'SIGTERM');
-        }
-      }
-    }
-
-    maybeExitProcess();
-  }
-
-  function handleChildExit(label, child, code, signal) {
-    managedChildren.delete(child);
-
-    if (shuttingDown) {
-      maybeExitProcess();
-      return;
-    }
-
-    if (signal) {
-      exitSignal = signal;
-      stopAllChildren(signal);
-      return;
-    }
-
-    if (typeof code === 'number' && code !== 0) {
-      console.error(`[dev:${label}] exited with code ${code}.`);
-      exitCode = code;
-      stopAllChildren();
-      return;
-    }
-
-    // When the Electron shell closes, shut down the remaining workers gracefully.
-    exitCode = code ?? exitCode ?? 0;
-    stopAllChildren();
-  }
-
-  function launchPnpmScript(label, baseArgs) {
-    const { command, args } = resolvePnpmInvocation(baseArgs);
-    const child = spawn(command, args, {
-      stdio: 'inherit',
-      env: process.env
-    });
-
-    managedChildren.add(child);
-
-    child.on('exit', (code, signal) => {
-      handleChildExit(label, child, code, signal);
-    });
-
-    child.on('error', (error) => {
-      if (shuttingDown) {
-        return;
-      }
-
-      managedChildren.delete(child);
-      console.error(`[dev:${label}] failed to start:`, error);
-      exitCode = 1;
-      stopAllChildren();
-    });
-
-    return child;
-  }
-
-  const watchers = [
-    ['dev:main', ['run', 'dev:main']],
-    ['dev:preload', ['run', 'dev:preload']],
-    ['dev:renderer', ['run', 'dev:renderer']]
+  const concurrentlyArgs = [
+    'exec',
+    'concurrently',
+    '-k',
+    '--success',
+    'last',
+    '--names',
+    'VITE,MAIN,PRELOAD,ELECTRON',
+    '--prefix-colors',
+    'cyan,magenta,blue,green',
+    'pnpm run dev:renderer',
+    'pnpm run dev:main',
+    'pnpm run dev:preload',
+    'pnpm run dev:electron'
   ];
 
-  for (const [label, args] of watchers) {
-    launchPnpmScript(label, args);
-  }
+  const { command, args } = resolvePnpmInvocation(concurrentlyArgs);
+  const child = spawn(command, args, {
+    stdio: 'inherit',
+    env: process.env
+  });
 
-  const electronArgs = ['run', 'electron'];
-  if (forwardedArgs.length > 0) {
-    electronArgs.push('--', ...forwardedArgs);
-  }
-  launchPnpmScript('electron', electronArgs);
+  child.on('error', (error) => {
+    console.error('[dev] Failed to launch concurrently:', error);
+    process.exit(1);
+  });
+
+  child.on('exit', (code, signal) => {
+    if (signal) {
+      process.kill(process.pid, signal);
+      return;
+    }
+
+    process.exit(code ?? 0);
+  });
 
   const handleSignal = (signal) => {
-    exitSignal = signal;
-    stopAllChildren(signal);
+    child.kill(signal);
   };
 
   process.once('SIGINT', handleSignal);
