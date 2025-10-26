@@ -43,6 +43,7 @@
   "dialog_overwrite_text": "This folder already contains stems-*.zip files. Existing files will be overwritten. Continue?",
   "dev_error_dev_only": "Test data generation is only available in developer mode.",
   "toast_estimate_title": "Estimate",
+  "pack_toast_estimate_pending": "Calculating ZIP estimate…",
   "pack_toast_estimate": "This run will likely produce ≈ {{count}} ZIP archive(s).",
   "toast_estimate_note": "Estimate accounts for mono-splitting of oversize stereo WAVs and archive overhead. Final count may differ slightly.",
   "panel_pack_metadata_title": "Pack metadata",

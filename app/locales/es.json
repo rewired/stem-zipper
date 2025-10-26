@@ -43,6 +43,7 @@
   "dialog_overwrite_text": "Esta carpeta ya contiene archivos stems-*.zip. Se sobrescribirán los archivos existentes. ¿Continuar?",
   "dev_error_dev_only": "La generación de datos de prueba solo está disponible en modo desarrollador.",
   "toast_estimate_title": "Estimación",
+  "pack_toast_estimate_pending": "Calculating ZIP estimate…",
   "pack_toast_estimate": "Esta ejecución producirá probablemente ≈ {{count}} archivo(s) ZIP.",
   "toast_estimate_note": "La estimación tiene en cuenta la división mono de WAV estéreo sobredimensionados y la sobrecarga del archivo. El recuento final puede variar ligeramente.",
   "panel_pack_metadata_title": "Pack metadata",

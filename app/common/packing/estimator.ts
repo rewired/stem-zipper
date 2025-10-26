@@ -17,6 +17,7 @@ export interface EstimateFileInput {
 export interface EstimateRequest {
   files: EstimateFileInput[];
   targetMB: number;
+  token?: string;
 }
 
 export interface EstimateResponse {

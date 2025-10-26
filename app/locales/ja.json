@@ -43,6 +43,7 @@
   "dialog_overwrite_text": "このフォルダーにはすでに stems-*.zip ファイルがあります。既存のファイルは上書きされます。続行しますか？",
   "dev_error_dev_only": "テストデータの生成は開発者モードでのみ利用できます。",
   "toast_estimate_title": "見積もり",
+  "pack_toast_estimate_pending": "Calculating ZIP estimate…",
   "pack_toast_estimate": "この実行で作成される ZIP アーカイブはおそらく ≈ {{count}} 件です。",
   "toast_estimate_note": "見積もりでは、大きなステレオ WAV のモノラル分割とアーカイブのオーバーヘッドを考慮しています。最終的な数は多少前後する場合があります。",
   "panel_pack_metadata_title": "Pack metadata",

@@ -43,6 +43,7 @@
   "dialog_overwrite_text": "Denne mappe indeholder allerede stems-*.zip-filer. Eksisterende filer overskrives. Fortsætte?",
   "dev_error_dev_only": "Generering af testdata er kun tilgængelig i udviklertilstand.",
   "toast_estimate_title": "Skøn",
+  "pack_toast_estimate_pending": "Calculating ZIP estimate…",
   "pack_toast_estimate": "Denne kørsel vil sandsynligvis producere ≈ {{count}} ZIP-arkiv(er).",
   "toast_estimate_note": "Skønnet tager højde for mono-opdeling af oversize stereo-WAV'er og arkivoverhead. Det endelige tal kan afvige en smule.",
   "panel_pack_metadata_title": "Pack metadata",

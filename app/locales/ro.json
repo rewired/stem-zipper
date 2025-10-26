@@ -43,6 +43,7 @@
   "dialog_overwrite_text": "Acest folder conține deja fișiere stems-*.zip. Fișierele existente vor fi suprascrise. Continuați?",
   "dev_error_dev_only": "Generarea datelor de testare este disponibilă doar în modul dezvoltator.",
   "toast_estimate_title": "Estimare",
+  "pack_toast_estimate_pending": "Calculating ZIP estimate…",
   "pack_toast_estimate": "Această rulare va produce probabil ≈ {{count}} arhive ZIP.",
   "toast_estimate_note": "Estimarea ține cont de împărțirea în mono a fișierelor WAV stereo supradimensionate și de cheltuielile de arhivare. Numărul final poate varia ușor.",
   "panel_pack_metadata_title": "Pack metadata",

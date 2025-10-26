@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 ### Changed
+- Renderer now debounces ZIP estimate requests and pairs them with the latest analysis token to prevent stale toasts.
 
 ### Removed
 

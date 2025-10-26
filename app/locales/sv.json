@@ -43,6 +43,7 @@
   "dialog_overwrite_text": "Den här mappen innehåller redan stems-*.zip-filer. Befintliga filer skrivs över. Fortsätta?",
   "dev_error_dev_only": "Generering av testdata är endast tillgänglig i utvecklarläge.",
   "toast_estimate_title": "Uppskattning",
+  "pack_toast_estimate_pending": "Calculating ZIP estimate…",
   "pack_toast_estimate": "Denna körning kommer sannolikt att producera ≈ {{count}} ZIP-arkiv.",
   "toast_estimate_note": "Uppskattningen tar hänsyn till monouppdelning av stora stereo-WAV-filer och arkivets overhead. Det slutliga antalet kan variera något.",
   "panel_pack_metadata_title": "Pack metadata",

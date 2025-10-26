@@ -43,6 +43,7 @@
   "dialog_overwrite_text": "Ця папка вже містить файли stems-*.zip. Існуючі файли буде перезаписано. Продовжити?",
   "dev_error_dev_only": "Генерація тестових даних доступна лише в режимі розробника.",
   "toast_estimate_title": "Оцінка",
+  "pack_toast_estimate_pending": "Calculating ZIP estimate…",
   "pack_toast_estimate": "Цей запуск, ймовірно, створить ≈ {{count}} ZIP-архівів.",
   "toast_estimate_note": "Оцінка враховує поділ великих стерео WAV-файлів на моно та архівні накладні витрати. Кінцева кількість може дещо відрізнятися.",
   "panel_pack_metadata_title": "Pack metadata",
