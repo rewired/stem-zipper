@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { WaveFile } from 'wavefile';
 import { ZipFile } from 'yazl';
-import type { FileEntry, PackProgress, RendererFileAction } from '../../common/ipc';
+import type { FileEntry, PackProgress, PackStatusEvent, PackToast, RendererFileAction } from '../../common/ipc';
 import type { EstimateFileKind } from '../../common/packing/estimator';
 import { SUPPORTED_EXTENSIONS } from '../../common/constants';
 import { formatPathForDisplay } from '../../common/paths';
@@ -16,6 +16,7 @@ import {
   createPackMetadataJson,
   type NormalizedPackMetadata
 } from './packMetadata';
+import { probeAudio } from './audioProbe';
 
 export const STAMP_FILENAME = '_stem-zipper.txt';
 const STEM_ZIPPER_LOGO = `░█▀▀░▀█▀░█▀▀░█▄█░░░▀▀█░▀█▀░█▀█░█▀█░█▀▀░█▀▄░
@@ -49,6 +50,16 @@ const EXTENSION_KIND_MAP: Record<SupportedExtension, EstimateFileKind> = {
   '.aac': 'aac',
   '.wma': 'wma'
 };
+
+const WAV_FORMAT_PCM = 1;
+const WAV_FORMAT_IEEE_FLOAT = 3;
+
+export class UnsupportedWavError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UnsupportedWavError';
+  }
+}
 
 function isSupportedExtension(extension: string): extension is SupportedExtension {
   return (SUPPORTED_EXTENSIONS as readonly string[]).includes(extension as SupportedExtension);
@@ -286,66 +297,147 @@ async function getSizedFile(filePath: string): Promise<SizedFile> {
   return createSizedFile(filePath, stats);
 }
 
-async function splitStereoWav(filePath: string): Promise<SizedFile[]> {
+export async function splitStereoWav(filePath: string): Promise<SizedFile[]> {
   const buffer = await fs.promises.readFile(filePath);
   const wav = new WaveFile(buffer);
-  const fmt = wav.fmt as { numChannels?: number; sampleRate?: number } | undefined;
-  if ((fmt?.numChannels ?? 0) !== 2) {
-    return [await getSizedFile(filePath)];
+  const fmt = wav.fmt as { audioFormat?: number; numChannels?: number; sampleRate?: number } | undefined;
+  const numChannels = fmt?.numChannels;
+  const audioFormat = fmt?.audioFormat;
+
+  if (numChannels !== 2) {
+    throw new UnsupportedWavError(`Expected stereo WAV but found channels=${numChannels ?? 'unknown'}`);
   }
 
-  const { dir, name, ext } = path.parse(filePath);
+  if (audioFormat !== WAV_FORMAT_PCM && audioFormat !== WAV_FORMAT_IEEE_FLOAT) {
+    throw new UnsupportedWavError(`Unsupported WAV audio format: ${audioFormat ?? 'unknown'}`);
+  }
 
-  // Build mono files by de-interleaving samples and writing fresh files
-  const getSamples = (wav as unknown as { getSamples: (interleaved: false, OutputObject: { new (...args: unknown[]): Float64Array }) => Float64Array[] }).getSamples;
-  const channels = getSamples(false, Float64Array);
+  const sampler = (wav as unknown as {
+    getSamples?: (interleaved: false, OutputObject: { new (...args: unknown[]): Float64Array }) => Float64Array[];
+  }).getSamples;
 
-  const leftSamples = channels[0];
-  const rightSamples = channels[1];
+  if (typeof sampler !== 'function') {
+    throw new UnsupportedWavError('WaveFile#getSamples is not available');
+  }
+
+  const channels = sampler.call(wav, false, Float64Array);
+
+  if (!Array.isArray(channels) || channels.length < 2) {
+    throw new UnsupportedWavError('WaveFile#getSamples did not return stereo channels');
+  }
+
+  const [leftSamples, rightSamples] = channels;
+  if (!leftSamples || !rightSamples) {
+    throw new UnsupportedWavError('Stereo channels are missing sample data');
+  }
+
   const sampleRate = fmt?.sampleRate ?? 44100;
-  const bitDepthCode = wav.bitDepth as string || '16';
-
-  const left = new WaveFile();
-  left.fromScratch(1, sampleRate, bitDepthCode, [leftSamples]);
+  const bitDepthCode = (typeof wav.bitDepth === 'string' && wav.bitDepth) || '16';
+  const { dir, name, ext } = path.parse(filePath);
   const leftPath = path.join(dir, `${name}_L${ext}`);
-
-  const right = new WaveFile();
-  right.fromScratch(1, sampleRate, bitDepthCode, [rightSamples]);
   const rightPath = path.join(dir, `${name}_R${ext}`);
+  const created: string[] = [];
 
-  await fs.promises.writeFile(leftPath, left.toBuffer());
-  await fs.promises.writeFile(rightPath, right.toBuffer());
-  await fs.promises.unlink(filePath);
+  try {
+    const left = new WaveFile();
+    left.fromScratch(1, sampleRate, bitDepthCode, [leftSamples]);
+    await fs.promises.writeFile(leftPath, left.toBuffer());
+    created.push(leftPath);
+
+    const right = new WaveFile();
+    right.fromScratch(1, sampleRate, bitDepthCode, [rightSamples]);
+    await fs.promises.writeFile(rightPath, right.toBuffer());
+    created.push(rightPath);
+
+    await fs.promises.unlink(filePath);
+  } catch (error) {
+    await Promise.all(
+      created.map((outputPath) =>
+        fs.promises
+          .unlink(outputPath)
+          .catch((unlinkError) =>
+            console.warn('Failed to clean up partial WAV split output', outputPath, unlinkError)
+          )
+      )
+    );
+    throw error;
+  }
 
   return Promise.all([getSizedFile(leftPath), getSizedFile(rightPath)]);
 }
 
-async function expandFiles(
-  files: SizedFile[],
-  maxSizeBytes: number,
-  onProgress?: (progress: PackProgress) => void
-): Promise<SizedFile[]> {
+interface ExpandFilesOptions {
+  maxSizeBytes: number;
+  onProgress?: (progress: PackProgress) => void;
+  emitToast?: (toast: PackToast) => void;
+  splitter?: (filePath: string) => Promise<SizedFile[]>;
+}
+
+export async function expandFiles(files: SizedFile[], options: ExpandFilesOptions): Promise<SizedFile[]> {
   const expanded: SizedFile[] = [];
-  const toSplit = files.filter((f) => f.size > maxSizeBytes && f.extension === '.wav').length;
+  const toSplit = files.filter((f) => f.size > options.maxSizeBytes && f.extension === '.wav').length;
   let processed = 0;
+  const performSplit = options.splitter ?? splitStereoWav;
+
+  const notifySkip = (file: SizedFile, reason: string) => {
+    console.info('Skipping stereo split for file', { file: file.path, reason });
+    options.emitToast?.({
+      id: `split-info:${file.path}`,
+      level: 'info',
+      messageKey: 'pack_info_skip_stereo_split_non_wav',
+      params: { file: formatPathForDisplay(file.path) }
+    });
+  };
+
+  const notifyError = (file: SizedFile, error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn('Skipping file due to split failure', { file: file.path, error: message });
+    options.emitToast?.({
+      id: `split-error:${file.path}`,
+      level: 'warning',
+      messageKey: 'pack_warn_file_skipped',
+      params: { file: formatPathForDisplay(file.path) }
+    });
+  };
+
   for (const file of files) {
-    if (file.size > maxSizeBytes && file.extension === '.wav') {
-      const split = await splitStereoWav(file.path);
-      expanded.push(...split);
-      processed += 1;
-      if (onProgress && toSplit > 0) {
-        onProgress({
-          state: 'analyzing',
-          current: processed,
-          total: toSplit,
-          percent: Math.floor((processed / toSplit) * 100),
-          message: 'splitting'
-        });
+    if (file.size > options.maxSizeBytes && file.extension === '.wav') {
+      try {
+        const probe = await probeAudio(file.path);
+        if (probe.kind !== 'wav') {
+          notifySkip(file, `probe-kind=${probe.kind}`);
+          expanded.push(file);
+        } else if (probe.stereo !== true) {
+          notifySkip(file, `stereo=${probe.stereo ?? 'unknown'}`);
+          expanded.push(file);
+        } else {
+          const split = await performSplit(file.path);
+          expanded.push(...split);
+        }
+      } catch (error) {
+        if (error instanceof UnsupportedWavError) {
+          notifySkip(file, error.message);
+          expanded.push(file);
+        } else {
+          notifyError(file, error);
+        }
+      } finally {
+        processed += 1;
+        if (options.onProgress && toSplit > 0) {
+          options.onProgress({
+            state: 'analyzing',
+            current: processed,
+            total: toSplit,
+            percent: Math.floor((processed / toSplit) * 100),
+            message: 'splitting'
+          });
+        }
       }
     } else {
       expanded.push(file);
     }
   }
+
   return expanded;
 }
 
@@ -354,7 +446,8 @@ export async function packFolder(
   maxSizeMb: number,
   locale: LocaleKey,
   metadata: NormalizedPackMetadata,
-  onProgress: (progress: PackProgress) => void
+  onProgress: (progress: PackProgress) => void,
+  onStatus?: (status: PackStatusEvent) => void
 ): Promise<number> {
   const maxSizeBytes = maxSizeMb * 1024 * 1024;
   const sizedFiles = scanTargetFolder(folderPath);
@@ -380,7 +473,15 @@ export async function packFolder(
   for (const extension of orderedExtensions) {
     const filesForExtension = groupedByExtension.get(extension);
     if (!filesForExtension || filesForExtension.length === 0) continue;
-    const expanded = await expandFiles(filesForExtension, maxSizeBytes, onProgress);
+    const expanded = await expandFiles(filesForExtension, {
+      maxSizeBytes,
+      onProgress,
+      emitToast: onStatus
+        ? (toast: PackToast) => {
+            onStatus({ type: 'toast', toast });
+          }
+        : undefined
+    });
     const packed = bestFitPack(expanded, maxSizeBytes);
     zipGroups.push(...packed);
   }

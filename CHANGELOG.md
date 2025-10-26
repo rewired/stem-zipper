@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## 1.0.2 unreleased
 
 ### Added
+- Electron packer now emits localized info/warning toasts (10s minimum) when stereo splitting is skipped, keeping users informed
+  about unsupported audio during packing.
 
 ### Changed
 - Renderer now debounces ZIP estimate requests and pairs them with the latest analysis token to prevent stale toasts.
@@ -12,8 +14,9 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- Electron packaging probes audio headers to split only real stereo WAV (PCM/IEEE float) files, logging and skipping malformed inputs without crashing the pack flow.
 - Renderer silences the ZIP estimate toast during the post-pack analysis cycle, preventing the notification from reappearing until the next manual scan or size change.
-- 
+
 ## 1.0.1
 
 ### Added

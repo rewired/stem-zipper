@@ -7,7 +7,7 @@ import {
   type DragEvent,
   type MouseEvent
 } from 'react';
-import type { FileEntry, PackMetadata, PackProgress, PackState } from '@common/ipc';
+import type { FileEntry, PackMetadata, PackProgress, PackState, PackStatusEvent } from '@common/ipc';
 import { DEFAULT_MAX_SIZE_MB, MAX_SIZE_LIMIT_MB } from '@common/constants';
 import { ensureValidMaxSize } from '@common/validation';
 import { Header } from './components/Header';
@@ -612,6 +612,26 @@ export default function App() {
     });
     return removeListener;
   }, [dismissToast, t]);
+
+  useEffect(() => {
+    if (!window.electronAPI || typeof window.electronAPI.onPackStatus !== 'function') {
+      return () => {};
+    }
+    const removeListener = window.electronAPI.onPackStatus((event: PackStatusEvent) => {
+      if (event.type !== 'toast') {
+        return;
+      }
+      const titleKey = event.toast.level === 'warning' ? 'toast_warning_title' : 'toast_info_title';
+      showToast({
+        id: event.toast.id,
+        title: formatMessage(locale, titleKey),
+        message: formatMessage(locale, event.toast.messageKey, event.toast.params),
+        closeLabel: t('common_close'),
+        timeoutMs: 10_000
+      });
+    });
+    return removeListener;
+  }, [locale, showToast, t]);
 
   const triggerEstimate = useMemo(() => {
     return debounce(() => {

@@ -3,6 +3,7 @@ import type {
   AnalyzeResponse,
   PackProgress,
   PackRequest,
+  PackStatusEvent,
   TestDataResponse,
   UserPrefsAddRecent,
   UserPrefsGet,
@@ -46,6 +47,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const listener = (_event: Electron.IpcRendererEvent, progress: PackProgress) => callback(progress);
     ipcRenderer.on(IPC_CHANNELS.PACK_PROGRESS, listener);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.PACK_PROGRESS, listener);
+  },
+  onPackStatus(callback: (status: PackStatusEvent) => void): () => void {
+    const listener = (_event: Electron.IpcRendererEvent, status: PackStatusEvent) => callback(status);
+    ipcRenderer.on(IPC_CHANNELS.PACK_STATUS, listener);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.PACK_STATUS, listener);
   },
   createTestData(folderPath: string, locale: string): Promise<TestDataResponse> {
     return ipcRenderer.invoke(IPC_CHANNELS.CREATE_TESTDATA, {
