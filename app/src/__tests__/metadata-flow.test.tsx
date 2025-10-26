@@ -5,6 +5,12 @@ import App from '../App';
 import { ToastProvider } from '../components/ui/ToastProvider';
 import type { PackMetadata, PackProgress } from '@common/ipc';
 
+type EstimateResponseMock = {
+  zips: number;
+  bytesLogical: number;
+  bytesCapacity: number;
+};
+
 const mockFileEntry = {
   name: 'alpha.wav',
   sizeMb: 4,
@@ -45,7 +51,7 @@ function createElectronAPIMock() {
     openExternal: vi.fn(),
     openPath: vi.fn(),
     checkExistingZips: vi.fn().mockResolvedValue({ count: 0, files: [] }),
-    estimateZipCount: vi.fn().mockResolvedValue({ zips: 1 }),
+    estimateZipCount: vi.fn().mockResolvedValue({ zips: 1, bytesLogical: 1_500_000, bytesCapacity: 50_000_000 }),
     getUserPrefs: vi.fn().mockResolvedValue({
       default_artist: 'Saved Artist',
       default_artist_url: 'https://saved.example',
@@ -236,7 +242,7 @@ describe('metadata modal integration', () => {
     const selectFolderButton = await screen.findByRole('button', { name: /Select Folder/i });
     await user.click(selectFolderButton);
 
-    await screen.findByText(/This run will likely produce/);
+    await screen.findByText(/Estimated: 1 pack\(s\)/i);
 
     electronAPI.emitProgress({
       state: 'finished',
@@ -247,13 +253,13 @@ describe('metadata modal integration', () => {
     });
 
     await waitFor(() => {
-      expect(screen.queryByText(/This run will likely produce/)).toBeNull();
+      expect(screen.queryByText(/Estimated:/i)).toBeNull();
     });
   });
 
   it('ignores stale estimate responses when inputs change quickly', async () => {
-    const firstEstimate = createDeferred<{ zips: number }>();
-    const secondEstimate = createDeferred<{ zips: number }>();
+    const firstEstimate = createDeferred<EstimateResponseMock>();
+    const secondEstimate = createDeferred<EstimateResponseMock>();
     electronAPI.estimateZipCount
       .mockReturnValueOnce(firstEstimate.promise)
       .mockReturnValueOnce(secondEstimate.promise);
@@ -280,15 +286,15 @@ describe('metadata modal integration', () => {
       expect(electronAPI.estimateZipCount).toHaveBeenCalledTimes(2);
     });
 
-    secondEstimate.resolve({ zips: 5 });
+    secondEstimate.resolve({ zips: 5, bytesLogical: 6_000_000, bytesCapacity: 50_000_000 });
     await Promise.resolve();
-    firstEstimate.resolve({ zips: 3 });
+    firstEstimate.resolve({ zips: 3, bytesLogical: 3_000_000, bytesCapacity: 50_000_000 });
     await Promise.resolve();
 
     await waitFor(() => {
-      expect(screen.getByText(/≈ 5 ZIP/i)).toBeTruthy();
+      expect(screen.getByText(/Estimated: 5 pack\(s\)/i)).toBeTruthy();
     });
-    expect(screen.queryByText(/≈ 3 ZIP/i)).toBeNull();
+    expect(screen.queryByText(/Estimated: 3 pack\(s\)/i)).toBeNull();
   });
 
   it('requests a fresh estimate after packing when the max size changes', async () => {
@@ -319,7 +325,7 @@ describe('metadata modal integration', () => {
     });
 
     await waitFor(() => {
-      expect(screen.queryByText(/This run will likely produce/)).toBeNull();
+      expect(screen.queryByText(/Estimated:/i)).toBeNull();
     });
 
     await user.clear(maxSizeInput);
