@@ -15,7 +15,11 @@ export class UnsupportedWavError extends Error {
 
 async function getSizedFile(filePath: string): Promise<SizedFile> {
   const stats = await fs.promises.stat(filePath);
-  return { path: filePath, size: stats.size, extension: path.extname(filePath).toLowerCase() };
+  const extension = path.extname(filePath).toLowerCase();
+  if (extension !== '.wav') {
+    throw new UnsupportedWavError(`Split stereo output has unexpected extension: ${extension}`);
+  }
+  return { path: filePath, size: stats.size, extension };
 }
 
 export async function splitStereoWav(filePath: string): Promise<SizedFile[]> {
