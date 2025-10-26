@@ -3,7 +3,25 @@ const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const ARGUMENTS = process.argv.slice(2);
+const CLI_ARGUMENTS = process.argv.slice(2);
+
+function readForwardedArgs() {
+  const raw = process.env.STEM_ZIPPER_ELECTRON_ARGS;
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((value) => typeof value === 'string' && value.length > 0);
+    }
+  } catch (error) {
+    console.warn('[electron] Failed to parse forwarded Electron arguments:', error);
+  }
+
+  return [];
+}
 
 function resolveElectronPackageDir() {
   try {
@@ -73,7 +91,9 @@ async function ensureElectronBinary() {
 async function main() {
   try {
     const electronBinary = await ensureElectronBinary();
-    const child = spawn(electronBinary, ARGUMENTS, {
+    const extraArgs = readForwardedArgs();
+    const electronArgs = [...CLI_ARGUMENTS, ...extraArgs];
+    const child = spawn(electronBinary, electronArgs, {
       stdio: 'inherit',
       env: process.env
     });

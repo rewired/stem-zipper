@@ -13,6 +13,7 @@ import { APP_VERSION } from '../common/version';
 import { estimateZipCount, type EstimateRequest } from '../common/packing/estimator';
 import { getUserPreferences, setUserPreferences, addRecentArtist } from './services/preferences';
 import { normalizePackMetadata } from './services/packMetadata';
+import { installGracefulExit } from './gracefulExit';
 
 let mainWindow: BrowserWindow | null = null;
 let packInProgress = false;
@@ -41,6 +42,8 @@ const cliLang = parseArgLang();
 if (cliLang) {
   process.env.STEM_ZIPPER_LANG = cliLang;
 }
+
+installGracefulExit();
 
 function getCandidatePreloadPaths(): string[] {
   const appPath = app.getAppPath();

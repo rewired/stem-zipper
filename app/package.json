@@ -14,7 +14,7 @@
     "dev:renderer": "vite",
     "dev:main": "tsc --watch --project electron/tsconfig.main.json",
     "dev:preload": "tsc --watch --project electron/tsconfig.preload.json",
-    "electron": "wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 node scripts/launch-electron.cjs .",
+    "electron": "wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 node scripts/launch-electron.cjs .",
     "build": "pnpm run build:renderer && pnpm run build:main && pnpm run build:preload",
     "package:win": "pnpm run clean && pnpm run build && electron-builder --win --x64 --publish never",
     "package:linux": "pnpm run clean && pnpm run build && electron-builder --linux AppImage --x64 --publish never",

@@ -80,7 +80,7 @@ pnpm dev -- --lang=fr
 If no locale is provided, the runners detect the operating system language and only fall back to English (`en`) when the locale
 cannot be resolved.
 
-This command starts the Vite dev server, compiles the Electron main & preload processes in watch mode and launches Electron once the renderer is ready. Any change in `src/` hot-reloads the UI, while updates to Electron code trigger a fast TypeScript rebuild.
+This command starts the Vite dev server, compiles the Electron main & preload processes in watch mode and launches Electron once the renderer is ready. The runner uses `concurrently` with coloured `[VITE]`, `[MAIN]`, `[PRELOAD]` and `[ELECTRON]` prefixes so you can follow each worker at a glance. Closing the Electron window or pressing <kbd>Ctrl</kbd>+<kbd>C</kbd> terminates all watchers cleanly, avoiding zombie Node or Vite instances on every platform. Any change in `src/` hot-reloads the UI, while updates to Electron code trigger a fast TypeScript rebuild.
 
 > ℹ️ The Electron launcher verifies that the native binary is available. If the post-install download was skipped (for example when `ELECTRON_SKIP_BINARY_DOWNLOAD=1` was set globally), the script reruns the official installer before starting the desktop shell.
 
