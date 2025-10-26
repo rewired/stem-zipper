@@ -66,5 +66,9 @@
   "modal_save_and_pack": "Speichern & Packen",
   "field_artist_remember_label": "Als Standard speichern",
   "badge_metadata_missing_required": "Pflichtangaben fehlen",
-  "toast_metadata_saved": "Metadaten gespeichert."
+  "toast_metadata_saved": "Metadaten gespeichert.",
+  "toast_info_title": "Heads up",
+  "toast_warning_title": "Warning",
+  "pack_info_skip_stereo_split_non_wav": "Skipped stereo split for {{file}} (not a WAV or unsupported format).",
+  "pack_warn_file_skipped": "Skipped {{file}} due to an error."
 }

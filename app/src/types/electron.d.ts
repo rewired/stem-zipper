@@ -2,6 +2,7 @@ import type {
   AnalyzeResponse,
   PackProgress,
   PackRequest,
+  PackStatusEvent,
   TestDataResponse,
   UserPrefsAddRecent,
   UserPrefsGet,
@@ -18,6 +19,7 @@ declare global {
       analyzeFolder: (folderPath: string, maxSizeMb: number, locale: string) => Promise<AnalyzeResponse>;
       startPack: (request: PackRequest) => Promise<number>;
       onPackProgress: (callback: (progress: PackProgress) => void) => () => void;
+      onPackStatus: (callback: (status: PackStatusEvent) => void) => () => void;
       createTestData: (folderPath: string, locale: string) => Promise<TestDataResponse>;
       openExternal: (url: string) => Promise<void>;
       openPath: (path: string) => Promise<void>;

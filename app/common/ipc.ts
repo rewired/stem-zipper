@@ -1,3 +1,4 @@
+import type { LocaleKey, TranslationKey } from './i18n';
 import type { EstimateFileKind } from './packing/estimator';
 
 export const IPC_CHANNELS = {
@@ -58,6 +59,15 @@ export interface PackRequest {
 
 export type PackState = 'idle' | 'analyzing' | 'packing' | 'finished' | 'error';
 
+export type PackToastLevel = 'info' | 'warning';
+
+export interface PackToast {
+  id: string;
+  level: PackToastLevel;
+  messageKey: TranslationKey;
+  params?: Record<string, string>;
+}
+
 export interface PackProgress {
   state: PackState;
   current: number;
@@ -67,6 +77,12 @@ export interface PackProgress {
   currentZip?: string;
   errorMessage?: string;
 }
+
+export type PackStatusEvent =
+  | {
+      type: 'toast';
+      toast: PackToast;
+    };
 
 export interface TestDataRequest {
   folderPath: string;

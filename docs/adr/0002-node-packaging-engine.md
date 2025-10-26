@@ -26,3 +26,4 @@ We implemented a TypeScript packaging service for the Electron main process that
 - Tests can run without launching Electron, shortening feedback loops and enabling CI automation.
 - New dependencies (`vitest`) and configuration files are added; developers need to install them before running the suite.
 - Bundled archives always contain the `_stem-zipper.txt` branding, ensuring continuity with the original tool.
+- Header probing guards the stereo-splitting path, skipping unsupported or malformed audio while surfacing user-facing toasts instead of aborting the pack run.

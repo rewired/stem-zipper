@@ -244,9 +244,18 @@ function registerIpcHandlers(): void {
       console.warn('Failed to check for existing ZIPs before packing', e);
     }
     try {
-      const total = await packFolder(args.folderPath, sanitizedMax, locale, normalizedMetadata, (progress) => {
-        event.sender.send(IPC_CHANNELS.PACK_PROGRESS, progress);
-      });
+      const total = await packFolder(
+        args.folderPath,
+        sanitizedMax,
+        locale,
+        normalizedMetadata,
+        (progress) => {
+          event.sender.send(IPC_CHANNELS.PACK_PROGRESS, progress);
+        },
+        (status) => {
+          event.sender.send(IPC_CHANNELS.PACK_STATUS, status);
+        }
+      );
       return total;
     } catch (error) {
       const fallback = formatMessage(locale, 'common_error_title');
