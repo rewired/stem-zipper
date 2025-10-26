@@ -94,6 +94,18 @@ function createElectronMock() {
       bytesCapacity: 12 * MB,
       packing: { maxZipSize: 0, capacityBytes: 0, perZipOverheadBytes: 0, files: [] }
     }),
+    estimatePackingPlan: vi
+      .fn()
+      .mockResolvedValue({
+        plan: [
+          {
+            path: mockFile.path,
+            archiveIndex: 1,
+            archiveLabel: 'stems-01.zip',
+            allowed: true
+          }
+        ]
+      }),
     startPack: vi.fn().mockImplementation(async () => {
       api.emitProgress({
         state: 'preparing',

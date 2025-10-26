@@ -7,6 +7,7 @@ import { FileBadge } from '../components/FileBadge';
 import { useZipEstimator } from '../hooks/useZipEstimator';
 import { formatMessage } from '@common/i18n';
 import { DEFAULT_MAX_SIZE_MB } from '@common/constants';
+import type { FileRow } from '../types/fileRow';
 
 const MB = 1024 * 1024;
 
@@ -16,14 +17,21 @@ type HarnessProps = {
 };
 
 function TestHarness({ files, maxSizeMb }: HarnessProps) {
-  const { badges } = useZipEstimator(files, { maxSizeMb });
+  const rows: FileRow[] = files.map((file) => ({
+    ...file,
+    id: file.path,
+    selectable: true,
+    selected: true
+  }));
+
+  const { badges } = useZipEstimator(rows, { maxSizeMb });
   const badgeLabel = formatMessage('en', 'badge_no_zip_gain');
   const badgeHint = formatMessage('en', 'badge_no_zip_gain_hint');
   const volumeLabel = formatMessage('en', 'badge_consider_7z_volumes');
 
   return (
     <FileTable
-      files={files}
+      files={rows}
       fileLabel="File"
       sizeLabel="Size"
       actionLabel="Action"
@@ -57,6 +65,16 @@ function TestHarness({ files, maxSizeMb }: HarnessProps) {
         }
         return <span className="flex gap-1">{elements}</span>;
       }}
+      renderEstimate={() => null}
+      onToggleRow={() => {}}
+      onToggleAll={() => {}}
+      selectLabel="Select"
+      toggleAllLabel="Toggle all"
+      estimateLabel="Estimate"
+      masterChecked
+      masterIndeterminate={false}
+      masterDisabled={false}
+      formatTooltip={(reason) => reason}
     />
   );
 }

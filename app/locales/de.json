@@ -89,5 +89,13 @@
   "pack_error_no_files": "No supported audio files were found.",
   "error_7z_binary_missing": "7z binary is missing. Install the platform binary under resources/bin.",
   "error_7z_spawn_failed": "7z compression failed. Verify the bundled binary and file permissions.",
-  "pack_error_unknown": "Packing failed due to an unknown error."
+  "pack_error_unknown": "Packing failed due to an unknown error.",
+  "table_col_select": "Auswahl",
+  "table_header_toggle_all": "Alle umschalten",
+  "table_col_estimate": "Voraussichtliches Archiv",
+  "row_reason_too_large_zip": "Zu groß für ZIP; wechsle zu 7z, um es einzuschließen.",
+  "badge_estimate_prefix": "~",
+  "badge_estimate_zip": "stems-{{index}}.zip",
+  "badge_estimate_7z": "vol-{{index}}.7z",
+  "tooltip_unselectable": "{{reason}}"
 }

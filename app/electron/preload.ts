@@ -16,6 +16,7 @@ import { IPC_CHANNELS } from '../common/ipc';
 import type { RuntimeConfig } from '../common/runtime';
 import { resolveLocale } from '../common/i18n';
 import type { EstimateRequest, EstimateResponse } from '../common/packing/estimator';
+import type { PackingPlanRequest, PackingPlanResponse } from '../common/ipc/contracts';
 
 type ProgressListener = (progress: PackProgress) => void;
 type ResultListener = (result: PackResult) => void;
@@ -84,6 +85,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   estimateZipCount(request: EstimateRequest): Promise<EstimateResponse> {
     return ipcRenderer.invoke(IPC_CHANNELS.ESTIMATE, request);
+  },
+  estimatePackingPlan(request: PackingPlanRequest): Promise<PackingPlanResponse> {
+    return ipcRenderer.invoke(IPC_CHANNELS.ESTIMATE_PLAN, request);
   },
   getUserPrefs(request: UserPrefsGet = {}): Promise<UserPrefsResponse> {
     return ipcRenderer.invoke(IPC_CHANNELS.PREFS_GET, request);

@@ -1,7 +1,7 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState, type Dispatch, type ReactNode } from 'react';
 import { DEFAULT_MAX_SIZE_MB } from '@common/constants';
-import type { FileEntry } from '@common/ipc';
 import { formatMessage, resolveLocale, type LocaleKey } from '@common/i18n';
+import type { FileRow } from '../types/fileRow';
 
 interface AppStoreValue {
   locale: LocaleKey;
@@ -9,8 +9,8 @@ interface AppStoreValue {
   setMaxSize: (value: number | '') => void;
   folderPath: string | null;
   setFolderPath: (value: string | null) => void;
-  files: FileEntry[];
-  setFiles: (files: FileEntry[]) => void;
+  files: FileRow[];
+  setFiles: Dispatch<React.SetStateAction<FileRow[]>>;
   statusText: string;
   setStatusText: (text: string) => void;
 }
@@ -28,7 +28,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [locale] = useState<LocaleKey>(initialLocale);
   const [maxSize, setMaxSize] = useState<number | ''>(DEFAULT_MAX_SIZE_MB);
   const [folderPath, setFolderPath] = useState<string | null>(null);
-  const [files, setFiles] = useState<FileEntry[]>([]);
+  const [files, setFiles] = useState<FileRow[]>([]);
   const [statusText, setStatusText] = useState(() =>
     formatMessage(initialLocale, 'pack_status_ready')
   );

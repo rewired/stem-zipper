@@ -9,12 +9,15 @@ import {
   type ReactNode
 } from 'react';
 import { DEFAULT_MAX_SIZE_MB, MAX_SIZE_LIMIT_MB } from '@common/constants';
-import type { PackProgress, PackState, PackStatusEvent, PackMethod } from '@common/ipc';
+import type { FileEntry, PackProgress, PackState, PackStatusEvent, PackMethod } from '@common/ipc';
+import type { PackingPlanRequest } from '@common/ipc/contracts';
 import type { EstimateResponse } from '@common/packing/estimator';
 import { ensureValidMaxSize } from '@common/validation';
-import { formatMessage, type TranslationKey } from '@common/i18n';
+import { formatMessage, tNS, type TranslationKey } from '@common/i18n';
 import { useAppStore } from '../../store/appStore';
 import { useMetadata } from '../metadata/useMetadata';
+import type { FileRow } from '../../types/fileRow';
+import { mergePackingPlan } from '../files/mergePackingPlan';
 
 const initialProgress: PackProgress = {
   state: 'done',
@@ -90,6 +93,31 @@ function useEventTarget<T>() {
   return { emit, subscribe };
 }
 
+function convertFileEntriesToRows(entries: FileEntry[], previous: FileRow[]): FileRow[] {
+  const previousByPath = new Map(previous.map((file) => [file.path, file] as const));
+  return entries.map((entry) => {
+    const existing = previousByPath.get(entry.path);
+    const intended =
+      typeof existing?.userIntendedSelected === 'boolean'
+        ? existing.userIntendedSelected
+        : typeof existing?.selected === 'boolean'
+          ? existing.selected
+          : true;
+    const estimate = existing?.estimate
+      ? { archiveIndex: existing.estimate.archiveIndex, archiveLabel: existing.estimate.archiveLabel }
+      : undefined;
+
+    return {
+      ...entry,
+      id: existing?.id ?? entry.path,
+      selectable: existing?.selectable ?? true,
+      selected: intended,
+      userIntendedSelected: intended,
+      estimate
+    };
+  });
+}
+
 export function PackStateProvider({ children }: { children: ReactNode }) {
   const { locale, maxSize, setMaxSize, folderPath, setFolderPath, files, setFiles, setStatusText } =
     useAppStore();
@@ -114,6 +142,13 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
   const progressStateRef = useRef<PackState>(initialProgress.state);
   const estimateModeRef = useRef<'auto' | 'silent'>('auto');
   const triggerEstimateRef = useRef<ReturnType<typeof debounce> | null>(null);
+  const lastPlanStateRef = useRef<{ signature: string; method: PackingPlanRequest['method']; size: number | null }>(
+    {
+      signature: '',
+      method: 'zip',
+      size: null
+    }
+  );
 
   const t = useCallback(
     (key: TranslationKey, params: Record<string, string | number> = {}) =>
@@ -161,7 +196,7 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
         if (!isLatestAnalyzeToken(analyzeToken)) {
           return;
         }
-        setFiles(response.files);
+        setFiles((previous) => convertFileEntriesToRows(response.files, previous));
         setFolderPath(targetFolder);
         ensureDraft(targetFolder);
         if (response.maxSizeMb !== currentMaxSize) {
@@ -251,13 +286,21 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
     emit({ type: 'dismiss', id: 'estimate' });
     setStatusText(t('pack_status_in_progress'));
     try {
+      const selectedFiles = files.filter((file) => file.selectable && file.selected).map((file) => file.path);
+      if (selectedFiles.length === 0) {
+        setStatusText(t('pack_status_no_files'));
+        setIsPacking(false);
+        estimateModeRef.current = 'auto';
+        return;
+      }
+
       await window.electronAPI.startPack({
         folderPath,
         maxSizeMb: maxSize,
         locale,
         packMetadata: metadata,
         method: packMethod,
-        files: files.map((file) => file.path)
+        files: selectedFiles
       });
       await analyze(folderPath, maxSize);
     } catch (error: unknown) {
@@ -459,6 +502,14 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
     return (value: number) => formatter.format(value);
   }, [locale]);
 
+  const filesPlanSignature = useMemo(
+    () =>
+      files
+        .map((file, index) => `${index}:${file.path}:${file.sizeBytes}`)
+        .join('|'),
+    [files]
+  );
+
   const triggerEstimate = useMemo(() => {
     return debounce(() => {
       if (estimateModeRef.current !== 'auto') {
@@ -564,6 +615,87 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
       fn.cancel();
     };
   }, [files, locale, maxSize]);
+
+  useEffect(() => {
+    const method: PackingPlanRequest['method'] = packMethod === 'seven_z_split' ? '7z' : 'zip';
+    const zipDisallowedReason = tNS('pack', 'row_reason_too_large_zip', undefined, locale);
+    const normalizedSize =
+      typeof maxSize === 'number' && Number.isFinite(maxSize) && maxSize > 0 ? maxSize : null;
+    const last = lastPlanStateRef.current;
+
+    if (last.signature === filesPlanSignature && last.method === method && last.size === normalizedSize) {
+      return;
+    }
+
+    if (!files.length) {
+      lastPlanStateRef.current = { signature: filesPlanSignature, method, size: normalizedSize };
+      setFiles((previous) =>
+        previous.map((file) => {
+          if (method !== '7z') {
+            return file;
+          }
+          const intended =
+            typeof file.userIntendedSelected === 'boolean'
+              ? file.userIntendedSelected
+              : typeof file.selected === 'boolean'
+                ? file.selected
+                : true;
+          return {
+            ...file,
+            selectable: true,
+            selected: intended,
+            userIntendedSelected: intended,
+            estimate: file.estimate
+              ? { archiveIndex: file.estimate.archiveIndex, archiveLabel: file.estimate.archiveLabel }
+              : undefined
+          };
+        })
+      );
+      return;
+    }
+
+    if (!window.electronAPI || typeof window.electronAPI.estimatePackingPlan !== 'function') {
+      lastPlanStateRef.current = { signature: filesPlanSignature, method, size: normalizedSize };
+      setFiles((previous) => mergePackingPlan(previous, [], { method, zipDisallowedReason }));
+      return;
+    }
+
+    if (normalizedSize === null) {
+      lastPlanStateRef.current = { signature: filesPlanSignature, method, size: normalizedSize };
+      setFiles((previous) => mergePackingPlan(previous, [], { method, zipDisallowedReason }));
+      return;
+    }
+
+    const requestFiles = files.map((file) => ({ path: file.path, sizeBytes: file.sizeBytes }));
+    const request: PackingPlanRequest = {
+      method,
+      maxArchiveSizeMb: normalizedSize,
+      files: requestFiles,
+      splitStereo: false
+    };
+
+    lastPlanStateRef.current = { signature: filesPlanSignature, method, size: normalizedSize };
+    let cancelled = false;
+    window.electronAPI
+      .estimatePackingPlan(request)
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+        setFiles((previous) => mergePackingPlan(previous, response.plan, { method, zipDisallowedReason }));
+      })
+      .catch((error: unknown) => {
+        if (cancelled) {
+          return;
+        }
+        console.error('Failed to compute packing plan', error);
+        setFiles((previous) => mergePackingPlan(previous, [], { method, zipDisallowedReason }));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [files, filesPlanSignature, locale, maxSize, packMethod, setFiles]);
 
   const value = useMemo<PackContextValue>(
     () => ({
