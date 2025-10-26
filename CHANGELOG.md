@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Renderer exposes a shared `getFileExtension` helper for consistent lowercase extension parsing across platforms.
 
 ### Changed
+- UI: Primary action "Pack Now" now green; "~ no zip gain" shown as blue info badge.
 - Renderer now debounces ZIP estimate requests and pairs them with the latest analysis token to prevent stale toasts.
 - Renderer toast estimates now use underscore keys with concise start/result/error copy shared across locales.
 - Development workflow now delegates to `concurrently` with named stream prefixes and signal-aware teardown so `pnpm run dev` exits cleanly across platforms.

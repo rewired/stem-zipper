@@ -14,6 +14,7 @@
   "pack_status_ready": "Ready",
   "pack_status_found_files": "{{count}} files found.",
   "pack_action_start": "Pack Now",
+  "app_btn_pack_now": "Pack Now",
   "pack_status_packing": "Creating {{name}}...",
   "pack_status_done": "Done.",
   "pack_status_packing_percent": "Creating {{name}}... ({{percent}}%)",

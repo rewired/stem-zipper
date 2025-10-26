@@ -14,6 +14,7 @@
   "pack_status_ready": "Готово",
   "pack_status_found_files": "Знайдено {{count}} файлів.",
   "pack_action_start": "Пакувати зараз",
+  "app_btn_pack_now": "Пакувати зараз",
   "pack_status_packing": "Створення {{name}}...",
   "pack_status_done": "Готово.",
   "pack_status_packing_percent": "Створення {{name}}... ({{percent}}%)",

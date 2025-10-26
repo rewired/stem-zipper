@@ -14,6 +14,7 @@
   "pack_status_ready": "Valmis",
   "pack_status_found_files": "{{count}} tiedostoa löytyi.",
   "pack_action_start": "Pakkaa nyt",
+  "app_btn_pack_now": "Pakkaa nyt",
   "pack_status_packing": "Luodaan {{name}}...",
   "pack_status_done": "Valmis.",
   "pack_status_packing_percent": "Luodaan {{name}}... ({{percent}}%)",

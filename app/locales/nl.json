@@ -14,6 +14,7 @@
   "pack_status_ready": "Klaar",
   "pack_status_found_files": "{{count}} bestanden gevonden.",
   "pack_action_start": "Nu inpakken",
+  "app_btn_pack_now": "Nu inpakken",
   "pack_status_packing": "Bezig met het maken van {{name}}...",
   "pack_status_done": "Klaar.",
   "pack_status_packing_percent": "Bezig met het maken van {{name}}... ({{percent}}%)",

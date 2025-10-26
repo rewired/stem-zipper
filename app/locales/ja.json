@@ -14,6 +14,7 @@
   "pack_status_ready": "準備完了",
   "pack_status_found_files": "{{count}} 件のファイルが見つかりました。",
   "pack_action_start": "今すぐパック",
+  "app_btn_pack_now": "今すぐパック",
   "pack_status_packing": "{{name}} を作成しています...",
   "pack_status_done": "完了。",
   "pack_status_packing_percent": "{{name}} を作成しています... ({{percent}}%)",

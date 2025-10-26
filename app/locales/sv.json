@@ -14,6 +14,7 @@
   "pack_status_ready": "Klar",
   "pack_status_found_files": "{{count}} filer hittades.",
   "pack_action_start": "Packa nu",
+  "app_btn_pack_now": "Packa nu",
   "pack_status_packing": "Skapar {{name}}...",
   "pack_status_done": "Klart.",
   "pack_status_packing_percent": "Skapar {{name}}... ({{percent}}%)",

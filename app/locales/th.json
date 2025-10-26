@@ -14,6 +14,7 @@
   "pack_status_ready": "พร้อม",
   "pack_status_found_files": "พบไฟล์ {{count}}",
   "pack_action_start": "แพ็กเลย",
+  "app_btn_pack_now": "แพ็กเลย",
   "pack_status_packing": "กำลังสร้าง {{name}}...",
   "pack_status_done": "เสร็จแล้ว",
   "pack_status_packing_percent": "กำลังสร้าง {{name}}... ({{percent}}%)",

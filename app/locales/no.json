@@ -14,6 +14,7 @@
   "pack_status_ready": "Klar",
   "pack_status_found_files": "{{count}} filer funnet.",
   "pack_action_start": "Pakk nå",
+  "app_btn_pack_now": "Pakk nå",
   "pack_status_packing": "Oppretter {{name}}...",
   "pack_status_done": "Ferdig.",
   "pack_status_packing_percent": "Oppretter {{name}}... ({{percent}}%)",

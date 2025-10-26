@@ -40,7 +40,13 @@ function TestHarness({ files, maxSizeMb }: HarnessProps) {
         const elements: JSX.Element[] = [];
         if (flags.noZipGain) {
           elements.push(
-            <FileBadge key="no-zip" label={badgeLabel} tooltip={badgeHint} />
+            <FileBadge
+              key="no-zip"
+              label={badgeLabel}
+              tooltip={badgeHint}
+              variant="info"
+              icon="info"
+            />
           );
         }
         if (flags.consider7zVolumes) {
@@ -101,7 +107,10 @@ describe('useZipEstimator integration', () => {
     const badges = screen.getAllByText('~ no zip gain');
     expect(badges).toHaveLength(3);
     for (const badge of badges) {
-      expect(badge.closest('span[title]')?.getAttribute('title')).toBe(
+      const container = badge.closest('span[aria-label]');
+      expect(container).not.toBeNull();
+      expect(container?.classList.contains('badge-info')).toBe(true);
+      expect(container?.getAttribute('title')).toBe(
         "Already compressed; ZIP usually won't shrink it."
       );
     }
