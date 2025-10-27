@@ -6,7 +6,12 @@ import { analyzeFolder, createTestData, pack } from './services/pack';
 import { ensureValidMaxSize } from '../common/validation';
 import { formatPathForDisplay } from '../common/paths';
 import { IPC_CHANNELS } from '../common/ipc';
-import type { AnalyzeResponse, PackRequest, TestDataRequest } from '../common/ipc';
+import type {
+  AnalyzeResponse,
+  PackProgress,
+  PackRequest,
+  TestDataRequest
+} from '../common/ipc';
 import { formatMessage, resolveLocale, type TranslationKey } from '../common/i18n';
 import type { RuntimeConfig } from '../common/runtime';
 import { APP_VERSION } from '../common/version';
@@ -184,7 +189,7 @@ app.on('window-all-closed', () => {
   }
 });
 
-function registerIpcHandlers(): void {
+export function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.SELECT_FOLDER, async () => {
     const config = getRuntimeConfig();
     const window = getWindow();
@@ -274,14 +279,48 @@ function registerIpcHandlers(): void {
       });
     } catch (error) {
       const code = error instanceof Error && error.message ? error.message : 'pack_error_unknown';
-      let message: string;
+      let friendlyMessage: string;
       try {
-        message = formatMessage(locale, code as TranslationKey);
+        friendlyMessage = formatMessage(locale, code as TranslationKey);
       } catch (formatError) {
         console.warn('Failed to localize pack error message', code, formatError);
-        message = code;
+        friendlyMessage = code;
       }
-      event.sender.send(IPC_CHANNELS.PACK_ERROR, { message, code });
+
+      let bodyMessage = friendlyMessage;
+      try {
+        bodyMessage = formatMessage(locale, 'pack_error_generic', { message: friendlyMessage });
+      } catch (formatError) {
+        console.warn('Failed to format pack error wrapper message', formatError);
+      }
+
+      const progressPayload: PackProgress = {
+        state: 'error',
+        current: 0,
+        total: 0,
+        percent: 0,
+        message: 'pack_progress_error',
+        errorMessage: friendlyMessage
+      };
+
+      event.sender.send(IPC_CHANNELS.PACK_STATUS, {
+        type: 'toast',
+        toast: {
+          id: 'pack',
+          level: 'warning',
+          titleKey: 'toast_warning_title',
+          messageKey: 'pack_error_generic',
+          params: { message: friendlyMessage }
+        }
+      });
+
+      event.sender.send(IPC_CHANNELS.PACK_STATUS, {
+        type: 'progress',
+        progress: progressPayload
+      });
+
+      event.sender.send(IPC_CHANNELS.PACK_PROGRESS, progressPayload);
+      event.sender.send(IPC_CHANNELS.PACK_ERROR, { message: bodyMessage, code });
       console.error('Packing failed', error);
     } finally {
       packInProgress = false;
