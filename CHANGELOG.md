@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- Electron 7z resolver now enforces executable permissions on every platform and
+  treats Windows-specific `chmod` errors as non-fatal, keeping binary resolution
+  consistent for development and packaged builds.
+
 ## [1.0.2]
 
 ### Added
