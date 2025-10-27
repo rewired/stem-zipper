@@ -34,6 +34,8 @@ All notable changes to this project will be documented in this file.
   Node 18+ where the dependency ships as ESM-only.
 - Electron 7z pack strategy now clears stale `stems.7z` volumes and forces non-interactive
   overwrites, preventing packing from hanging on overwrite prompts.
+- Electron 7z split pack strategy now stages split mono temp files inside the pack folder before
+  spawning 7z, restoring multi-volume archives after stereo splitting.
 - `pnpm run dev` now registers the Electron launcher script again, restoring the
   development workflow after the missing `dev:electron` target regression.
 - Preview launcher now reinstalls Electron binaries automatically, preventing `Electron failed to install correctly` crashes

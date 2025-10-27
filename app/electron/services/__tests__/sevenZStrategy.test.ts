@@ -101,6 +101,75 @@ describe('sevenZSplitStrategy', () => {
     expect(fs.existsSync(path.join(tempRoot, '_stem-zipper.txt'))).toBe(false);
   });
 
+  it('stages split files created outside the output directory before invoking 7z', async () => {
+    const tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'stem-zipper-7z-stage-'));
+    const splitRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'stem-zipper-7z-split-'));
+    tempDirs.push(tempRoot, splitRoot);
+
+    const leftSource = path.join(splitRoot, 'beat-L.wav');
+    const rightSource = path.join(splitRoot, 'beat-R.wav');
+    await fs.promises.writeFile(leftSource, Buffer.from('left-wav'));
+    await fs.promises.writeFile(rightSource, Buffer.from('right-wav'));
+
+    const metadata = normalizePackMetadata({
+      title: 'Fixture',
+      artist: 'Test Artist',
+      license: { id: 'CC-BY-4.0' }
+    });
+
+    resolve7zBinary.mockReturnValue('/bin/7zz');
+    const stagedPaths: string[] = [];
+
+    execa.mockImplementation(() => {
+      expect(fs.existsSync(leftSource)).toBe(false);
+      expect(fs.existsSync(rightSource)).toBe(false);
+      expect(fs.existsSync(path.join(tempRoot, 'beat-L.wav'))).toBe(true);
+      expect(fs.existsSync(path.join(tempRoot, 'beat-R.wav'))).toBe(true);
+      const emitter = new EventEmitter();
+      const promise = (async () => {
+        emitter.emit('data', Buffer.from('25%'));
+        await fs.promises.writeFile(path.join(tempRoot, 'stems.7z'), Buffer.from('archive'));
+        return { exitCode: 0, stderr: '' };
+      })();
+      Object.assign(promise, { stdout: emitter });
+      return promise as unknown as ReturnType<typeof execa>;
+    });
+
+    const context: PackStrategyContext = {
+      files: [
+        { path: leftSource, size: 4, extension: '.wav' },
+        { path: rightSource, size: 4, extension: '.wav' }
+      ],
+      options: {
+        method: 'seven_z_split',
+        maxArchiveSizeMB: 50,
+        outputDir: tempRoot,
+        files: [leftSource, rightSource],
+        locale: 'en',
+        metadata
+      },
+      progress: createProgressReporter(() => {}),
+      extras: [],
+      emitToast: undefined,
+      registerTempFile: (filePath) => {
+        stagedPaths.push(filePath);
+      }
+    };
+
+    const result = await sevenZSplitStrategy(context);
+
+    expect(resolve7zBinary).toHaveBeenCalledTimes(1);
+    expect(execa).toHaveBeenCalledTimes(1);
+    expect(stagedPaths).toEqual([
+      path.join(tempRoot, 'beat-L.wav'),
+      path.join(tempRoot, 'beat-R.wav')
+    ]);
+    const [, args] = execa.mock.calls[0];
+    expect(args).toContain('beat-L.wav');
+    expect(args).toContain('beat-R.wav');
+    expect(result.archives).toEqual([path.join(tempRoot, 'stems.7z')]);
+  });
+
   it('throws when the 7z binary cannot be resolved', async () => {
     const tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'stem-zipper-7z-missing-'));
     tempDirs.push(tempRoot);
