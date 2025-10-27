@@ -2,10 +2,11 @@ import {
   EST_LICENSE_BYTES,
   EST_SPLIT_RATIO,
   EST_STAMP_BYTES,
-  EST_ZIP_OVERHEAD_BYTES
+  EST_ZIP_OVERHEAD_BYTES,
+  LOSSY_ZIP_RATIO
 } from './constants';
 
-export type EstimateFileKind = 'wav' | 'flac' | 'mp3' | 'aiff' | 'ogg' | 'aac' | 'wma';
+export type EstimateFileKind = 'wav' | 'flac' | 'mp3' | 'aiff' | 'ogg' | 'aac' | 'm4a' | 'opus' | 'wma';
 
 export interface EstimateFileInput {
   path: string;
@@ -17,12 +18,147 @@ export interface EstimateFileInput {
 export interface EstimateRequest {
   files: EstimateFileInput[];
   targetMB: number;
+  token?: string;
 }
 
 export interface EstimateResponse {
   zips: number;
   bytesLogical: number;
   bytesCapacity: number;
+  packing: PackingEstimate;
+}
+
+export type PackingOverflowReason =
+  | 'file_exceeds_limit'
+  | 'exceeds_capacity'
+  | 'needs_new_volume';
+
+export interface PackingEstimateFile {
+  path: string;
+  rawBytes: number;
+  effectiveBytes: number;
+  targetVolume: number;
+  overflowReason: PackingOverflowReason | null;
+}
+
+export interface PackingEstimate {
+  maxZipSize: number;
+  capacityBytes: number;
+  perZipOverheadBytes: number;
+  files: PackingEstimateFile[];
+}
+
+interface EstimatePackingOptions {
+  maxZipSize: number;
+  perZipOverhead?: number;
+  compressRatioByKind?: Partial<Record<EstimateFileKind, number>>;
+}
+
+const LOSSY_KIND_SET = new Set<EstimateFileKind>([
+  'mp3',
+  'aac',
+  'm4a',
+  'ogg',
+  'opus',
+  'wma'
+]);
+
+const COMPRESSED_EXTENSIONS = new Set<string>([
+  '.mp3',
+  '.aac',
+  '.m4a',
+  '.mp4',
+  '.ogg',
+  '.opus',
+  '.wma',
+  '.webm',
+  '.flac'
+]);
+
+export function isCompressedExt(extension: string): boolean {
+  if (!extension) {
+    return false;
+  }
+  const normalized = extension.startsWith('.') ? extension.toLowerCase() : `.${extension.toLowerCase()}`;
+  return COMPRESSED_EXTENSIONS.has(normalized);
+}
+
+export function isLossyKind(kind: EstimateFileKind): boolean {
+  return LOSSY_KIND_SET.has(kind);
+}
+
+function resolveKindCompressionRatio(
+  kind: EstimateFileKind,
+  compressRatioByKind: EstimatePackingOptions['compressRatioByKind']
+): number {
+  if (isLossyKind(kind)) {
+    return LOSSY_ZIP_RATIO;
+  }
+  const ratio = compressRatioByKind?.[kind];
+  if (typeof ratio === 'number' && Number.isFinite(ratio) && ratio > 0) {
+    return ratio;
+  }
+  return 1.0;
+}
+
+export function estimatePacking(
+  files: EstimateFileInput[],
+  options: EstimatePackingOptions
+): PackingEstimate {
+  const perZipOverhead = options.perZipOverhead ?? EST_ZIP_OVERHEAD_BYTES + EST_STAMP_BYTES + EST_LICENSE_BYTES;
+  const maxZipSize = Number.isFinite(options.maxZipSize) && options.maxZipSize > 0 ? options.maxZipSize : 0;
+  const capacityBytes = Math.max(0, maxZipSize - perZipOverhead);
+  const compressRatioByKind = options.compressRatioByKind;
+  const estimateFiles: PackingEstimateFile[] = [];
+
+  let currentVolume = 1;
+  let usedBytes = 0;
+
+  for (const file of files) {
+    const ratio = resolveKindCompressionRatio(file.kind, compressRatioByKind);
+    const effectiveBytes = Math.ceil(file.sizeBytes * ratio);
+    const fileExceedsLimit = maxZipSize > 0 && file.sizeBytes >= maxZipSize;
+    const capacityUnavailable = capacityBytes <= 0;
+    const exceedsCapacity = !capacityUnavailable && effectiveBytes > capacityBytes;
+    let overflowReason: PackingOverflowReason | null = null;
+    let targetVolume = currentVolume;
+
+    if (fileExceedsLimit) {
+      overflowReason = 'file_exceeds_limit';
+    } else if (capacityUnavailable || exceedsCapacity) {
+      overflowReason = 'exceeds_capacity';
+    } else if (usedBytes + effectiveBytes > capacityBytes) {
+      currentVolume += 1;
+      targetVolume = currentVolume;
+      overflowReason = 'needs_new_volume';
+      usedBytes = effectiveBytes;
+    } else {
+      usedBytes += effectiveBytes;
+    }
+
+    estimateFiles.push({
+      path: file.path,
+      rawBytes: file.sizeBytes,
+      effectiveBytes,
+      targetVolume,
+      overflowReason
+    });
+
+    if (overflowReason && overflowReason !== 'needs_new_volume') {
+      currentVolume += 1;
+      usedBytes = 0;
+    } else if (!overflowReason && capacityBytes > 0 && usedBytes >= capacityBytes) {
+      currentVolume += 1;
+      usedBytes = 0;
+    }
+  }
+
+  return {
+    maxZipSize,
+    capacityBytes,
+    perZipOverheadBytes: perZipOverhead,
+    files: estimateFiles
+  };
 }
 
 function normalizeTargetBytes(targetMB: number): number {
@@ -57,9 +193,15 @@ export function estimateZipCount(request: EstimateRequest): EstimateResponse {
   const quotient = bytesCapacity > 0 ? logicalBytes / bytesCapacity : logicalBytes;
   const zips = Math.max(1, Math.ceil(quotient));
 
+  const packing = estimatePacking(request.files, {
+    maxZipSize: targetBytes,
+    perZipOverhead
+  });
+
   return {
     zips,
     bytesLogical: logicalBytes,
-    bytesCapacity
+    bytesCapacity,
+    packing
   };
 }

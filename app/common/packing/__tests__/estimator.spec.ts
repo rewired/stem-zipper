@@ -7,6 +7,8 @@ import {
 } from '../constants';
 import {
   estimateZipCount,
+  estimatePacking,
+  isCompressedExt,
   type EstimateFileInput,
   type EstimateRequest
 } from '../estimator';
@@ -88,5 +90,46 @@ describe('estimateZipCount', () => {
 
     expect(result.bytesLogical).toBe(logical);
     expect(result.zips).toBe(expectedZips);
+  });
+});
+
+describe('isCompressedExt', () => {
+  it('detects already compressed audio formats regardless of case', () => {
+    const compressedExtensions = ['.mp3', '.AAC', 'm4a', 'MP4', '.ogg', 'OpUs', 'wma', 'WEBM', '.flac'];
+    for (const ext of compressedExtensions) {
+      expect(isCompressedExt(ext)).toBe(true);
+    }
+  });
+
+  it('rejects uncompressed audio formats', () => {
+    expect(isCompressedExt('.wav')).toBe(false);
+    expect(isCompressedExt('aiff')).toBe(false);
+    expect(isCompressedExt('')).toBe(false);
+  });
+});
+
+describe('estimatePacking', () => {
+  it('marks lossy files that individually exceed the max ZIP size', () => {
+    const files: EstimateFileInput[] = [
+      { path: 'large.mp3', sizeBytes: 52 * MB, kind: 'mp3' }
+    ];
+
+    const result = estimatePacking(files, { maxZipSize: 50 * MB });
+    expect(result.files).toHaveLength(1);
+    const entry = result.files[0];
+    expect(entry.overflowReason).toBe('file_exceeds_limit');
+  });
+
+  it('flags lossy files that require a new volume while sparing compressible WAV files', () => {
+    const files: EstimateFileInput[] = [
+      { path: 'stem.wav', sizeBytes: 40 * MB, kind: 'wav' },
+      { path: 'vocals.mp3', sizeBytes: 12 * MB, kind: 'mp3' }
+    ];
+
+    const result = estimatePacking(files, { maxZipSize: 50 * MB });
+    const wavEntry = result.files.find((entry) => entry.path === 'stem.wav');
+    const mp3Entry = result.files.find((entry) => entry.path === 'vocals.mp3');
+    expect(wavEntry?.overflowReason).toBeNull();
+    expect(mp3Entry?.overflowReason).toBe('needs_new_volume');
   });
 });

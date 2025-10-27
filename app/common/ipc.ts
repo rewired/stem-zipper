@@ -1,4 +1,14 @@
+import type { LocaleKey, TranslationKey } from './i18n';
 import type { EstimateFileKind } from './packing/estimator';
+import type { AudioCodec } from './types';
+
+export type {
+  PackingEstimatorMethod,
+  PackingPlanEntry,
+  PackingPlanFileInput,
+  PackingPlanRequest,
+  PackingPlanResponse
+} from './ipc/contracts';
 
 export const IPC_CHANNELS = {
   SELECT_FOLDER: 'dialog:select-folder',
@@ -6,11 +16,14 @@ export const IPC_CHANNELS = {
   PACK_FOLDER: 'pack-folder',
   PACK_PROGRESS: 'pack-progress',
   PACK_STATUS: 'pack-status',
+  PACK_DONE: 'pack-done',
+  PACK_ERROR: 'pack-error',
   CREATE_TESTDATA: 'create-testdata',
   OPEN_EXTERNAL: 'open-external',
   OPEN_PATH: 'open-path',
   CHECK_EXISTING_ZIPS: 'check-existing-zips',
   ESTIMATE: 'estimator:estimate',
+  ESTIMATE_PLAN: 'estimator:plan',
   PREFS_GET: 'prefs:get',
   PREFS_SET: 'prefs:set',
   PREFS_ADD_RECENT: 'prefs:addRecent'
@@ -28,6 +41,10 @@ export interface FileEntry {
   sizeBytes: number;
   kind: EstimateFileKind;
   stereo?: boolean;
+  codec?: AudioCodec;
+  num_channels?: number;
+  suggest_split_mono?: boolean;
+  header_bytes?: number;
 }
 
 export interface AnalyzeResponse {
@@ -49,23 +66,59 @@ export interface PackMetadata {
   links?: { artist_url?: string; contact_email?: string };
 }
 
+export type PackMethod = 'zip_best_fit' | 'seven_z_split';
+
 export interface PackRequest {
   folderPath: string;
+  files?: string[];
   maxSizeMb: number;
   locale: string;
   packMetadata: PackMetadata;
+  method?: PackMethod;
+  splitStereoThresholdMb?: number;
+  splitStereoFiles?: string[];
 }
 
-export type PackState = 'idle' | 'analyzing' | 'packing' | 'finished' | 'error';
+export type PackState = 'preparing' | 'packing' | 'finalizing' | 'done' | 'error';
+
+export type PackToastLevel = 'info' | 'warning';
+
+export interface PackToast {
+  id: string;
+  level: PackToastLevel;
+  messageKey: TranslationKey;
+  params?: Record<string, string>;
+  titleKey?: TranslationKey;
+}
 
 export interface PackProgress {
   state: PackState;
   current: number;
   total: number;
   percent: number;
-  message: string;
-  currentZip?: string;
+  message: TranslationKey;
+  currentArchive?: string;
   errorMessage?: string;
+}
+
+export type PackStatusEvent =
+  | {
+      type: 'toast';
+      toast: PackToast;
+    }
+  | {
+      type: 'progress';
+      progress: PackProgress;
+    };
+
+export interface PackResult {
+  archives: string[];
+  method: PackMethod;
+}
+
+export interface PackErrorPayload {
+  message: string;
+  code: string;
 }
 
 export interface TestDataRequest {

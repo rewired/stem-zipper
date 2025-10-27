@@ -2,17 +2,25 @@ import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
-import { analyzeFolder, createTestData, packFolder } from './services/packaging';
+import { analyzeFolder, createTestData, pack } from './services/pack';
 import { ensureValidMaxSize } from '../common/validation';
 import { formatPathForDisplay } from '../common/paths';
 import { IPC_CHANNELS } from '../common/ipc';
-import type { AnalyzeResponse, PackRequest, TestDataRequest } from '../common/ipc';
-import { formatMessage, resolveLocale } from '../common/i18n';
+import type {
+  AnalyzeResponse,
+  PackProgress,
+  PackRequest,
+  TestDataRequest
+} from '../common/ipc';
+import { formatMessage, resolveLocale, type TranslationKey } from '../common/i18n';
 import type { RuntimeConfig } from '../common/runtime';
 import { APP_VERSION } from '../common/version';
 import { estimateZipCount, type EstimateRequest } from '../common/packing/estimator';
+import type { PackingPlanRequest } from '../common/ipc/contracts';
+import { estimatePackingPlan } from './services/packEstimator';
 import { getUserPreferences, setUserPreferences, addRecentArtist } from './services/preferences';
 import { normalizePackMetadata } from './services/packMetadata';
+import { installGracefulExit } from './gracefulExit';
 
 let mainWindow: BrowserWindow | null = null;
 let packInProgress = false;
@@ -41,6 +49,8 @@ const cliLang = parseArgLang();
 if (cliLang) {
   process.env.STEM_ZIPPER_LANG = cliLang;
 }
+
+installGracefulExit();
 
 function getCandidatePreloadPaths(): string[] {
   const appPath = app.getAppPath();
@@ -117,8 +127,8 @@ async function createWindow(): Promise<void> {
   const config = getRuntimeConfig();
   const preload = await resolvePreloadPath();
   mainWindow = new BrowserWindow({
-    width: 1120,
-    height: 720,
+    width: 1600,
+    height: 1000,
     minWidth: 960,
     minHeight: 640,
     backgroundColor: '#0f172a',
@@ -179,7 +189,7 @@ app.on('window-all-closed', () => {
   }
 });
 
-function registerIpcHandlers(): void {
+export function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.SELECT_FOLDER, async () => {
     const config = getRuntimeConfig();
     const window = getWindow();
@@ -193,7 +203,7 @@ function registerIpcHandlers(): void {
     IPC_CHANNELS.ANALYZE_FOLDER,
     async (_event, args: { folderPath: string; maxSizeMb: number; locale: string }) => {
       const sanitizedMax = ensureValidMaxSize(args.maxSizeMb);
-      const files = analyzeFolder(args.folderPath, sanitizedMax);
+      const files = await analyzeFolder(args.folderPath, sanitizedMax);
       const response: AnalyzeResponse = {
         files,
         count: files.length,
@@ -205,7 +215,7 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.PACK_FOLDER, async (event, args: PackRequest) => {
     if (packInProgress) {
-      return 0;
+      return;
     }
 
     packInProgress = true;
@@ -223,7 +233,7 @@ function registerIpcHandlers(): void {
     }
     try {
       const entries = await fs.promises.readdir(args.folderPath, { withFileTypes: true });
-      const existing = entries.filter((e) => e.isFile() && /^stems-.*\.zip$/i.test(e.name));
+      const existing = entries.filter((entry) => entry.isFile() && /^stems-.*\.(zip|7z(\.\d{3})?)$/i.test(entry.name));
       if (existing.length > 0) {
         const window = getWindow();
         const { response } = await dialog.showMessageBox(window, {
@@ -237,29 +247,81 @@ function registerIpcHandlers(): void {
         });
         if (response !== 0) {
           packInProgress = false;
-          return 0;
+          return;
         }
       }
-    } catch (e) {
-      console.warn('Failed to check for existing ZIPs before packing', e);
-    }
-    try {
-      const total = await packFolder(args.folderPath, sanitizedMax, locale, normalizedMetadata, (progress) => {
-        event.sender.send(IPC_CHANNELS.PACK_PROGRESS, progress);
-      });
-      return total;
     } catch (error) {
-      const fallback = formatMessage(locale, 'common_error_title');
-      const message = error instanceof Error && error.message ? error.message : fallback;
-      event.sender.send(IPC_CHANNELS.PACK_PROGRESS, {
+      console.warn('Failed to check for existing archives before packing', error);
+    }
+
+    try {
+      const result = await pack({
+        options: {
+          method: args.method ?? 'zip_best_fit',
+          maxArchiveSizeMB: sanitizedMax,
+          outputDir: args.folderPath,
+          files: Array.isArray(args.files) ? args.files : [],
+          locale,
+          metadata: normalizedMetadata,
+          splitStereoThresholdMB: args.splitStereoThresholdMb,
+          splitStereoFiles: Array.isArray(args.splitStereoFiles) ? args.splitStereoFiles : undefined
+        },
+        onProgress: (progress) => {
+          event.sender.send(IPC_CHANNELS.PACK_PROGRESS, progress);
+        },
+        emitStatus: (status) => {
+          event.sender.send(IPC_CHANNELS.PACK_STATUS, status);
+        }
+      });
+      event.sender.send(IPC_CHANNELS.PACK_DONE, {
+        archives: result.archives.map((archivePath) => formatPathForDisplay(archivePath)),
+        method: args.method ?? 'zip_best_fit'
+      });
+    } catch (error) {
+      const code = error instanceof Error && error.message ? error.message : 'pack_error_unknown';
+      let friendlyMessage: string;
+      try {
+        friendlyMessage = formatMessage(locale, code as TranslationKey);
+      } catch (formatError) {
+        console.warn('Failed to localize pack error message', code, formatError);
+        friendlyMessage = code;
+      }
+
+      let bodyMessage = friendlyMessage;
+      try {
+        bodyMessage = formatMessage(locale, 'pack_error_generic', { message: friendlyMessage });
+      } catch (formatError) {
+        console.warn('Failed to format pack error wrapper message', formatError);
+      }
+
+      const progressPayload: PackProgress = {
         state: 'error',
         current: 0,
         total: 0,
         percent: 0,
-        message: 'error',
-        errorMessage: message
+        message: 'pack_progress_error',
+        errorMessage: friendlyMessage
+      };
+
+      event.sender.send(IPC_CHANNELS.PACK_STATUS, {
+        type: 'toast',
+        toast: {
+          id: 'pack',
+          level: 'warning',
+          titleKey: 'toast_warning_title',
+          messageKey: 'pack_error_generic',
+          params: { message: friendlyMessage }
+        }
       });
-      throw error;
+
+      event.sender.send(IPC_CHANNELS.PACK_STATUS, {
+        type: 'progress',
+        progress: progressPayload
+      });
+
+      event.sender.send(IPC_CHANNELS.PACK_PROGRESS, progressPayload);
+      event.sender.send(IPC_CHANNELS.PACK_ERROR, { message: bodyMessage, code });
+      console.error('Packing failed', error);
     } finally {
       packInProgress = false;
     }
@@ -282,6 +344,15 @@ function registerIpcHandlers(): void {
       return estimateZipCount(args);
     } catch (error) {
       console.error('Failed to compute ZIP estimate', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.ESTIMATE_PLAN, async (_event, args: PackingPlanRequest) => {
+    try {
+      return estimatePackingPlan(args);
+    } catch (error) {
+      console.error('Failed to compute packing plan', error);
       throw error;
     }
   });

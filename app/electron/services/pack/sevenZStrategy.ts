@@ -1,0 +1,363 @@
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import readline from 'node:readline';
+import { resolve7zBinary } from './resolve7zBinary';
+import { createMetadataEntries, STAMP_FILENAME } from './metadata';
+import { expandFiles } from './expandFiles';
+import type { PackStrategy, SizedFile } from './types';
+
+function clampVolumeSize(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) {
+    return 10;
+  }
+  return Math.max(10, Math.floor(value));
+}
+
+export function parseProgressLine(line: string): number | null {
+  const sanitized = line.replace(/\r/g, '');
+  const match = sanitized.match(/(\d+)\s*%/);
+  if (!match) {
+    return null;
+  }
+  const percent = Number.parseInt(match[1], 10);
+  if (Number.isNaN(percent)) {
+    return null;
+  }
+  return Math.max(0, Math.min(percent, 100));
+}
+
+interface Run7zOptions {
+  cwd: string;
+  heartbeatMs?: number;
+  onPercent: (percent: number) => void;
+}
+
+export async function run7zWithProgress(
+  binary: string,
+  args: string[],
+  options: Run7zOptions
+): Promise<void> {
+  const heartbeatMs = options.heartbeatMs ?? 2000;
+
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(binary, args, {
+      cwd: options.cwd,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+
+    let lastPercent: number | undefined;
+    const nonProgressMessages: string[] = [];
+    let settled = false;
+
+    const cleanup: Array<() => void> = [];
+    let heartbeatTimer: NodeJS.Timeout | undefined;
+
+    const clearHeartbeat = () => {
+      if (heartbeatTimer) {
+        clearTimeout(heartbeatTimer);
+        heartbeatTimer = undefined;
+      }
+    };
+
+    cleanup.push(clearHeartbeat);
+
+    const emitPercent = (percent: number) => {
+      lastPercent = percent;
+      options.onPercent(percent);
+      scheduleHeartbeat();
+    };
+
+    const handleLine = (rawLine: string, trackForError: boolean) => {
+      const percent = parseProgressLine(rawLine);
+      if (percent !== null) {
+        emitPercent(percent);
+        return;
+      }
+
+      if (!trackForError) {
+        return;
+      }
+
+      const cleaned = rawLine.replace(/\r/g, '').trim();
+      if (cleaned.length > 0) {
+        nonProgressMessages.push(cleaned);
+      }
+    };
+
+    const scheduleHeartbeat = () => {
+      clearHeartbeat();
+      if (lastPercent === undefined) {
+        return;
+      }
+      heartbeatTimer = setTimeout(() => {
+        if (lastPercent !== undefined) {
+          options.onPercent(lastPercent);
+          scheduleHeartbeat();
+        }
+      }, heartbeatMs);
+      heartbeatTimer.unref?.();
+    };
+
+    const attachReader = (stream: NodeJS.ReadableStream | null, trackForError: boolean) => {
+      if (!stream) {
+        return;
+      }
+      let pending = '';
+      let onData: ((chunk: Buffer) => void) | undefined;
+      if (trackForError) {
+        onData = (chunk: Buffer) => {
+          pending += chunk.toString();
+        };
+        stream.on('data', onData);
+        cleanup.push(() => {
+          if (onData) {
+            stream.off('data', onData);
+          }
+        });
+      }
+      const reader = readline.createInterface({ input: stream, crlfDelay: Infinity });
+      reader.on('line', (line) => handleLine(line, trackForError));
+      if (trackForError) {
+        reader.on('line', () => {
+          pending = '';
+        });
+        reader.once('close', () => {
+          const remainder = pending.replace(/\r/g, '').trim();
+          if (remainder.length > 0) {
+            nonProgressMessages.push(remainder);
+          }
+        });
+      }
+      cleanup.push(() => reader.close());
+    };
+
+    attachReader(child.stdout, false);
+    attachReader(child.stderr, true);
+
+    child.once('error', (error) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup.forEach((close) => close());
+      reject(error);
+    });
+
+    child.once('close', (code) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup.forEach((close) => close());
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      const message = nonProgressMessages.join('\n').trim();
+      reject(new Error(message || 'error_7z_spawn_failed'));
+    });
+  });
+}
+
+async function removeExistingArchives(outputDir: string): Promise<void> {
+  try {
+    const entries = await fs.promises.readdir(outputDir, { withFileTypes: true });
+    const staleArchives = entries.filter(
+      (entry) => entry.isFile() && /^stems\.7z(\.\d{3})?$/i.test(entry.name)
+    );
+    await Promise.all(
+      staleArchives.map((entry) =>
+        fs.promises
+          .unlink(path.join(outputDir, entry.name))
+          .catch((error) =>
+            console.warn('Failed to remove existing 7z archive before packing', entry.name, error)
+          )
+      )
+    );
+  } catch (error) {
+    console.warn('Failed to scan for existing 7z archives before packing', outputDir, error);
+  }
+}
+
+async function writeExtras(
+  outputDir: string,
+  entries: { name: string; content: string | Buffer }[],
+  stamp: string
+): Promise<string[]> {
+  const written: string[] = [];
+  const allEntries = [...entries, { name: STAMP_FILENAME, content: stamp }];
+  for (const entry of allEntries) {
+    const target = path.join(outputDir, entry.name);
+    const data = typeof entry.content === 'string' ? Buffer.from(entry.content, 'utf-8') : entry.content;
+    await fs.promises.writeFile(target, data);
+    written.push(target);
+  }
+  return written;
+}
+
+async function cleanupExtras(paths: string[]): Promise<void> {
+  await Promise.all(
+    paths.map((filePath) =>
+      fs.promises
+        .unlink(filePath)
+        .catch((error) => console.warn('Failed to remove temporary 7z extra', filePath, error))
+    )
+  );
+}
+
+export function is7zVolume(name: string): boolean {
+  return name === 'stems.7z' || /^stems\.7z\.\d{3}$/u.test(name);
+}
+
+function isErrnoException(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && typeof (error as NodeJS.ErrnoException).code === 'string';
+}
+
+async function stageFileForArchive(
+  file: SizedFile,
+  outputDir: string,
+  registerTempFile: (filePath: string) => void
+): Promise<string> {
+  const baseName = path.basename(file.path);
+  if (path.dirname(file.path) === outputDir) {
+    return baseName;
+  }
+
+  const targetPath = path.join(outputDir, baseName);
+  const targetExists = await fs.promises
+    .access(targetPath)
+    .then(() => true)
+    .catch(() => false);
+
+  if (targetExists) {
+    console.warn('Refusing to overwrite existing file while staging for 7z', targetPath);
+    throw new Error('error_7z_spawn_failed');
+  }
+
+  try {
+    await fs.promises.rename(file.path, targetPath);
+  } catch (error) {
+    if (isErrnoException(error) && error.code === 'EXDEV') {
+      await fs.promises.copyFile(file.path, targetPath, fs.constants.COPYFILE_EXCL);
+      await fs.promises.unlink(file.path).catch((unlinkError) => {
+        if (isErrnoException(unlinkError) && unlinkError.code !== 'ENOENT') {
+          console.warn('Failed to remove staged source after copy', file.path, unlinkError);
+        }
+      });
+    } else {
+      throw error;
+    }
+  }
+
+  registerTempFile(targetPath);
+  return path.basename(targetPath);
+}
+
+async function stageFilesForArchive(
+  files: SizedFile[],
+  outputDir: string,
+  registerTempFile: (filePath: string) => void
+): Promise<string[]> {
+  const staged: string[] = [];
+  for (const file of files) {
+    const stagedName = await stageFileForArchive(file, outputDir, registerTempFile);
+    staged.push(stagedName);
+  }
+  return staged;
+}
+
+export const sevenZSplitStrategy: PackStrategy = async (context) => {
+  if (context.files.length === 0) {
+    throw new Error('pack_error_no_files');
+  }
+
+  const archiveName = 'stems.7z';
+  const archivePath = path.join(context.options.outputDir, archiveName);
+  const maxSizeBytes = context.options.maxArchiveSizeMB * 1024 * 1024;
+  const splitThresholdBytes = context.options.splitStereoThresholdMB
+    ? context.options.splitStereoThresholdMB * 1024 * 1024
+    : undefined;
+  const expanded = await expandFiles(context.files, {
+    maxSizeBytes,
+    splitThresholdBytes,
+    progress: context.progress,
+    emitToast: context.emitToast,
+    registerTempFile: context.registerTempFile
+  });
+
+  const packedAt = new Date().toISOString();
+  const { extras, stamp } = createMetadataEntries(context.options.metadata, context.options.locale, packedAt);
+  await removeExistingArchives(context.options.outputDir);
+  const writtenExtras = await writeExtras(context.options.outputDir, [...context.extras, ...extras], stamp);
+
+  const volumeSize = clampVolumeSize(context.options.maxArchiveSizeMB);
+
+  context.progress.start({ total: 1, message: 'pack_progress_preparing' });
+  context.progress.tick({ state: 'preparing', percent: 100 });
+  context.progress.tick({ state: 'packing', percent: 0, currentArchive: archiveName });
+
+  try {
+    const binary = await resolve7zBinary();
+    const stagedFiles = await stageFilesForArchive(
+      expanded,
+      context.options.outputDir,
+      context.registerTempFile
+    );
+    const filesToPack = [
+      ...stagedFiles,
+      ...writtenExtras.map((filePath) => path.basename(filePath))
+    ];
+    const args = [
+      'a',
+      '-t7z',
+      '-mx=5',
+      '-mmt=on',
+      '-bd',
+      '-bsp1',
+      '-y',
+      `-v${volumeSize}m`,
+      archivePath,
+      ...filesToPack
+    ];
+    await run7zWithProgress(binary, args, {
+      cwd: context.options.outputDir,
+      onPercent: (percent) =>
+        context.progress.tick({ state: 'packing', percent, currentArchive: archiveName })
+    });
+  } catch (error) {
+    context.progress.error({
+      error: error instanceof Error ? error : String(error),
+      message: 'pack_progress_error'
+    });
+    await cleanupExtras(writtenExtras);
+    if (error instanceof Error) {
+      if (error.message === 'pack_error_7z_binary_missing') {
+        throw error;
+      }
+      throw error;
+    }
+    throw new Error('error_7z_spawn_failed');
+  }
+
+  await cleanupExtras(writtenExtras);
+
+  context.progress.fileDone({ currentArchive: archiveName, message: 'pack_progress_packing' });
+  context.progress.tick({ state: 'finalizing', percent: 100, currentArchive: archiveName });
+  context.progress.done({ message: 'pack_progress_done' });
+
+  const directoryEntries = await fs.promises.readdir(context.options.outputDir, {
+    withFileTypes: true
+  });
+  const archives = directoryEntries
+    .filter((entry) => entry.isFile() && is7zVolume(entry.name))
+    .map((entry) => path.join(context.options.outputDir, entry.name))
+    .sort((left, right) =>
+      path
+        .basename(left)
+        .localeCompare(path.basename(right), undefined, { numeric: true })
+    );
+
+  return { archives };
+};

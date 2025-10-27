@@ -3,14 +3,10 @@ import os from 'node:os';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  STAMP_FILENAME,
-  STEM_ZIPPER_STAMP,
-  bestFitPack,
-  createBrandedZip,
-  packFolder,
-  type SizedFile
-} from '../packaging';
+import { STAMP_FILENAME, STEM_ZIPPER_STAMP } from '../pack/metadata';
+import { analyzeFolder, pack } from '../pack';
+import { bestFitPack } from '../pack/expandFiles';
+import type { SizedFile } from '../pack/types';
 import { normalizePackMetadata, createLicenseText } from '../packMetadata';
 import type { NormalizedPackMetadata } from '../packMetadata';
 
@@ -44,36 +40,26 @@ describe('bestFitPack', () => {
   });
 });
 
-describe('createBrandedZip', () => {
-  it('creates a zip archive that contains the payload and branding stamp', async () => {
-    const tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'stem-zipper-test-'));
+describe('analyzeFolder', () => {
+  it('sniffs lossy headers even when the extension suggests WAV', async () => {
+    const tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'stem-zipper-analyze-'));
 
     try {
-      const sourceA = path.join(tempRoot, 'alpha.wav');
-      const sourceB = path.join(tempRoot, 'bravo.mp3');
-      await fs.promises.writeFile(sourceA, Buffer.from('file-a'));
-      await fs.promises.writeFile(sourceB, Buffer.from('file-b'));
+      const disguisedPath = path.join(tempRoot, 'disguised.wav');
+      const id3Header = Buffer.from([0x49, 0x44, 0x33, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21]);
+      const payload = Buffer.concat([id3Header, Buffer.alloc(2048, 0)]);
+      await fs.promises.writeFile(disguisedPath, payload);
 
-      const sizedFiles: SizedFile[] = [
-        await statAsSizedFile(sourceA, '.wav'),
-        await statAsSizedFile(sourceB, '.mp3')
-      ];
-
-      const zipPath = await createBrandedZip('test-pack', sizedFiles, tempRoot);
-      const buffer = await fs.promises.readFile(zipPath);
-      const entries = extractZipEntries(buffer);
-
-      expect(entries).toContain('alpha.wav');
-      expect(entries).toContain('bravo.mp3');
-      expect(entries).toContain(STAMP_FILENAME);
-      expect(buffer.includes(Buffer.from(STEM_ZIPPER_STAMP, 'utf-8'))).toBe(true);
+      const entries = await analyzeFolder(tempRoot, 50);
+      expect(entries).toHaveLength(1);
+      expect(entries[0].kind).toBe('mp3');
     } finally {
       await fs.promises.rm(tempRoot, { recursive: true, force: true });
     }
   });
 });
 
-describe('packFolder metadata integration', () => {
+describe('pack metadata integration', () => {
   const tempDirs: string[] = [];
 
   afterEach(async () => {
@@ -117,16 +103,28 @@ describe('packFolder metadata integration', () => {
     const fixedDate = new Date('2025-05-23T10:15:30Z');
     vi.setSystemTime(fixedDate);
 
-    const total = await packFolder(tempRoot, 128, 'en', metadata, () => {});
-    expect(total).toBe(1);
+    const result = await pack({
+      options: {
+        method: 'zip_best_fit',
+        maxArchiveSizeMB: 128,
+        outputDir: tempRoot,
+        files: [source],
+        locale: 'en',
+        metadata
+      },
+      onProgress: () => {}
+    });
+    expect(result.archives).toHaveLength(1);
 
-    const zipPath = path.join(tempRoot, 'stems-01.zip');
+    const [zipPath] = result.archives;
     const buffer = await fs.promises.readFile(zipPath);
     const entries = extractZipEntries(buffer);
+    expect(entries).toContain('alpha.wav');
     expect(entries).toContain('PACK-METADATA.json');
     expect(entries).toContain('LICENSE.txt');
     expect(entries).toContain('ATTRIBUTION.txt');
     expect(entries).toContain(STAMP_FILENAME);
+    expect(buffer.includes(Buffer.from(STEM_ZIPPER_STAMP, 'utf-8'))).toBe(true);
 
     const contents = extractZipContents(buffer);
     const metadataJson = contents['PACK-METADATA.json'].toString('utf-8');
@@ -139,10 +137,7 @@ describe('packFolder metadata integration', () => {
       bpm: '128',
       key: 'F# minor',
       attribution: 'Unit Tester — Test Track',
-      links: {
-        artist_url: 'https://example.com',
-        contact_email: 'test@example.com'
-      }
+      links: { artist_url: 'https://example.com', contact_email: 'test@example.com' }
     });
 
     const licenseText = contents['LICENSE.txt'].toString('utf-8');
@@ -183,15 +178,6 @@ describe('packFolder metadata integration', () => {
     }
   });
 });
-
-async function statAsSizedFile(filePath: string, extension: SizedFile['extension']): Promise<SizedFile> {
-  const stats = await fs.promises.stat(filePath);
-  return {
-    path: filePath,
-    size: stats.size,
-    extension
-  };
-}
 
 function extractZipEntries(buffer: Buffer): string[] {
   const entries: string[] = [];

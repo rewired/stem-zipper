@@ -2,6 +2,8 @@
 
 Stem ZIPper is now delivered as an Electron application that combines a Vite powered React + TypeScript renderer with a modern desktop runtime. The tool keeps the original mission of preparing sample packs for platforms such as [ccmixter.org](https://ccmixter.org) by analysing folders full of audio files, splitting stereo WAV files if necessary and producing optimally filled ZIP archives.
 
+[![stem-zipper version](https://img.shields.io/github/v/release/rewired/stem-zipper)](https://github.com/rewired/stem-zipper/releases/latest)
+
 ---
 
 ## Highlights
@@ -55,41 +57,44 @@ app/
 
 ## Installation & workflows
 
-Run the following steps from the repository root unless noted otherwise.
+Run the following steps from the repository root.
 
 ### Install dependencies
 
 ```bash
-cd app
 pnpm install
 ```
+
+The post-install hook downloads the precompiled 7-Zip command-line binaries from the
+`7zip-bin` package and stages them under `app/resources/bin/<platform>/<arch>/`. This keeps
+packaging ready on fresh checkouts without relying on a system-level 7z installation.
 
 ### Development workflow
 
 ```bash
-pnpm dev
+pnpm run dev
 ```
 
 Pass an optional locale when launching the development workflow to override the interface language, for example:
 
 ```bash
-pnpm dev de
-pnpm dev -- --lang=fr
+pnpm run dev de
+pnpm run dev -- --lang=fr
 ```
 
 If no locale is provided, the runners detect the operating system language and only fall back to English (`en`) when the locale
 cannot be resolved.
 
-This command starts the Vite dev server, compiles the Electron main & preload processes in watch mode and launches Electron once the renderer is ready. Any change in `src/` hot-reloads the UI, while updates to Electron code trigger a fast TypeScript rebuild.
+This command starts the Vite dev server, compiles the Electron main & preload processes in watch mode and launches Electron once the renderer is ready. The runner uses `concurrently` with coloured `[VITE]`, `[MAIN]`, `[PRELOAD]` and `[ELECTRON]` prefixes so you can follow each worker at a glance. Closing the Electron window or pressing <kbd>Ctrl</kbd>+<kbd>C</kbd> terminates all watchers cleanly, avoiding zombie Node or Vite instances on every platform. Any change in `src/` hot-reloads the UI, while updates to Electron code trigger a fast TypeScript rebuild.
 
 > ℹ️ The Electron launcher verifies that the native binary is available. If the post-install download was skipped (for example when `ELECTRON_SKIP_BINARY_DOWNLOAD=1` was set globally), the script reruns the official installer before starting the desktop shell.
 
 ### Quality gates
 
 ```bash
-pnpm lint
-pnpm typecheck
-pnpm test
+pnpm run lint
+pnpm run typecheck
+pnpm run test
 ```
 
 - **`lint`** runs ESLint with the React/TypeScript configuration.
@@ -99,8 +104,8 @@ pnpm test
 ### Production build & smoke test
 
 ```bash
-pnpm build
-pnpm preview
+pnpm run build
+pnpm run preview
 ```
 
 The build pipeline produces two artefacts:
@@ -108,12 +113,12 @@ The build pipeline produces two artefacts:
 - `dist-renderer/` – the production React bundle styled with Tailwind CSS.
 - `dist-electron/` – compiled Electron main & preload scripts ready for packaging.
 
-`pnpm preview` launches the built application locally using the generated artefacts, allowing a final manual smoke test before packaging.
+`pnpm run preview` launches the built application locally using the generated artefacts, allowing a final manual smoke test before packaging.
 
 ### Cleanup generated artefacts
 
 ```bash
-pnpm clean
+pnpm run clean
 ```
 
 The cleanup task removes the `dist-electron/`, `dist-renderer/` and `release/` directories. It is safe to run repeatedly and helps keep cross-platform builds reproducible.
@@ -137,7 +142,7 @@ The cleanup task removes the `dist-electron/`, `dist-renderer/` and `release/` d
 4. **Progress rail** – Right-aligned timeline showing current phase (scanning, splitting, packing) with an indeterminate spinner for long-running tasks.
 5. **Action footer** – Primary **Pack Now** button plus contextual secondary controls (**Cancel**, **Clear Results**) matching the previous keyboard shortcuts.
 
-> Need a visual reference? See the annotated UI description above or explore the interactive preview via `pnpm dev`.
+> Need a visual reference? See the annotated UI description above or explore the interactive preview via `pnpm run dev`.
 
 ---
 
@@ -149,6 +154,11 @@ The cleanup task removes the `dist-electron/`, `dist-renderer/` and `release/` d
 4. Click **Pack Now** to create `stems-XX.zip` files in the source folder. Progress updates mirror the classic Tkinter interface.
 5. In development builds, a **Create Test Data (DEV)** button generates random dummy audio files in a chosen directory.
 
+### Packing: what the badges mean
+
+- `~ no zip gain` appears next to already-compressed formats (MP3, AAC, M4A, MP4, OGG, OPUS, WMA, WEBM, FLAC). ZIP archives rarely shrink these files.
+- `try 7z volumes` highlights compressed files that exceed the configured max ZIP size, nudging you toward the 7z split-volume pack method when needed.
+
 ---
 
 ## Packaging & distribution
@@ -156,10 +166,12 @@ The cleanup task removes the `dist-electron/`, `dist-renderer/` and `release/` d
 ### Windows installer
 
 ```bash
-pnpm package:win
+pnpm run package:win
 ```
 
-Run this command from the `app/` workspace. It compiles the renderer and Electron processes and then uses [electron-builder](https://www.electron.build/) to generate an NSIS installer for 64-bit Windows. The packaging script automatically runs `pnpm clean` first to clear previous releases, preventing Windows from holding on to files such as `chrome_100_percent.pak` between successive builds.
+> Need a platform-aware shortcut? `pnpm run package` automatically calls the Windows or Linux packaging target based on the host operating system. macOS users should invoke the dedicated platform script directly once it becomes available.
+
+Run this command from the repository root. It compiles the renderer and Electron processes and then uses [electron-builder](https://www.electron.build/) to generate an NSIS installer for 64-bit Windows. The packaging script automatically runs `pnpm run clean` first to clear previous releases, preventing Windows from holding on to files such as `chrome_100_percent.pak` between successive builds.
 
 The Electron Builder configuration now whitelists only the production runtime packages (`buffer-crc32`, `clsx`, `react`, `react-dom`, `scheduler`, `loose-envify`, `js-tokens`, `wavefile`, `yazl`) so that development tooling such as Vite and ESLint is no longer copied into the installer. After running the packaging task you can inspect the generated archive with:
 
