@@ -71,7 +71,10 @@ export function packProgressReducer(
   }
 }
 
-type TranslateFn = (key: TranslationKey, params?: Record<string, string | number>) => string;
+export type TranslateFn = (
+  key: TranslationKey,
+  params?: Record<string, string | number>
+) => string;
 
 export function buildProgressUpdate(
   event: PackProgress,
@@ -307,17 +310,20 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
     (event: PackProgress) => {
       const update = buildProgressUpdate(event, t);
       dispatchProgress(update);
+
+      const progressLabel = update.type === 'progress' ? update.label : '';
+
       switch (event.state) {
         case 'preparing':
           emit({ type: 'dismiss', id: 'estimate' });
-          setStatusText(update.label);
+          setStatusText(progressLabel);
           break;
         case 'packing':
           emit({ type: 'dismiss', id: 'estimate' });
-          setStatusText(update.label);
+          setStatusText(progressLabel);
           break;
         case 'finalizing':
-          setStatusText(update.label);
+          setStatusText(progressLabel);
           emit({ type: 'dismiss', id: 'estimate' });
           break;
         case 'done':
