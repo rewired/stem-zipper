@@ -46,6 +46,7 @@ All notable changes to this project will be documented in this file.
 - Planner, estimator, and pack flow now split oversize stereo WAV files into mono stems, keeping rows selectable and packaging the channel outputs automatically when they enable a ZIP plan.
 - Router shell now opts the React Router `RouterProvider` into the `v7_startTransition` future flag, eliminating the transition
   mode warning ahead of the v7 release.
+- Renderer pack badge for Split Mono now resolves via the `pack_badge_split_mono` key across all locales, restoring the localized label and aria text.
 
 ## [1.0.1]
 

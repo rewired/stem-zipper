@@ -6,6 +6,8 @@ const REQUIRED_PACK_KEYS = [
   'pack_badge_no_zip_gain',
   'pack_badge_no_zip_gain_hint',
   'pack_badge_try_7z_volumes',
+  'pack_badge_split_mono',
+  'pack_aria_label_badge_split_mono',
   'pack_badge_estimate_prefix',
   'pack_badge_estimate_zip',
   'pack_badge_estimate_7z',
