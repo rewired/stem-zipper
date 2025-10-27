@@ -26,8 +26,19 @@ export interface ProgressEvent {
 
 export interface ProgressReporter {
   start(info: { total: number; message?: ProgressMessage }): void;
+  setTotal(total: number): void;
+  addToTotal(delta: number): void;
   tick(info?: { state?: Exclude<ProgressState, 'done' | 'error'>; message?: ProgressMessage; percent?: number; currentArchive?: string }): void;
-  fileDone(info?: { message?: ProgressMessage; currentArchive?: string }): void;
+  fileStart(info?: {
+    state?: Exclude<ProgressState, 'done' | 'error'>;
+    message?: ProgressMessage;
+    currentArchive?: string;
+  }): void;
+  fileDone(info?: {
+    state?: Exclude<ProgressState, 'done' | 'error'>;
+    message?: ProgressMessage;
+    currentArchive?: string;
+  }): void;
   done(info?: { message?: ProgressMessage }): void;
   error(info: { error: Error | string; message?: ProgressMessage }): void;
 }

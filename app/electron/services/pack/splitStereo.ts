@@ -45,10 +45,17 @@ async function ensureStreamClosed(stream: fs.WriteStream): Promise<void> {
   await once(stream, 'close');
 }
 
+export interface SplitStereoWavOptions {
+  registerTemp?: (artifactPath: string) => void;
+  onProgress?: (fractionComplete: number) => void;
+}
+
 export async function splitStereoWav(
   filePath: string,
-  registerTemp?: (artifactPath: string) => void
+  options?: SplitStereoWavOptions
 ): Promise<SizedFile[]> {
+  const registerTemp = typeof options?.registerTemp === 'function' ? options.registerTemp : undefined;
+  const reportProgress = typeof options?.onProgress === 'function' ? options.onProgress : undefined;
   const stats = await fs.promises.stat(filePath);
   const probe = await probeAudio(filePath);
 
@@ -99,6 +106,21 @@ export async function splitStereoWav(
       let remainder = Buffer.alloc(0);
       let processing: Promise<void> = Promise.resolve();
       let settled = false;
+      let framesProcessed = 0;
+      const framesPerReport = Math.max(1, Math.floor(frameCount / 50));
+      let nextReportFrame = framesPerReport;
+
+      const emitProgress = (force = false) => {
+        if (!reportProgress) {
+          return;
+        }
+        if (!force && framesProcessed < nextReportFrame) {
+          return;
+        }
+        const ratio = frameCount === 0 ? 1 : Math.min(1, framesProcessed / frameCount);
+        reportProgress(ratio);
+        nextReportFrame = framesProcessed + framesPerReport;
+      };
 
       const handleFailure = (error: Error) => {
         if (settled) {
@@ -127,6 +149,8 @@ export async function splitStereoWav(
             await once(rightStream, 'drain');
           }
         }
+        framesProcessed += usableLength / frameSize;
+        emitProgress();
       };
 
       const handleStreamError = (error: Error | unknown) => {
@@ -155,6 +179,7 @@ export async function splitStereoWav(
               console.warn('Dropping incomplete WAV frame during split', filePath);
             }
             await Promise.all([ensureStreamClosed(leftStream), ensureStreamClosed(rightStream)]);
+            emitProgress(true);
             if (!settled) {
               settled = true;
               resolve();

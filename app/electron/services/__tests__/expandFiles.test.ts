@@ -32,7 +32,10 @@ describe('expandFiles', () => {
     const emitToast = vi.fn();
     const progress = {
       start: vi.fn(),
+      setTotal: vi.fn(),
+      addToTotal: vi.fn(),
       tick: vi.fn(),
+      fileStart: vi.fn(),
       fileDone: vi.fn(),
       done: vi.fn(),
       error: vi.fn()
@@ -41,7 +44,10 @@ describe('expandFiles', () => {
     const result = await expandFiles([file], { maxSizeBytes: 1, progress, emitToast, splitter });
 
     expect(result).toEqual(splitResult);
-    expect(splitter).toHaveBeenCalledWith(file.path);
+    expect(splitter).toHaveBeenCalledWith(
+      file.path,
+      expect.objectContaining({ onProgress: expect.any(Function) })
+    );
     expect(emitToast).not.toHaveBeenCalled();
     expect(progress.tick).toHaveBeenCalledWith(expect.objectContaining({ state: 'preparing' }));
   });
