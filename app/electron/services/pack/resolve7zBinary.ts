@@ -29,18 +29,14 @@ function isErrnoException(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && typeof (error as NodeJS.ErrnoException).code === 'string';
 }
 
+const IGNORED_CHMOD_ERROR_CODES = new Set(['EROFS', 'EACCES', 'EPERM', 'ENOTSUP', 'EINVAL']);
+
 async function ensureExecutablePermissions(filePath: string): Promise<void> {
-  if (process.platform === 'win32') {
-    return;
-  }
   try {
     await fs.promises.chmod(filePath, 0o755);
   } catch (error) {
-    if (
-      isErrnoException(error) &&
-      (error.code === 'EROFS' || error.code === 'EACCES' || error.code === 'EPERM')
-    ) {
-      logDebug('Skipping chmod on read-only or permission-restricted filesystem', filePath);
+    if (isErrnoException(error) && IGNORED_CHMOD_ERROR_CODES.has(error.code)) {
+      logDebug('Skipping chmod on read-only or permission-restricted filesystem', filePath, error.code);
       return;
     }
     console.warn('Failed to adjust 7z binary permissions', filePath, error);
