@@ -6,8 +6,8 @@ import { formatPathForDisplay } from '../../../common/paths';
 import type { EstimateFileKind } from '../../../common/packing/estimator';
 import { SUPPORTED_EXTENSIONS } from '../../../common/constants';
 import { probeAudio } from '../audioProbe';
-import { splitStereoWav, UnsupportedWavError } from './splitStereo';
-import type { ProgressReporter, SizedFile, SupportedExtension } from './types';
+import { splitStereoWav, UnsupportedWavError, type SplitStereoWavOptions } from './splitStereo';
+import type { ProgressMessage, ProgressReporter, SizedFile, SupportedExtension } from './types';
 
 export function toMb(bytes: number): number {
   return Math.round((bytes / 1024 / 1024) * 100) / 100;
@@ -117,6 +117,20 @@ export function bestFitPack(files: SizedFile[], maxSizeBytes: number): SizedFile
   return bins.map((bin) => [...bin.items]);
 }
 
+const PREPARING_STATE = 'preparing' as const;
+const PREPARING_MESSAGE: ProgressMessage = 'pack_progress_preparing';
+
+const preparingContexts = new WeakMap<ProgressReporter, { total: number; completed: number }>();
+
+function getPreparingContext(progress: ProgressReporter): { total: number; completed: number } {
+  let context = preparingContexts.get(progress);
+  if (!context) {
+    context = { total: 0, completed: 0 };
+    preparingContexts.set(progress, context);
+  }
+  return context;
+}
+
 const HEADER_READ_BYTES = 64;
 const ASF_HEADER_GUID = Buffer.from([
   0x30,
@@ -214,7 +228,7 @@ export interface ExpandFilesOptions {
   splitThresholdBytes?: number;
   progress?: ProgressReporter;
   emitToast?: (toast: PackToast) => void;
-  splitter?: (filePath: string) => Promise<SizedFile[]>;
+  splitter?: (filePath: string, options?: SplitStereoWavOptions) => Promise<SizedFile[]>;
   registerTempFile?: (filePath: string) => void;
   forceSplit?: Set<string>;
 }
@@ -223,8 +237,39 @@ export async function expandFiles(files: SizedFile[], options: ExpandFilesOption
   const expanded: SizedFile[] = [];
   const threshold = options.splitThresholdBytes ?? options.maxSizeBytes;
   const forceSet = options.forceSplit ?? new Set<string>();
-  const toSplit = files.filter((f) => (f.size > threshold || forceSet.has(f.path)) && f.extension === '.wav').length;
-  let processed = 0;
+  const progressReporter = options.progress;
+  const progressContext = progressReporter ? getPreparingContext(progressReporter) : undefined;
+  const predictedSplits = files.filter((file) => (file.size > threshold || forceSet.has(file.path)) && file.extension === '.wav').length;
+
+  const applyTotalDelta = (delta: number) => {
+    if (!progressReporter || !progressContext || delta === 0) {
+      return;
+    }
+    progressReporter.addToTotal(delta);
+    progressContext.total = Math.max(0, progressContext.total + delta);
+    if (progressContext.completed > progressContext.total) {
+      progressContext.completed = progressContext.total;
+    }
+  };
+
+  if (progressReporter && progressContext) {
+    const totalDelta = files.length + predictedSplits;
+    if (totalDelta > 0) {
+      applyTotalDelta(totalDelta);
+      progressReporter.tick({ state: PREPARING_STATE, message: PREPARING_MESSAGE });
+    }
+  }
+
+  const beginUnit = () => {
+    progressReporter?.fileStart({ state: PREPARING_STATE, message: PREPARING_MESSAGE });
+  };
+
+  const completeUnit = () => {
+    progressReporter?.fileDone({ state: PREPARING_STATE, message: PREPARING_MESSAGE });
+    if (progressContext) {
+      progressContext.completed = Math.min(progressContext.total, progressContext.completed + 1);
+    }
+  };
 
   const notifySkip = (file: SizedFile, reason: string) => {
     console.info('Skipping stereo split for file', { file: file.path, reason });
@@ -250,29 +295,68 @@ export async function expandFiles(files: SizedFile[], options: ExpandFilesOption
   for (const file of files) {
     const mustSplit = forceSet.has(file.path);
     const sizeExceedsThreshold = file.size > threshold;
-    if (file.extension === '.wav' && (sizeExceedsThreshold || mustSplit)) {
+    const shouldAttemptSplit = file.extension === '.wav' && (sizeExceedsThreshold || mustSplit);
+    const predictedExtraUnits = shouldAttemptSplit ? 1 : 0;
+    const baseCompleted = progressContext?.completed ?? 0;
+    const unitsForFile = 1 + predictedExtraUnits;
+
+    beginUnit();
+
+    const onSplitProgress =
+      shouldAttemptSplit && progressReporter && progressContext && progressContext.total > 0
+        ? (fraction: number) => {
+            const bounded = Number.isFinite(fraction) ? Math.min(1, Math.max(0, fraction)) : 0;
+            const unitsProgress = unitsForFile * bounded;
+            const percent =
+              progressContext.total === 0
+                ? 0
+                : ((baseCompleted + unitsProgress) / progressContext.total) * 100;
+            progressReporter.tick({ state: PREPARING_STATE, message: PREPARING_MESSAGE, percent });
+          }
+        : undefined;
+
+    if (shouldAttemptSplit) {
       try {
         const probe = await probeAudio(file.path);
         if (probe.codec !== 'wav_pcm' && probe.codec !== 'wav_float') {
           notifySkip(file, `codec=${probe.codec}`);
+          applyTotalDelta(-predictedExtraUnits);
           expanded.push(file);
         } else if (!probe.num_channels || probe.num_channels < 2) {
           notifySkip(file, `channels=${probe.num_channels ?? 'unknown'}`);
+          applyTotalDelta(-predictedExtraUnits);
           expanded.push(file);
         } else {
+          const splitOptions: SplitStereoWavOptions = {
+            registerTemp: options.registerTempFile,
+            onProgress: onSplitProgress
+          };
           const split = options.splitter
-            ? await options.splitter(file.path)
-            : await splitStereoWav(file.path, options.registerTempFile);
+            ? await options.splitter(file.path, splitOptions)
+            : await splitStereoWav(file.path, splitOptions);
           if (options.registerTempFile && options.splitter) {
             for (const entry of split) {
               options.registerTempFile(entry.path);
             }
           }
           expanded.push(...split);
+
+          if (progressReporter && progressContext) {
+            const actualExtra = Math.max(0, split.length - 1);
+            const delta = actualExtra - predictedExtraUnits;
+            if (delta !== 0) {
+              applyTotalDelta(delta);
+            }
+            for (let index = 1; index < split.length; index += 1) {
+              beginUnit();
+              completeUnit();
+            }
+          }
         }
       } catch (error) {
         if (error instanceof UnsupportedWavError) {
           notifySkip(file, error.message);
+          applyTotalDelta(-predictedExtraUnits);
           expanded.push(file);
         } else if (mustSplit) {
           options.emitToast?.({
@@ -281,21 +365,23 @@ export async function expandFiles(files: SizedFile[], options: ExpandFilesOption
             messageKey: 'warn_split_mono_failed',
             params: { name: formatPathForDisplay(file.path) }
           });
+          applyTotalDelta(-predictedExtraUnits);
           expanded.push(file);
         } else {
           notifyError(file, error);
+          applyTotalDelta(-predictedExtraUnits);
           expanded.push(file);
-        }
-      } finally {
-        processed += 1;
-        if (options.progress && toSplit > 0) {
-          const percent = Math.floor((processed / toSplit) * 100);
-          options.progress.tick({ state: 'preparing', percent });
         }
       }
     } else {
       expanded.push(file);
     }
+
+    completeUnit();
+  }
+
+  if (progressReporter && progressContext && progressContext.completed >= progressContext.total) {
+    preparingContexts.delete(progressReporter);
   }
 
   return expanded;
