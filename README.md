@@ -15,6 +15,7 @@ Stem ZIPper is now delivered as an Electron application that combines a Vite pow
 - **Multilingual interface** (EN, DE, FR, IT, ES, PT, DA, NO, SV, FI, NL, PL, JA, ZH, TH, KO, CS, RO, UK) that adapts to the operating system locale.
 - **Metadata automation** with a dedicated modal that validates title/artist/license input, remembers preferred defaults and generates `PACK-METADATA.json`, `LICENSE.txt`, and `ATTRIBUTION.txt` alongside packed archives.
 - **Deterministic ZIP estimates** surfaced as renderer toasts that account for stereo split heuristics whenever scans finish or the maximum size changes.
+- **Deterministic 7Z estimates** surfaced as renderer toasts that account for stereo split heuristics whenever scans finish or the maximum size changes. Also supports volumes natively.
 - **Developer utilities** (available in dev mode) to generate dummy audio files for testing the packing workflow.
 - **JSON-based localisation catalogues** shared between Electron and the renderer, backed by guard tests to ensure mirrored keys and placeholder integrity across languages.
 
@@ -29,6 +30,13 @@ Supported formats remain: `.wav`, `.flac`, `.mp3`, `.aiff`, `.ogg`, `.aac`, `.wm
 - **Predictable ZIP counts** – A renderer toast reports how many archives the next pack will create, stays in sync with mono split decisions and clears as soon as packing succeeds.
 - **Localisation pipeline upgrade** – Shared translations moved to flat JSON catalogues with typed helpers so renderer, preload and main processes stay aligned.
 - **Reliability improvements** – Preferences now persist via the filesystem, locale catalogues participate in TypeScript watch mode, and the development runner spawns pnpm watchers directly to eliminate previous crashers and warnings.
+
+## What's new in 1.0.2
+- _Added:_ Automated cross-platform icon build; table checkboxes with estimate badges; accessible labels; deterministic estimatePackingPlan IPC; 7z support with volume splitting; ZIP vs 7z selector; shared getFileExtension helper.
+
+- _Changed:_ Progress UI now a reducer-based state machine with clear phases and done/error; “Pack Now” is green, “~ no zip gain” is an info badge; better a11y/focus; debounced ZIP estimates; cleaner renderer shell; monorepo root pnpm scripts; modular pack strategies; sturdier stereo-split progress; reliable per-platform 7z binary resolution.
+
+- _Fixed:_ Reliable 7z availability (bundled + PATH fallback); stable progress/toasts; correct volume reporting and overwrite behavior; Windows/ESM compatibility; clean pnpm run dev; stricter audio probing & split validation; localized badges/toasts; multiple robustness fixes to avoid stale or hanging UI states.
 
 ---
 
