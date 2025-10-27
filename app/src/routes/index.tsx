@@ -3,18 +3,21 @@ import { AppStoreProvider } from '../store/appStore';
 import { MetadataProvider } from '../features/metadata/useMetadata';
 import { PackStateProvider } from '../features/pack/usePackState';
 import { AppShell } from './AppShell';
+import { PlayerProvider } from '../features/player';
 
 const router = createHashRouter([
   {
     path: '/',
     element: (
-      <AppStoreProvider>
-        <MetadataProvider>
-          <PackStateProvider>
-            <AppShell />
-          </PackStateProvider>
-        </MetadataProvider>
-      </AppStoreProvider>
+          <AppStoreProvider>
+            <MetadataProvider>
+              <PackStateProvider>
+                <PlayerProvider>
+                  <AppShell />
+                </PlayerProvider>
+              </PackStateProvider>
+            </MetadataProvider>
+          </AppStoreProvider>
     )
   }
 ]);

@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { FileTable } from '../FileTable';
 import type { FileRow } from '../../../types/fileRow';
+import { PlayerProvider } from '../../player';
 
 describe('FileTable', () => {
   function createRows(): FileRow[] {
@@ -12,7 +13,7 @@ describe('FileTable', () => {
         path: '/bass.wav',
         sizeMb: 4,
         action: 'normal',
-        sizeBytes: 4,
+        sizeBytes: 4 * 1024 * 1024,
         kind: 'wav',
         selectable: true,
         selected: true
@@ -23,7 +24,7 @@ describe('FileTable', () => {
         path: '/vox.wav',
         sizeMb: 6,
         action: 'normal',
-        sizeBytes: 6,
+        sizeBytes: 70 * 1024 * 1024,
         kind: 'wav',
         selectable: false,
         selected: false,
@@ -37,29 +38,32 @@ describe('FileTable', () => {
     const handleToggleAll = vi.fn();
 
     render(
-      <FileTable
-        files={createRows()}
-        fileLabel="File"
-        sizeLabel="Size"
-        actionLabel="Action"
-        actionNames={{ normal: 'Normal', split_mono: 'Split Mono', split_zip: 'Split ZIP' }}
-        emptyLabel="Empty"
-        helperLabel="Helper"
-        sizeUnitLabel="MB"
-        formatSize={(value) => value.toFixed(2)}
-        renderBadge={() => null}
-        renderEstimate={() => <span data-testid="estimate">~ stems-01.zip</span>}
-        onToggleRow={handleToggleRow}
-        onToggleAll={handleToggleAll}
-        selectLabel="Select"
-        selectAllLabel="Select all"
-        estimateLabel="Estimate"
-        masterChecked={false}
-        masterIndeterminate={false}
-        masterDisabled={false}
-        formatTooltip={(reason) => reason}
-        splitMonoHint="Split"
-      />
+      <PlayerProvider>
+        <FileTable
+          files={createRows()}
+          fileLabel="File"
+          sizeLabel="Size"
+          actionLabel="Action"
+          actionNames={{ normal: 'Normal', split_mono: 'Split Mono', split_zip: 'Split ZIP' }}
+          emptyLabel="Empty"
+          helperLabel="Helper"
+          sizeUnitLabel="MB"
+          formatSize={(value) => value.toFixed(2)}
+          renderBadge={() => null}
+          renderEstimate={() => <span data-testid="estimate">~ stems-01.zip</span>}
+          onToggleRow={handleToggleRow}
+          onToggleAll={handleToggleAll}
+          selectLabel="Select"
+          selectAllLabel="Select all"
+          previewLabel="Preview"
+          estimateLabel="Estimate"
+          masterChecked={false}
+          masterIndeterminate={false}
+          masterDisabled={false}
+          formatTooltip={(reason) => reason}
+          splitMonoHint="Split"
+        />
+      </PlayerProvider>
     );
 
     const masterCheckbox = screen.getByRole('checkbox', { name: 'Select all' });
@@ -69,33 +73,41 @@ describe('FileTable', () => {
     const rowCheckbox = screen.getByRole('checkbox', { name: 'Select bass.wav' });
     fireEvent.click(rowCheckbox);
     expect(handleToggleRow).toHaveBeenCalledWith('bass');
+
+    const previewButton = screen.getByRole('button', { name: 'Preview bass.wav' }) as HTMLButtonElement;
+    expect(previewButton.disabled).toBe(false);
+    const disabledPreview = screen.getByRole('button', { name: 'Preview vox.wav' }) as HTMLButtonElement;
+    expect(disabledPreview.disabled).toBe(true);
   });
 
   it('renders disabled rows with tooltip information', () => {
     render(
-      <FileTable
-        files={createRows()}
-        fileLabel="File"
-        sizeLabel="Size"
-        actionLabel="Action"
-        actionNames={{ normal: 'Normal', split_mono: 'Split Mono', split_zip: 'Split ZIP' }}
-        emptyLabel="Empty"
-        helperLabel="Helper"
-        sizeUnitLabel="MB"
-        formatSize={(value) => value.toFixed(2)}
-        renderBadge={() => null}
-        renderEstimate={() => null}
-        onToggleRow={() => {}}
-        onToggleAll={() => {}}
-        selectLabel="Select"
-        selectAllLabel="Select all"
-        estimateLabel="Estimate"
-        masterChecked={false}
-        masterIndeterminate={false}
-        masterDisabled={false}
-        formatTooltip={(reason) => `Reason: ${reason}`}
-        splitMonoHint="Split"
-      />
+      <PlayerProvider>
+        <FileTable
+          files={createRows()}
+          fileLabel="File"
+          sizeLabel="Size"
+          actionLabel="Action"
+          actionNames={{ normal: 'Normal', split_mono: 'Split Mono', split_zip: 'Split ZIP' }}
+          emptyLabel="Empty"
+          helperLabel="Helper"
+          sizeUnitLabel="MB"
+          formatSize={(value) => value.toFixed(2)}
+          renderBadge={() => null}
+          renderEstimate={() => null}
+          onToggleRow={() => {}}
+          onToggleAll={() => {}}
+          selectLabel="Select"
+          selectAllLabel="Select all"
+          previewLabel="Preview"
+          estimateLabel="Estimate"
+          masterChecked={false}
+          masterIndeterminate={false}
+          masterDisabled={false}
+          formatTooltip={(reason) => `Reason: ${reason}`}
+          splitMonoHint="Split"
+        />
+      </PlayerProvider>
     );
 
     const [disabledCheckbox] = screen.getAllByRole('checkbox', { name: 'Select vox.wav' });

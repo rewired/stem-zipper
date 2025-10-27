@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { FileRow } from '../FileRow';
 import type { FileRow as FileRowModel } from '../../../types/fileRow';
 import { FileBadge } from '../../../components/FileBadge';
+import { PlayerProvider } from '../../player';
 
 function createFile(): FileRowModel {
   return {
@@ -26,26 +27,29 @@ describe('FileRow split-mono behaviour', () => {
     const file = createFile();
     const hint = 'Will split';
     render(
-      <table>
-        <tbody>
-          <FileRow
-            file={file}
-            actionName="Split Mono"
-            sizeUnitLabel="MB"
-            formatSize={(value) => value.toFixed(2)}
-            renderBadge={(row) =>
-              row.suggest_split_mono ? (
-                <FileBadge label="Split Mono" tooltip={hint} ariaLabel="Split mono badge" variant="info" icon="info" />
-              ) : null
-            }
-            renderEstimate={() => null}
-            onToggle={vi.fn()}
-            selectLabel="Select"
-            formatTooltip={(reason) => reason}
-            splitMonoHint={hint}
-          />
-        </tbody>
-      </table>
+      <PlayerProvider>
+        <table>
+          <tbody>
+            <FileRow
+              file={file}
+              actionName="Split Mono"
+              sizeUnitLabel="MB"
+              formatSize={(value) => value.toFixed(2)}
+              renderBadge={(row) =>
+                row.suggest_split_mono ? (
+                  <FileBadge label="Split Mono" tooltip={hint} ariaLabel="Split mono badge" variant="info" icon="info" />
+                ) : null
+              }
+              renderEstimate={() => null}
+              onToggle={vi.fn()}
+              selectLabel="Select"
+              previewLabel="Preview"
+              formatTooltip={(reason) => reason}
+              splitMonoHint={hint}
+            />
+          </tbody>
+        </table>
+      </PlayerProvider>
     );
 
     const badge = screen.getByLabelText('Split mono badge');

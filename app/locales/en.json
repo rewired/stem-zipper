@@ -115,5 +115,11 @@
   "error_7z_spawn_failed": "7z compression failed. Verify the bundled binary and file permissions.",
   "pack_error_unknown": "Packing failed due to an unknown error.",
   "pack_badge_split_mono": "Split Mono",
-  "pack_aria_label_badge_split_mono": "Split mono badge"
+  "pack_aria_label_badge_split_mono": "Split mono badge",
+  "player_modal_label": "Audio preview",
+  "player_open_preview_button_label": "Open audio preview",
+  "player_play_pause_button_label": "Play or pause preview",
+  "player_seek_slider_label": "Seek within preview",
+  "player_volume_slider_label": "Preview volume",
+  "player_close_button_label": "Close preview"
 }

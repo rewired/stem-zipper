@@ -8,6 +8,7 @@ import { useZipEstimator } from '../hooks/useZipEstimator';
 import { formatMessage } from '@common/i18n';
 import { DEFAULT_MAX_SIZE_MB } from '@common/constants';
 import type { FileRow } from '../types/fileRow';
+import { PlayerProvider } from '../features/player';
 
 const MB = 1024 * 1024;
 
@@ -30,53 +31,56 @@ function TestHarness({ files, maxSizeMb }: HarnessProps) {
   const volumeLabel = formatMessage('en', 'pack_badge_try_7z_volumes');
 
   return (
-    <FileTable
-      files={rows}
-      fileLabel="File"
-      sizeLabel="Size"
-      actionLabel="Action"
-      actionNames={{ normal: 'Normal', split_mono: 'Split Mono', split_zip: 'Split ZIP' }}
-      emptyLabel="Empty"
-      helperLabel="Helper"
-      sizeUnitLabel="MB"
-      formatSize={(value) => value.toFixed(2)}
-      renderBadge={(file) => {
-        const flags = badges.get(file.path);
-        if (!flags) {
-          return null;
-        }
-        const elements: JSX.Element[] = [];
-        if (flags.noZipGain) {
-          elements.push(
-            <FileBadge
-              key="no-zip"
-              label={badgeLabel}
-              tooltip={badgeHint}
-              variant="info"
-              icon="info"
-            />
-          );
-        }
-        if (flags.consider7zVolumes) {
-          elements.push(<FileBadge key="7z" label={volumeLabel} />);
-        }
-        if (elements.length === 0) {
-          return null;
-        }
-        return <span className="flex gap-1">{elements}</span>;
-      }}
-      renderEstimate={() => null}
-      onToggleRow={() => {}}
-      onToggleAll={() => {}}
-      selectLabel="Select"
-      selectAllLabel="Select all"
-      estimateLabel="Estimate"
-      masterChecked
-      masterIndeterminate={false}
-      masterDisabled={false}
-      formatTooltip={(reason) => reason}
-      splitMonoHint="Split"
-    />
+    <PlayerProvider>
+      <FileTable
+        files={rows}
+        fileLabel="File"
+        sizeLabel="Size"
+        actionLabel="Action"
+        actionNames={{ normal: 'Normal', split_mono: 'Split Mono', split_zip: 'Split ZIP' }}
+        emptyLabel="Empty"
+        helperLabel="Helper"
+        sizeUnitLabel="MB"
+        formatSize={(value) => value.toFixed(2)}
+        renderBadge={(file) => {
+          const flags = badges.get(file.path);
+          if (!flags) {
+            return null;
+          }
+          const elements: JSX.Element[] = [];
+          if (flags.noZipGain) {
+            elements.push(
+              <FileBadge
+                key="no-zip"
+                label={badgeLabel}
+                tooltip={badgeHint}
+                variant="info"
+                icon="info"
+              />
+            );
+          }
+          if (flags.consider7zVolumes) {
+            elements.push(<FileBadge key="7z" label={volumeLabel} />);
+          }
+          if (elements.length === 0) {
+            return null;
+          }
+          return <span className="flex gap-1">{elements}</span>;
+        }}
+        renderEstimate={() => null}
+        onToggleRow={() => {}}
+        onToggleAll={() => {}}
+        selectLabel="Select"
+        selectAllLabel="Select all"
+        previewLabel="Preview"
+        estimateLabel="Estimate"
+        masterChecked
+        masterIndeterminate={false}
+        masterDisabled={false}
+        formatTooltip={(reason) => reason}
+        splitMonoHint="Split"
+      />
+    </PlayerProvider>
   );
 }
 
