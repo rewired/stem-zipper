@@ -3,7 +3,7 @@ import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import { PassThrough } from 'node:stream';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../binaries', () => ({
+vi.mock('../resolve7zBinary', () => ({
   resolve7zBinary: vi.fn()
 }));
 

@@ -97,6 +97,7 @@
   "pack_progress_error": "Packing failed",
   "pack_error_no_files": "No supported audio files were found.",
   "error_7z_binary_missing": "7z binary is missing. Install the platform binary under resources/bin.",
+  "pack_error_7z_binary_missing": "Unable to locate the 7z binary. Install the platform build under resources/bin or set STEM_ZIPPER_7Z_PATH.",
   "error_7z_spawn_failed": "7z compression failed. Verify the bundled binary and file permissions.",
   "pack_error_generic": "Packing failed: {{message}}",
   "pack_error_unknown": "Packing failed due to an unknown error.",

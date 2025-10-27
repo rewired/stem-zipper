@@ -10,7 +10,7 @@ import { normalizePackMetadata } from '../packMetadata';
 import type { PackStrategyContext, ProgressEvent, SizedFile } from '../pack/types';
 import { createProgressReporter } from '../pack/progress';
 
-vi.mock('../pack/binaries', () => ({
+vi.mock('../pack/resolve7zBinary', () => ({
   resolve7zBinary: vi.fn()
 }));
 
@@ -18,7 +18,7 @@ vi.mock('node:child_process', () => ({
   spawn: vi.fn()
 }));
 
-import { resolve7zBinary as resolve7zBinaryMock } from '../pack/binaries';
+import { resolve7zBinary as resolve7zBinaryMock } from '../pack/resolve7zBinary';
 import { spawn as spawnMock } from 'node:child_process';
 
 const resolve7zBinary = vi.mocked(resolve7zBinaryMock);
@@ -73,7 +73,7 @@ describe('sevenZSplitStrategy', () => {
     const events: ProgressEvent[] = [];
     const reporter = createProgressReporter((event) => events.push(event));
 
-    resolve7zBinary.mockReturnValue('/bin/7zz');
+    resolve7zBinary.mockResolvedValue('/bin/7zz');
     spawn.mockImplementation(() => {
       expect(fs.existsSync(staleArchive)).toBe(false);
       expect(fs.existsSync(staleVolume)).toBe(false);
@@ -139,7 +139,7 @@ describe('sevenZSplitStrategy', () => {
       license: { id: 'CC-BY-4.0' }
     });
 
-    resolve7zBinary.mockReturnValue('/bin/7zz');
+    resolve7zBinary.mockResolvedValue('/bin/7zz');
     const stagedPaths: string[] = [];
 
     spawn.mockImplementation(() => {
@@ -199,9 +199,7 @@ describe('sevenZSplitStrategy', () => {
     const source = path.join(tempRoot, 'beat.wav');
     await fs.promises.writeFile(source, Buffer.from('fake-wav'));
 
-    resolve7zBinary.mockImplementation(() => {
-      throw new Error('error_7z_binary_missing');
-    });
+    resolve7zBinary.mockRejectedValue(new Error('pack_error_7z_binary_missing'));
 
     const context: PackStrategyContext = {
       files: [{ path: source, size: 8, extension: '.wav' }],
@@ -223,6 +221,6 @@ describe('sevenZSplitStrategy', () => {
       registerTempFile: () => {}
     };
 
-    await expect(sevenZSplitStrategy(context)).rejects.toThrow('error_7z_binary_missing');
+    await expect(sevenZSplitStrategy(context)).rejects.toThrow('pack_error_7z_binary_missing');
   });
 });
