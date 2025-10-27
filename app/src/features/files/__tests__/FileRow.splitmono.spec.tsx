@@ -43,7 +43,9 @@ describe('FileRow split-mono behaviour', () => {
               renderEstimate={() => null}
               onToggle={vi.fn()}
               selectLabel="Select"
-              previewLabel="Preview"
+              previewLabel="Open audio preview"
+              playLabel="Play"
+              previewUnavailableLabel="Cannot decode this file"
               formatTooltip={(reason) => reason}
               splitMonoHint={hint}
             />

@@ -1,10 +1,13 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FileTable } from '../FileTable';
 import type { FileRow } from '../../../types/fileRow';
 import { PlayerProvider } from '../../player';
 
 describe('FileTable', () => {
+  afterEach(() => {
+    cleanup();
+  });
   function createRows(): FileRow[] {
     return [
       {
@@ -55,7 +58,9 @@ describe('FileTable', () => {
           onToggleAll={handleToggleAll}
           selectLabel="Select"
           selectAllLabel="Select all"
-          previewLabel="Preview"
+          previewLabel="Open audio preview"
+          playLabel="Play"
+          previewUnavailableLabel="Cannot decode this file"
           estimateLabel="Estimate"
           masterChecked={false}
           masterIndeterminate={false}
@@ -74,9 +79,9 @@ describe('FileTable', () => {
     fireEvent.click(rowCheckbox);
     expect(handleToggleRow).toHaveBeenCalledWith('bass');
 
-    const previewButton = screen.getByRole('button', { name: 'Preview bass.wav' }) as HTMLButtonElement;
+    const previewButton = screen.getByRole('button', { name: 'Play' }) as HTMLButtonElement;
     expect(previewButton.disabled).toBe(false);
-    const disabledPreview = screen.getByRole('button', { name: 'Preview vox.wav' }) as HTMLButtonElement;
+    const disabledPreview = screen.getByRole('button', { name: 'Open audio preview' }) as HTMLButtonElement;
     expect(disabledPreview.disabled).toBe(true);
   });
 
@@ -99,7 +104,9 @@ describe('FileTable', () => {
           onToggleAll={() => {}}
           selectLabel="Select"
           selectAllLabel="Select all"
-          previewLabel="Preview"
+          previewLabel="Open audio preview"
+          playLabel="Play"
+          previewUnavailableLabel="Cannot decode this file"
           estimateLabel="Estimate"
           masterChecked={false}
           masterIndeterminate={false}
@@ -114,5 +121,42 @@ describe('FileTable', () => {
     expect((disabledCheckbox as HTMLInputElement).disabled).toBe(true);
     const tooltipIcon = screen.getByLabelText('Reason: Too large');
     expect(tooltipIcon).toBeTruthy();
+  });
+  it('renders Play only for previewable files', () => {
+    render(
+      <PlayerProvider>
+        <FileTable
+          files={createRows()}
+          fileLabel="File"
+          sizeLabel="Size"
+          actionLabel="Action"
+          actionNames={{ normal: 'Normal', split_mono: 'Split Mono', split_zip: 'Split ZIP' }}
+          emptyLabel="Empty"
+          helperLabel="Helper"
+          sizeUnitLabel="MB"
+          formatSize={(value) => value.toFixed(2)}
+          renderBadge={() => null}
+          renderEstimate={() => null}
+          onToggleRow={() => {}}
+          onToggleAll={() => {}}
+          selectLabel="Select"
+          selectAllLabel="Select all"
+          previewLabel="Open audio preview"
+          playLabel="Play"
+          previewUnavailableLabel="Cannot decode this file"
+          estimateLabel="Estimate"
+          masterChecked={false}
+          masterIndeterminate={false}
+          masterDisabled={false}
+          formatTooltip={(reason) => reason}
+          splitMonoHint="Split"
+        />
+      </PlayerProvider>
+    );
+
+    const playButtons = screen.getAllByRole('button', { name: 'Play' });
+    expect(playButtons).toHaveLength(1);
+    const disabledPreview = screen.getByRole('button', { name: 'Open audio preview' }) as HTMLButtonElement;
+    expect(disabledPreview.disabled).toBe(true);
   });
 });

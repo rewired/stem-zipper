@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useEffect } from 'react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { PlayerModal } from '../PlayerModal';
@@ -39,11 +39,11 @@ vi.mock('../waveSurfer', () => {
       }
     }
 
-    load() {}
+    load = vi.fn();
 
-    destroy() {
+    destroy = vi.fn(() => {
       this.listeners.clear();
-    }
+    });
 
     getDuration() {
       return this.duration;
@@ -57,23 +57,31 @@ vi.mock('../waveSurfer', () => {
       return this.playing;
     }
 
-    play() {
+    play = vi.fn(() => {
       this.playing = true;
       this.emit('play');
       return Promise.resolve();
-    }
+    });
 
-    pause() {
+    pause = vi.fn(() => {
       this.playing = false;
       this.emit('pause');
-    }
+    });
 
-    seekTo(progress: number) {
+    playPause = vi.fn(() => {
+      if (this.playing) {
+        this.pause();
+        return;
+      }
+      void this.play();
+    });
+
+    seekTo = vi.fn((progress: number) => {
       this.currentTime = this.duration * progress;
       this.emit('seek', progress);
-    }
+    });
 
-    setVolume() {}
+    setVolume = vi.fn();
   }
 
   const instances: FakeWaveSurfer[] = [];
@@ -83,12 +91,30 @@ vi.mock('../waveSurfer', () => {
     return instance;
   });
 
+  const reset = () => {
+    instances.splice(0, instances.length);
+  };
+
+  const augmentedFactory = Object.assign(factory, {
+    __getWaveSurferInstances: () => instances,
+    __resetWaveSurferMocks: reset
+  });
+
   return {
     __esModule: true,
-    createWaveSurfer: factory,
-    __getWaveSurferInstances: () => instances
+    createWaveSurfer: augmentedFactory
   };
 });
+
+const waveSurferModule = createWaveSurfer as unknown as {
+  __getWaveSurferInstances: () => Array<{
+    destroy: ReturnType<typeof vi.fn>;
+    playPause: ReturnType<typeof vi.fn>;
+    seekTo: ReturnType<typeof vi.fn>;
+    emit: (event: string, ...args: unknown[]) => void;
+  }>;
+  __resetWaveSurferMocks: () => void;
+};
 
 const sampleFile: FileRow = {
   id: 'file-1',
@@ -129,6 +155,7 @@ describe('PlayerModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    waveSurferModule.__resetWaveSurferMocks();
     Object.defineProperty(window, 'api', {
       value: {
         readFileBlob: vi.fn(() => Promise.resolve(new ArrayBuffer(8))),
@@ -142,6 +169,8 @@ describe('PlayerModal', () => {
   });
 
   afterEach(() => {
+    cleanup();
+    waveSurferModule.__resetWaveSurferMocks();
     Object.defineProperty(window, 'api', {
       value: originalApi,
       configurable: true,
@@ -151,23 +180,118 @@ describe('PlayerModal', () => {
     window.URL.revokeObjectURL = originalRevokeObjectUrl;
   });
 
-  it('renders loading state until the waveform is ready', async () => {
+  it('opens modal and focuses Play', async () => {
     renderModal(sampleFile);
 
-    const loadingMessage = screen.getByText('Loading preview…');
-    expect(loadingMessage).toBeDefined();
+    const waveInstances = waveSurferModule.__getWaveSurferInstances();
+    await waitFor(() => expect(waveInstances.length).toBeGreaterThan(0));
+    waveInstances[0].emit('ready');
 
-    const createWaveSurferMock = vi.mocked(createWaveSurfer);
-    await waitFor(() => expect(createWaveSurferMock).toHaveBeenCalled());
-    const instance = createWaveSurferMock.mock.results[0].value as unknown as {
-      emit: (event: string, ...args: unknown[]) => void;
-    };
+    const playButton = (await screen.findByRole('button', { name: 'Play' })) as HTMLButtonElement;
+    await waitFor(() => expect(document.activeElement).toBe(playButton));
+  });
 
-    instance.emit('ready');
+  it('shows Loading then Ready on ws ready', async () => {
+    renderModal(sampleFile);
+
+    const loadingMessages = await screen.findAllByText('Loading preview…');
+    expect(loadingMessages.length).toBeGreaterThan(0);
+
+    const waveInstances = waveSurferModule.__getWaveSurferInstances();
+    await waitFor(() => expect(waveInstances.length).toBeGreaterThan(0));
+    waveInstances[0].emit('ready');
 
     await waitFor(() => expect(screen.queryByText('Loading preview…')).toBeNull());
-    const volumeControl = screen.getByLabelText('Preview volume') as HTMLInputElement;
-    expect(volumeControl.disabled).toBe(false);
+    await waitFor(() => expect(screen.getAllByText('Ready').length).toBeGreaterThan(0));
+  });
+
+  it('play/pause toggles aria-pressed and calls ws.playPause', async () => {
+    renderModal(sampleFile);
+
+    const waveInstances = waveSurferModule.__getWaveSurferInstances();
+    await waitFor(() => expect(waveInstances.length).toBeGreaterThan(0));
+    const wave = waveInstances[0];
+    wave.emit('ready');
+
+    const playButton = (await screen.findByRole('button', { name: 'Play' })) as HTMLButtonElement;
+    expect(playButton.getAttribute('aria-pressed')).toBe('false');
+
+    playButton.click();
+    await waitFor(() => expect(playButton.getAttribute('aria-pressed')).toBe('true'));
+    expect(wave.playPause).toHaveBeenCalledTimes(1);
+
+    playButton.click();
+    await waitFor(() => expect(playButton.getAttribute('aria-pressed')).toBe('false'));
+    expect(wave.playPause).toHaveBeenCalledTimes(2);
+  });
+
+  it('seek slider calls ws.seekTo with correct fraction', async () => {
+    renderModal(sampleFile);
+
+    const waveInstances = waveSurferModule.__getWaveSurferInstances();
+    await waitFor(() => expect(waveInstances.length).toBeGreaterThan(0));
+    const wave = waveInstances[0] as unknown as {
+      emit: (event: string, ...args: unknown[]) => void;
+      getDuration: () => number;
+      seekTo: ReturnType<typeof vi.fn>;
+    };
+    wave.getDuration = vi.fn(() => 10);
+    expect(wave.getDuration()).toBe(10);
+    wave.emit('ready');
+
+    const seekSlider = (await screen.findByRole('slider', {
+      name: 'Seek within preview'
+    })) as HTMLInputElement;
+    await waitFor(() => expect(seekSlider.disabled).toBe(false));
+    seekSlider.max = '10';
+    Object.defineProperty(seekSlider, 'value', {
+      configurable: true,
+      get: () => '5',
+      // JSDOM clamps <input type="range"> values to the current max, so override the getter
+      // to reflect the value we want to send through React's synthetic change event.
+      set: () => {}
+    });
+    fireEvent.change(seekSlider);
+    await waitFor(() => expect(wave.seekTo).toHaveBeenCalledWith(0.5));
+  });
+
+  it('close destroys ws and revokes URL', async () => {
+    renderModal(sampleFile);
+
+    const waveInstances = waveSurferModule.__getWaveSurferInstances();
+    await waitFor(() => expect(waveInstances.length).toBeGreaterThan(0));
+    const wave = waveInstances[0];
+    wave.emit('ready');
+
+    const closeButton = await screen.findByRole('button', { name: 'Close' });
+    closeButton.click();
+
+    await waitFor(() => {
+      expect(wave.destroy).toHaveBeenCalled();
+      expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock');
+      expect(window.api?.teardownAudio).toHaveBeenCalled();
+    });
+  });
+
+  it('no hard-coded strings; i18n keys resolved', async () => {
+    renderModal(sampleFile);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Audio preview').length).toBeGreaterThan(0);
+    });
+
+    await waitFor(() => expect(screen.getAllByRole('status')).toHaveLength(1));
+    const status = screen.getByRole('status');
+    expect(status.textContent ?? '').toContain('Loading preview…');
+
+    const waveInstances = waveSurferModule.__getWaveSurferInstances();
+    await waitFor(() => expect(waveInstances.length).toBeGreaterThan(0));
+    waveInstances[0].emit('ready');
+
+    expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy();
+    expect(screen.getByRole('slider', { name: 'Seek within preview' })).toBeTruthy();
+    expect(screen.getAllByText('Volume').length).toBeGreaterThan(0);
+    expect(screen.queryByLabelText('Preview volume')).toBeNull();
   });
 
   it('shows an error message when loading fails', async () => {
@@ -183,8 +307,8 @@ describe('PlayerModal', () => {
 
     renderModal(sampleFile);
 
-    const errorMessages = await screen.findAllByText('Could not decode audio preview.');
-    expect(errorMessages.length).toBeGreaterThan(0);
+    const errorMessage = (await screen.findByRole('alert')) as HTMLElement;
+    expect(errorMessage.textContent ?? '').toContain('Cannot decode this file');
     expect(failingApi.readFileBlob).toHaveBeenCalledWith(sampleFile.path);
     await waitFor(() => expect(failingApi.teardownAudio).toHaveBeenCalled());
   });

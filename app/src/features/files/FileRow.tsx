@@ -15,6 +15,8 @@ interface FileRowProps {
   onToggle: (fileId: string) => void;
   selectLabel: string;
   previewLabel: string;
+  playLabel: string;
+  previewUnavailableLabel: string;
   formatTooltip: (reason: string) => string;
   splitMonoHint: string;
 }
@@ -29,6 +31,8 @@ export function FileRow({
   onToggle,
   selectLabel,
   previewLabel,
+  playLabel,
+  previewUnavailableLabel,
   formatTooltip,
   splitMonoHint
 }: FileRowProps) {
@@ -43,7 +47,10 @@ export function FileRow({
     isActivePreview && 'bg-emerald-600/20 text-emerald-200 hover:bg-emerald-600/30',
     !previewable && 'cursor-not-allowed opacity-50 hover:bg-slate-800'
   );
-  const previewTitle = `${previewLabel} ${file.name}`.trim();
+  const buttonLabel = previewable ? playLabel : previewLabel;
+  const previewTitle = previewable
+    ? `${playLabel} — ${file.name}`
+    : `${previewUnavailableLabel} — ${file.name}`;
 
   const handlePreviewClick = () => {
     if (!previewable) {
@@ -73,7 +80,7 @@ export function FileRow({
           onClick={handlePreviewClick}
           className={previewButtonClasses}
           disabled={!previewable}
-          aria-label={previewTitle}
+          aria-label={buttonLabel}
           title={previewTitle}
         >
           <MaterialIcon icon="play_arrow" />
