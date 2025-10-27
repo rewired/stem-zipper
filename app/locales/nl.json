@@ -79,10 +79,8 @@
   "badge_no_zip_gain": "~ no zip gain",
   "badge_no_zip_gain_hint": "Already compressed; ZIP usually won't shrink it.",
   "badge_try_7z_volumes": "try 7z volumes",
-  "badge_split_mono": "Split Mono",
   "hint_split_mono_feasible": "Will split L/R to fit under the max size.",
   "warn_split_mono_failed": "Split Mono failed for {{name}}.",
-  "aria_label_badge_split_mono": "Split mono badge",
   "badge_consider_7z_volumes": "try 7z volumes",
   "pack_badge_no_zip_gain": "~ no zip gain",
   "pack_badge_no_zip_gain_hint": "Already compressed; ZIP usually won't shrink it.",
@@ -115,5 +113,7 @@
   "pack_badge_estimate_zip": "stems-{{index}}.zip",
   "pack_badge_estimate_7z": "vol-{{index}}.7z",
   "tooltip_unselectable": "{{reason}}",
-  "pack_tooltip_unselectable": "{{reason}}"
+  "pack_tooltip_unselectable": "{{reason}}",
+  "pack_badge_split_mono": "Split Mono",
+  "pack_aria_label_badge_split_mono": "Split mono badge"
 }
