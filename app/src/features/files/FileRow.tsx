@@ -35,7 +35,7 @@ export function FileRow({
         <div className="flex justify-center">
           <input
             type="checkbox"
-            className="h-4 w-4 rounded border border-slate-600 bg-slate-900 text-blue-500 focus:ring-blue-500 disabled:cursor-not-allowed"
+            className="h-4 w-4 rounded border border-slate-600 bg-slate-900 text-emerald-400 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed"
             checked={file.selected}
             onChange={() => onToggle(file.id)}
             disabled={!file.selectable}

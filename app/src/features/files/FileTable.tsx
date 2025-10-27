@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { FileRow } from './FileRow';
 import type { FileRow as FileRowModel } from '../../types/fileRow';
 
@@ -18,7 +18,7 @@ interface FileTableProps {
   onToggleRow: (fileId: string) => void;
   onToggleAll: () => void;
   selectLabel: string;
-  toggleAllLabel: string;
+  selectAllLabel: string;
   estimateLabel: string;
   masterChecked: boolean;
   masterIndeterminate: boolean;
@@ -41,13 +41,21 @@ export function FileTable({
   onToggleRow,
   onToggleAll,
   selectLabel,
-  toggleAllLabel,
+  selectAllLabel,
   estimateLabel,
   masterChecked,
   masterIndeterminate,
   masterDisabled,
   formatTooltip
 }: FileTableProps) {
+  const masterCheckboxRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (!masterCheckboxRef.current) {
+      return;
+    }
+    masterCheckboxRef.current.indeterminate = masterIndeterminate && !masterChecked;
+  }, [masterChecked, masterIndeterminate]);
+
   if (files.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-slate-700 bg-slate-900/50 p-12 text-center text-slate-400">
@@ -59,14 +67,9 @@ export function FileTable({
     );
   }
 
-  const toggleClasses = clsx(
-    'relative inline-flex h-5 w-10 items-center rounded-full transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400',
-    masterChecked ? 'bg-blue-500' : 'bg-slate-600',
-    masterDisabled && 'cursor-not-allowed opacity-40'
-  );
-  const knobClasses = clsx(
-    'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition',
-    masterChecked ? 'translate-x-5' : masterIndeterminate ? 'translate-x-3' : 'translate-x-1'
+  const masterCheckboxClasses = clsx(
+    'h-4 w-4 rounded border border-slate-600 bg-slate-900 text-emerald-400 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed',
+    masterDisabled && 'opacity-50'
   );
 
   return (
@@ -78,20 +81,22 @@ export function FileTable({
               scope="col"
               className="w-12 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400"
             >
-              <div className="flex items-center gap-2">
-                <span>{selectLabel}</span>
-                <button
-                  type="button"
-                  className={toggleClasses}
-                  onClick={onToggleAll}
+              <div className="flex items-center justify-center">
+                <span className="sr-only">{selectLabel}</span>
+                <input
+                  ref={masterCheckboxRef}
+                  type="checkbox"
+                  className={masterCheckboxClasses}
+                  checked={masterChecked}
+                  onChange={() => {
+                    if (masterDisabled) {
+                      return;
+                    }
+                    onToggleAll();
+                  }}
                   disabled={masterDisabled}
-                  role="switch"
-                  aria-checked={masterChecked}
-                  aria-label={toggleAllLabel}
-                  data-indeterminate={masterIndeterminate ? 'true' : undefined}
-                >
-                  <span className={knobClasses} />
-                </button>
+                  aria-label={selectAllLabel}
+                />
               </div>
             </th>
             <th

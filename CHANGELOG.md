@@ -19,6 +19,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - UI: Primary action "Pack Now" now green; "~ no zip gain" shown as blue info badge.
+- Renderer "Pack Now" CTA now leans into the success palette with higher-contrast focus/hover states for AA compliance.
+- File table select column swaps the slider toggle for an indeterminate-aware master checkbox with an accessible select-all label.
 - Renderer now debounces ZIP estimate requests and pairs them with the latest analysis token to prevent stale toasts.
 - Renderer toast estimates now use underscore keys with concise start/result/error copy shared across locales.
 - Development workflow now delegates to `concurrently` with named stream prefixes and signal-aware teardown so `pnpm run dev` exits cleanly across platforms.
@@ -37,6 +39,7 @@ All notable changes to this project will be documented in this file.
 - Renderer now force-dismisses the ZIP estimate toast when analysis or packing begins, keeping the notification hidden during
   heavy work and final states.
 - Electron packaging probes audio headers to split only real stereo WAV (PCM/IEEE float) files, logging and skipping malformed inputs without crashing the pack flow.
+- Renderer pack badges and estimate chips now pull localized copy via `tNS('pack', ...)`, eliminating raw key output in the table.
 - Renderer silences the ZIP estimate toast during the post-pack analysis cycle, preventing the notification from reappearing until the next manual scan or size change.
 - Electron pack routines now await folder analysis, normalize 7z error reporting, and validate stereo split outputs to satisfy strict TypeScript checks and keep progress feedback reliable.
 - Renderer now detects all already-compressed audio formats when flagging "~ no zip gain" and suggests 7z volumes for oversized compressed files.
