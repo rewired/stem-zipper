@@ -36,6 +36,9 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- Electron packer now falls back to 7z binaries available on the system `PATH`
+  when bundled archives are missing, restoring packing on developer machines
+  without the packaged helper.
 - Icon generation script now resolves project paths relative to the repository root, restoring `pnpm run icons` when invoked
   from the `app` workspace on Windows terminals.
 - Electron pack handler now emits localized warning toasts and error progress updates when 7z/split operations fail,
