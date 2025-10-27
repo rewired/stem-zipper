@@ -35,6 +35,10 @@ declare global {
       setUserPrefs: (request: UserPrefsSet) => Promise<void>;
       addRecentArtist: (request: UserPrefsAddRecent) => Promise<void>;
     };
+    api?: {
+      readFileBlob?: (path: string) => Promise<ArrayBuffer>;
+      teardownAudio?: () => void;
+    };
     runtimeConfig: RuntimeConfig;
   }
 }

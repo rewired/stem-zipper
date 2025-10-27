@@ -26,7 +26,9 @@ export const IPC_CHANNELS = {
   ESTIMATE_PLAN: 'estimator:plan',
   PREFS_GET: 'prefs:get',
   PREFS_SET: 'prefs:set',
-  PREFS_ADD_RECENT: 'prefs:addRecent'
+  PREFS_ADD_RECENT: 'prefs:addRecent',
+  READ_FILE_BLOB: 'player:read-file-blob',
+  TEARDOWN_AUDIO: 'player:teardown-audio'
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

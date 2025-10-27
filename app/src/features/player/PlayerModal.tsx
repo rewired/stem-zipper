@@ -1,9 +1,20 @@
 import clsx from 'clsx';
-import { useEffect, useMemo, useRef } from 'react';
-import { tNS } from '@common/i18n';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent
+} from 'react';
+import { formatMessage, tNS } from '@common/i18n';
 import { MaterialIcon } from '../../components/icons/MaterialIcon';
 import { useAppStore } from '../../store/appStore';
 import { usePlayer } from './PlayerProvider';
+import { MAX_PREVIEW_FILE_SIZE_BYTES, clampTime, clampVolume } from './previewUtils';
+import { createWaveSurfer } from './waveSurfer';
+import { useToast } from '../../providers/ToastProvider';
+import type WaveSurfer from 'wavesurfer.js';
 
 function formatTime(value: number): string {
   if (!Number.isFinite(value) || value <= 0) {
@@ -27,13 +38,22 @@ export function PlayerModal() {
     duration,
     seekTo,
     setVolume,
-    volume
+    volume,
+    setProgress,
+    setPlayingState
   } = usePlayer();
 
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const playButtonRef = useRef<HTMLButtonElement | null>(null);
   const waveRef = useRef<HTMLDivElement | null>(null);
+  const waveSurferRef = useRef<WaveSurfer | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
+  const volumeRef = useRef(volume);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+
+  const { show: showToast } = useToast();
 
   const modalLabel = useMemo(() => tNS('player', 'modal_label', undefined, locale), [locale]);
   const playPauseLabel = useMemo(
@@ -46,6 +66,64 @@ export function PlayerModal() {
     [locale]
   );
   const closeLabel = useMemo(() => tNS('player', 'close_button_label', undefined, locale), [locale]);
+  const loadingMessage = useMemo(() => tNS('player', 'loading', undefined, locale), [locale]);
+  const genericErrorMessage = useMemo(
+    () => tNS('player', 'error_generic', undefined, locale),
+    [locale]
+  );
+  const decodeFailedMessage = useMemo(
+    () => tNS('player', 'error_decode_failed', undefined, locale),
+    [locale]
+  );
+  const maxPreviewMb = Math.round(MAX_PREVIEW_FILE_SIZE_BYTES / (1024 * 1024));
+  const tooLargeMessage = useMemo(
+    () => tNS('player', 'error_file_too_large', { max_size: String(maxPreviewMb) }, locale),
+    [locale, maxPreviewMb]
+  );
+  const toastCloseLabel = useMemo(() => formatMessage(locale, 'common_close'), [locale]);
+
+  useEffect(() => {
+    volumeRef.current = volume;
+  }, [volume]);
+
+  const handleTogglePlayback = useCallback(() => {
+    const wave = waveSurferRef.current;
+    if (wave) {
+      if (wave.isPlaying()) {
+        wave.pause();
+      } else {
+        void wave.play();
+      }
+      return;
+    }
+    togglePlayback();
+  }, [togglePlayback]);
+
+  const handleSeek = useCallback(
+    (seconds: number) => {
+      if (!Number.isFinite(seconds)) {
+        return;
+      }
+      const wave = waveSurferRef.current;
+      const measured = wave?.getDuration();
+      const total = Number.isFinite(measured) && measured !== undefined ? measured : duration;
+      const safeTotal = Number.isFinite(total) && total > 0 ? total : 0;
+      const target = clampTime(seconds, safeTotal);
+      if (wave && safeTotal > 0) {
+        wave.seekTo(target / safeTotal);
+      }
+      seekTo(target);
+    },
+    [duration, seekTo]
+  );
+
+  const handleSeekInput = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const nextValue = Number(event.target.value);
+      handleSeek(nextValue);
+    },
+    [handleSeek]
+  );
 
   useEffect(() => {
     if (!isOpen) {
@@ -74,17 +152,17 @@ export function PlayerModal() {
       }
       if (event.key === ' ' || event.key === 'Spacebar') {
         event.preventDefault();
-        togglePlayback();
+        handleTogglePlayback();
         return;
       }
       if (event.key === 'ArrowLeft') {
         event.preventDefault();
-        seekTo(currentTime - 5);
+        handleSeek(currentTime - 5);
         return;
       }
       if (event.key === 'ArrowRight') {
         event.preventDefault();
-        seekTo(currentTime + 5);
+        handleSeek(currentTime + 5);
         return;
       }
       if (event.key === 'ArrowUp') {
@@ -99,7 +177,7 @@ export function PlayerModal() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [close, currentTime, isOpen, seekTo, setVolume, togglePlayback, volume]);
+  }, [close, currentTime, handleSeek, handleTogglePlayback, isOpen, setVolume, volume]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -139,6 +217,231 @@ export function PlayerModal() {
     return () => node.removeEventListener('keydown', handleTabTrap);
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen || !file) {
+      setStatus('idle');
+      setErrorMessage(null);
+      return;
+    }
+
+    const container = waveRef.current;
+    if (!container) {
+      return;
+    }
+
+    setStatus('loading');
+    setErrorMessage(null);
+    setPlayingState(false);
+    setProgress(0, 0);
+
+    const previousWave = waveSurferRef.current;
+    if (previousWave) {
+      previousWave.destroy();
+      waveSurferRef.current = null;
+    }
+    container.innerHTML = '';
+    const previousUrl = objectUrlRef.current;
+    if (previousUrl) {
+      URL.revokeObjectURL(previousUrl);
+      objectUrlRef.current = null;
+    }
+
+    let disposed = false;
+    let detachListeners: (() => void) | null = null;
+
+    const handleError = (message: string) => {
+      if (disposed) {
+        return;
+      }
+      if (detachListeners) {
+        detachListeners();
+        detachListeners = null;
+      }
+      const url = objectUrlRef.current;
+      if (url) {
+        URL.revokeObjectURL(url);
+        objectUrlRef.current = null;
+      }
+      setPlayingState(false);
+      setProgress(0, 0);
+      setStatus('error');
+      setErrorMessage(message);
+      showToast({
+        id: 'player-preview-error',
+        title: modalLabel,
+        message,
+        closeLabel: toastCloseLabel,
+        timeoutMs: 15000
+      });
+      window.api?.teardownAudio?.();
+    };
+
+    const loadWaveform = async () => {
+      if (file.sizeBytes > MAX_PREVIEW_FILE_SIZE_BYTES) {
+        handleError(tooLargeMessage);
+        return;
+      }
+
+      if (!window.api?.readFileBlob) {
+        handleError(genericErrorMessage);
+        return;
+      }
+
+      try {
+        const buffer = await window.api.readFileBlob(file.path);
+        if (disposed) {
+          return;
+        }
+        const blob = new Blob([buffer]);
+        const url = URL.createObjectURL(blob);
+        objectUrlRef.current = url;
+        const wave = createWaveSurfer(container);
+        waveSurferRef.current = wave;
+
+        const readyListener = () => {
+          if (disposed) {
+            return;
+          }
+          const measured = wave.getDuration();
+          const total = Number.isFinite(measured) && measured > 0 ? measured : 0;
+          wave.setVolume(clampVolume(volumeRef.current));
+          setProgress(0, total);
+          setStatus('ready');
+          setErrorMessage(null);
+        };
+
+        const audioProcessListener = () => {
+          if (disposed) {
+            return;
+          }
+          const total = wave.getDuration();
+          const safeTotal = Number.isFinite(total) && total > 0 ? total : 0;
+          setProgress(wave.getCurrentTime(), safeTotal);
+        };
+
+        const seekListener = (value: unknown) => {
+          if (disposed) {
+            return;
+          }
+          const progress = typeof value === 'number' ? value : Number(value);
+          const normalized = Number.isFinite(progress) && progress >= 0 ? Math.min(1, progress) : 0;
+          const total = wave.getDuration();
+          const safeTotal = Number.isFinite(total) && total > 0 ? total : 0;
+          setProgress(normalized * safeTotal, safeTotal);
+        };
+
+        const playListener = () => {
+          if (disposed) {
+            return;
+          }
+          setPlayingState(true);
+        };
+
+        const pauseListener = () => {
+          if (disposed) {
+            return;
+          }
+          setPlayingState(false);
+        };
+
+        const finishListener = () => {
+          if (disposed) {
+            return;
+          }
+          const total = wave.getDuration();
+          const safeTotal = Number.isFinite(total) && total > 0 ? total : 0;
+          setPlayingState(false);
+          setProgress(safeTotal, safeTotal);
+        };
+
+        const errorListener = () => {
+          if (disposed) {
+            return;
+          }
+          handleError(decodeFailedMessage);
+          wave.destroy();
+          waveSurferRef.current = null;
+        };
+
+        wave.on('ready', readyListener);
+        wave.on('audioprocess', audioProcessListener);
+        wave.on('seek', seekListener);
+        wave.on('play', playListener);
+        wave.on('pause', pauseListener);
+        wave.on('finish', finishListener);
+        wave.on('error', errorListener);
+
+        detachListeners = () => {
+          wave.un('ready', readyListener);
+          wave.un('audioprocess', audioProcessListener);
+          wave.un('seek', seekListener);
+          wave.un('play', playListener);
+          wave.un('pause', pauseListener);
+          wave.un('finish', finishListener);
+          wave.un('error', errorListener);
+        };
+
+        wave.load(url);
+      } catch (error) {
+        console.error('Failed to load audio preview', file.path, error);
+        handleError(decodeFailedMessage);
+      }
+    };
+
+    void loadWaveform();
+
+    return () => {
+      disposed = true;
+      if (detachListeners) {
+        detachListeners();
+        detachListeners = null;
+      }
+      const wave = waveSurferRef.current;
+      if (wave) {
+        wave.destroy();
+        waveSurferRef.current = null;
+      }
+      const url = objectUrlRef.current;
+      if (url) {
+        URL.revokeObjectURL(url);
+        objectUrlRef.current = null;
+      }
+      window.api?.teardownAudio?.();
+    };
+  }, [
+    decodeFailedMessage,
+    file,
+    genericErrorMessage,
+    isOpen,
+    modalLabel,
+    setPlayingState,
+    setProgress,
+    showToast,
+    toastCloseLabel,
+    tooLargeMessage
+  ]);
+
+  useEffect(() => {
+    const wave = waveSurferRef.current;
+    if (!wave || status !== 'ready') {
+      return;
+    }
+    if (isPlaying && !wave.isPlaying()) {
+      void wave.play();
+    }
+    if (!isPlaying && wave.isPlaying()) {
+      wave.pause();
+    }
+  }, [isPlaying, status]);
+
+  useEffect(() => {
+    const wave = waveSurferRef.current;
+    if (!wave) {
+      return;
+    }
+    wave.setVolume(clampVolume(volume));
+  }, [volume]);
+
   if (!isOpen || !file) {
     return null;
   }
@@ -147,6 +450,13 @@ export function PlayerModal() {
   const maxSeek = duration > 0 ? duration : 0;
   const seekValue = maxSeek > 0 ? currentTime : 0;
   const volumeValue = Math.round(Math.min(1, Math.max(0, volume)) * 100);
+  const isReady = status === 'ready';
+  const isLoading = status === 'loading';
+  const statusMessage = isLoading
+    ? loadingMessage
+    : status === 'error'
+      ? errorMessage ?? genericErrorMessage
+      : null;
 
   return (
     <div
@@ -179,21 +489,33 @@ export function PlayerModal() {
           </button>
         </div>
         <div
-          ref={waveRef}
-          id="wave"
-          className="mt-4 h-40 rounded-md bg-slate-800/80 shadow-inner md:h-48"
-        />
+          className="relative mt-4 h-40 overflow-hidden rounded-md bg-slate-800/80 shadow-inner md:h-48"
+          aria-busy={isLoading}
+        >
+          <div ref={waveRef} id="wave" className="absolute inset-0" />
+          {statusMessage ? (
+            <div
+              className="absolute inset-0 flex items-center justify-center bg-slate-900/80 text-sm font-medium text-slate-200"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {statusMessage}
+            </div>
+          ) : null}
+        </div>
         <div className="mt-6 flex flex-col gap-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <button
               ref={playButtonRef}
               type="button"
-              onClick={togglePlayback}
+              onClick={handleTogglePlayback}
               aria-label={playPauseLabel}
               className={clsx(
                 'inline-flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-200 transition hover:bg-slate-700 focus-visible:ring focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900',
-                isPlaying && 'bg-emerald-600 text-white hover:bg-emerald-500'
+                isPlaying && 'bg-emerald-600 text-white hover:bg-emerald-500',
+                !isReady && 'cursor-not-allowed opacity-60'
               )}
+              disabled={!isReady}
             >
               <MaterialIcon icon={isPlaying ? 'pause' : 'play_arrow'} />
             </button>
@@ -208,14 +530,9 @@ export function PlayerModal() {
                 max={maxSeek}
                 step={0.1}
                 value={seekValue}
-                onChange={(event) => {
-                  const nextValue = Number(event.target.value);
-                  if (Number.isFinite(nextValue)) {
-                    seekTo(nextValue);
-                  }
-                }}
+                onChange={handleSeekInput}
                 aria-label={seekLabel}
-                disabled={maxSeek === 0}
+                disabled={!isReady}
                 className="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-700 focus-visible:ring focus-visible:ring-emerald-400"
               />
             </div>
@@ -241,6 +558,7 @@ export function PlayerModal() {
                 }}
                 aria-label={volumeLabel}
                 className="h-2 w-32 cursor-pointer appearance-none rounded-full bg-slate-700 focus-visible:ring focus-visible:ring-emerald-400"
+                disabled={!isReady}
               />
               <span className="w-10 text-right text-xs font-medium text-slate-400" aria-live="polite">
                 {volumeValue}%

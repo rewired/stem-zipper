@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
   trigger extra volumes.
 - Renderer adds a front-end pack method selector (ZIP vs 7z) ahead of the upcoming multi-archive backend work.- Electron packer can now produce 7z archives with configurable volume splitting via bundled native binaries.
 - Renderer exposes a shared `getFileExtension` helper for consistent lowercase extension parsing across platforms.
+- Renderer audio preview modal now instantiates a WaveSurfer waveform via the preload bridge, streaming local files through
+  WebAudio with loading/error states and playback controls synced to the app store.
 
 ### Changed
 - UI: Primary action "Pack Now" now green; "~ no zip gain" shown as blue info badge.

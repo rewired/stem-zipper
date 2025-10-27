@@ -28,6 +28,9 @@ importers:
       wavefile:
         specifier: ^11.0.0
         version: 11.0.0
+      wavesurfer.js:
+        specifier: ^7.11.0
+        version: 7.11.0
       yazl:
         specifier: ^2.5.1
         version: 2.5.1
@@ -3006,6 +3009,9 @@ packages:
     resolution: {integrity: sha512-/OBiAALgWU24IG7sC84cDO/KfFuvajWc5Uec0oV2zrpOOZZDgGdOwHwgEzOrwh8jkubBk7PtZfQBIcI1OaE5Ng==}
     engines: {node: '>=8'}
     hasBin: true
+
+  wavesurfer.js@7.11.0:
+    resolution: {integrity: sha512-LOGdIBIKv/roYuQYClhoqhwbIdQL1GfobLnS2vx0heoLD9lu57OUHWE2DIsCNXBvCsmmbkUvJq9W8bPLPbikGw==}
 
   webidl-conversions@8.0.0:
     resolution: {integrity: sha512-n4W4YFyz5JzOfQeA8oN7dUYpR+MBP3PIUsn2jLjWXwK5ASUzt0Jc/A5sAUZoCYFJRGF0FBKJ+1JjN43rNdsQzA==}
@@ -6436,6 +6442,8 @@ snapshots:
       - debug
 
   wavefile@11.0.0: {}
+
+  wavesurfer.js@7.11.0: {}
 
   webidl-conversions@8.0.0: {}
 

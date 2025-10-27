@@ -371,4 +371,21 @@ function registerIpcHandlers(): void {
       return { count: 0, files: [] };
     }
   });
+
+  ipcMain.handle(IPC_CHANNELS.READ_FILE_BLOB, async (_event, filePath: string) => {
+    if (typeof filePath !== 'string' || filePath.trim().length === 0) {
+      throw new Error('Invalid file path');
+    }
+    try {
+      const buffer = await fs.promises.readFile(filePath);
+      return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    } catch (error) {
+      console.error('Failed to read audio preview file', filePath, error);
+      throw error;
+    }
+  });
+
+  ipcMain.on(IPC_CHANNELS.TEARDOWN_AUDIO, () => {
+    // Placeholder hook for future audio teardown orchestration.
+  });
 }

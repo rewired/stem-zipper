@@ -99,3 +99,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return ipcRenderer.invoke(IPC_CHANNELS.PREFS_ADD_RECENT, request);
   }
 });
+
+contextBridge.exposeInMainWorld('api', {
+  readFileBlob(path: string): Promise<ArrayBuffer> {
+    return ipcRenderer.invoke(IPC_CHANNELS.READ_FILE_BLOB, path);
+  },
+  teardownAudio(): void {
+    ipcRenderer.send(IPC_CHANNELS.TEARDOWN_AUDIO);
+  }
+});
