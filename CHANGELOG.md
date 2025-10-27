@@ -30,6 +30,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- Electron 7z packing progress now parses stdout/stderr percentages, tolerates CR updates, and heartbeats stale output to keep
+  the progress bar responsive across platforms.
 - Electron 7z split pack strategy now loads `execa` via a dynamic import, restoring packaging on
   Node 18+ where the dependency ships as ESM-only.
 - Electron 7z pack strategy now clears stale `stems.7z` volumes and forces non-interactive
