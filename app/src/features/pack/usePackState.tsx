@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
   type ReactNode
@@ -19,13 +20,133 @@ import { useMetadata } from '../metadata/useMetadata';
 import type { FileRow } from '../../types/fileRow';
 import { mergePackingPlan } from '../files/mergePackingPlan';
 
-const initialProgress: PackProgress = {
-  state: 'done',
-  current: 0,
-  total: 0,
+export type PackProgressPhase = 'idle' | PackState;
+
+export interface PackProgressView {
+  phase: PackProgressPhase;
+  percent: number;
+  label: string;
+  archiveLabel: string | null;
+  errorMessage: string | null;
+}
+
+export type PackProgressAction =
+  | { type: 'reset' }
+  | {
+      type: 'progress';
+      phase: PackProgressPhase;
+      percent: number;
+      label: string;
+      archiveLabel?: string | null;
+      errorMessage?: string | null;
+    };
+
+export const initialProgressView: PackProgressView = {
+  phase: 'idle',
   percent: 0,
-  message: 'pack_progress_done'
+  label: '',
+  archiveLabel: null,
+  errorMessage: null
 };
+
+export function packProgressReducer(
+  _state: PackProgressView,
+  action: PackProgressAction
+): PackProgressView {
+  switch (action.type) {
+    case 'reset':
+      return { ...initialProgressView };
+    case 'progress': {
+      const percent = clampPercent(action.percent);
+      return {
+        phase: action.phase,
+        percent,
+        label: action.label,
+        archiveLabel: action.archiveLabel ?? null,
+        errorMessage: action.phase === 'error' ? action.errorMessage ?? null : null
+      };
+    }
+    default:
+      return _state;
+  }
+}
+
+type TranslateFn = (key: TranslationKey, params?: Record<string, string | number>) => string;
+
+export function buildProgressUpdate(
+  event: PackProgress,
+  translate: TranslateFn
+): PackProgressAction {
+  const percent = clampPercent(event.percent);
+  switch (event.state) {
+    case 'preparing':
+      return {
+        type: 'progress',
+        phase: 'preparing',
+        percent,
+        label: translate(event.message, { percent })
+      };
+    case 'packing':
+      if (event.currentArchive) {
+        return {
+          type: 'progress',
+          phase: 'packing',
+          percent,
+          label: translate(event.message, { name: event.currentArchive, percent }),
+          archiveLabel: event.currentArchive
+        };
+      }
+      return {
+        type: 'progress',
+        phase: 'packing',
+        percent,
+        label: translate('pack_progress_packing_generic', { percent }),
+        archiveLabel: null
+      };
+    case 'finalizing':
+      return {
+        type: 'progress',
+        phase: 'finalizing',
+        percent,
+        label: translate(event.message)
+      };
+    case 'done':
+      return {
+        type: 'progress',
+        phase: 'done',
+        percent: 100,
+        label: translate('pack_progress_done')
+      };
+    case 'error':
+      return {
+        type: 'progress',
+        phase: 'error',
+        percent,
+        label: translate('pack_progress_error'),
+        errorMessage: event.errorMessage ?? null
+      };
+    default:
+      return {
+        type: 'progress',
+        phase: event.state,
+        percent,
+        label: translate(event.message)
+      };
+  }
+}
+
+function clampPercent(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  if (value <= 0) {
+    return 0;
+  }
+  if (value >= 100) {
+    return 100;
+  }
+  return value;
+}
 
 const PACK_METHOD_STORAGE_KEY = 'stem-zipper.pack-method';
 
@@ -44,7 +165,7 @@ export type PackToastEvent =
   | { type: 'dismiss'; id: string };
 
 interface PackContextValue {
-  progress: PackProgress;
+  progress: PackProgressView;
   isPacking: boolean;
   packMethod: PackMethod;
   setPackMethod: (method: PackMethod) => void;
@@ -122,7 +243,7 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
   const { locale, maxSize, setMaxSize, folderPath, setFolderPath, files, setFiles, setStatusText } =
     useAppStore();
   const { ensureDraft, metadataMissingRequired, openMetadata, getPackMetadata } = useMetadata();
-  const [progress, setProgress] = useState<PackProgress>(initialProgress);
+  const [progress, dispatchProgress] = useReducer(packProgressReducer, initialProgressView);
   const [isPacking, setIsPacking] = useState(false);
   const [isRevealOpen, setIsRevealOpen] = useState(false);
   const [lastPackCount, setLastPackCount] = useState(0);
@@ -139,7 +260,6 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
   const estimateRequestCounterRef = useRef(0);
   const estimateTokenRef = useRef('0-0');
   const estimatorErrorLoggedRef = useRef(false);
-  const progressStateRef = useRef<PackState>(initialProgress.state);
   const estimateModeRef = useRef<'auto' | 'silent'>('auto');
   const triggerEstimateRef = useRef<ReturnType<typeof debounce> | null>(null);
   const lastPlanStateRef = useRef<{ signature: string; method: PackingPlanRequest['method']; size: number | null }>(
@@ -180,38 +300,24 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
   const isLatestEstimateToken = useCallback((token: string) => estimateTokenRef.current === token, []);
 
   const resetProgress = useCallback(() => {
-    setProgress(initialProgress);
-    progressStateRef.current = initialProgress.state;
+    dispatchProgress({ type: 'reset' });
   }, []);
 
   const applyProgressEvent = useCallback(
     (event: PackProgress) => {
-      progressStateRef.current = event.state;
-      setProgress(event);
+      const update = buildProgressUpdate(event, t);
+      dispatchProgress(update);
       switch (event.state) {
         case 'preparing':
           emit({ type: 'dismiss', id: 'estimate' });
-          setStatusText(
-            t(event.message, {
-              percent: event.percent
-            })
-          );
+          setStatusText(update.label);
           break;
         case 'packing':
           emit({ type: 'dismiss', id: 'estimate' });
-          if (event.currentArchive) {
-            setStatusText(
-              t(event.message, {
-                name: event.currentArchive,
-                percent: event.percent
-              })
-            );
-          } else {
-            setStatusText(t('pack_progress_packing_generic', { percent: event.percent }));
-          }
+          setStatusText(update.label);
           break;
         case 'finalizing':
-          setStatusText(t(event.message));
+          setStatusText(update.label);
           emit({ type: 'dismiss', id: 'estimate' });
           break;
         case 'done':
@@ -230,7 +336,7 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
           break;
       }
     },
-    [emit, setProgress, setStatusText, t]
+    [dispatchProgress, emit, setStatusText, t]
   );
 
   const analyze = useCallback(
