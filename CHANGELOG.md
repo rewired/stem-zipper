@@ -21,6 +21,8 @@ All notable changes to this project will be documented in this file.
   WebAudio with loading/error states and playback controls synced to the app store.
 
 ### Changed
+- Renderer file preview flow now surfaces localized Play/Pause/Close labels, announces loading/ready states, and restores focus
+  after closing, with Vitest coverage for accessibility and WaveSurfer control hooks.
 - UI: Primary action "Pack Now" now green; "~ no zip gain" shown as blue info badge.
 - Renderer "Pack Now" CTA now leans into the success palette with higher-contrast focus/hover states for AA compliance.
 - File table select column swaps the slider toggle for an indeterminate-aware master checkbox with an accessible select-all label.

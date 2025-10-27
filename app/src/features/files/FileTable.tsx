@@ -20,6 +20,8 @@ interface FileTableProps {
   selectLabel: string;
   selectAllLabel: string;
   previewLabel: string;
+  playLabel: string;
+  previewUnavailableLabel: string;
   estimateLabel: string;
   masterChecked: boolean;
   masterIndeterminate: boolean;
@@ -45,6 +47,8 @@ export function FileTable({
   selectLabel,
   selectAllLabel,
   previewLabel,
+  playLabel,
+  previewUnavailableLabel,
   estimateLabel,
   masterChecked,
   masterIndeterminate,
@@ -142,6 +146,8 @@ export function FileTable({
               onToggle={onToggleRow}
               selectLabel={selectLabel}
               previewLabel={previewLabel}
+              playLabel={playLabel}
+              previewUnavailableLabel={previewUnavailableLabel}
               formatTooltip={formatTooltip}
               splitMonoHint={splitMonoHint}
             />

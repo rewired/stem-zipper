@@ -116,6 +116,11 @@ export function AppShell() {
     () => tNS('player', 'open_preview_button_label', undefined, locale),
     [locale]
   );
+  const playLabel = useMemo(() => tNS('player', 'button_play', undefined, locale), [locale]);
+  const previewUnavailableLabel = useMemo(
+    () => tNS('player', 'error_decode_failed', undefined, locale),
+    [locale]
+  );
 
   const packLabel = useMemo(
     () => tNS('app', 'btn_pack_now', undefined, locale),
@@ -404,6 +409,8 @@ export function AppShell() {
             selectLabel={selectColumnLabel}
             selectAllLabel={selectAllLabel}
             previewLabel={previewLabel}
+            playLabel={playLabel}
+            previewUnavailableLabel={previewUnavailableLabel}
             estimateLabel={estimateColumnLabel}
             masterChecked={masterChecked}
             masterIndeterminate={masterIndeterminate}

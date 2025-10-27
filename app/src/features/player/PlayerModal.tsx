@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -52,20 +53,18 @@ export function PlayerModal() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+  const headingId = useId();
+  const statusId = useId();
+  const volumeLabelId = useId();
 
   const { show: showToast } = useToast();
 
   const modalLabel = useMemo(() => tNS('player', 'modal_label', undefined, locale), [locale]);
-  const playPauseLabel = useMemo(
-    () => tNS('player', 'play_pause_button_label', undefined, locale),
-    [locale]
-  );
+  const playLabel = useMemo(() => tNS('player', 'button_play', undefined, locale), [locale]);
+  const pauseLabel = useMemo(() => tNS('player', 'button_pause', undefined, locale), [locale]);
   const seekLabel = useMemo(() => tNS('player', 'seek_slider_label', undefined, locale), [locale]);
-  const volumeLabel = useMemo(
-    () => tNS('player', 'volume_slider_label', undefined, locale),
-    [locale]
-  );
-  const closeLabel = useMemo(() => tNS('player', 'close_button_label', undefined, locale), [locale]);
+  const volumeLabel = useMemo(() => tNS('player', 'label_volume', undefined, locale), [locale]);
+  const closeLabel = useMemo(() => tNS('player', 'button_close', undefined, locale), [locale]);
   const loadingMessage = useMemo(() => tNS('player', 'loading', undefined, locale), [locale]);
   const genericErrorMessage = useMemo(
     () => tNS('player', 'error_generic', undefined, locale),
@@ -75,6 +74,15 @@ export function PlayerModal() {
     () => tNS('player', 'error_decode_failed', undefined, locale),
     [locale]
   );
+  const currentTimeLabel = useMemo(
+    () => tNS('player', 'label_time_current', undefined, locale),
+    [locale]
+  );
+  const durationLabel = useMemo(
+    () => tNS('player', 'label_time_duration', undefined, locale),
+    [locale]
+  );
+  const readyMessage = useMemo(() => formatMessage(locale, 'pack_status_ready'), [locale]);
   const maxPreviewMb = Math.round(MAX_PREVIEW_FILE_SIZE_BYTES / (1024 * 1024));
   const tooLargeMessage = useMemo(
     () => tNS('player', 'error_file_too_large', { max_size: String(maxPreviewMb) }, locale),
@@ -89,6 +97,11 @@ export function PlayerModal() {
   const handleTogglePlayback = useCallback(() => {
     const wave = waveSurferRef.current;
     if (wave) {
+      const toggle = (wave as WaveSurfer & { playPause?: () => void }).playPause;
+      if (typeof toggle === 'function') {
+        toggle.call(wave);
+        return;
+      }
       if (wave.isPlaying()) {
         wave.pause();
       } else {
@@ -130,15 +143,21 @@ export function PlayerModal() {
       return;
     }
     previouslyFocused.current = document.activeElement as HTMLElement | null;
-    const timer = window.setTimeout(() => {
-      playButtonRef.current?.focus();
-    }, 0);
     return () => {
-      window.clearTimeout(timer);
       previouslyFocused.current?.focus({ preventScroll: true });
       previouslyFocused.current = null;
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || status !== 'ready') {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      playButtonRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, status]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -445,8 +464,8 @@ export function PlayerModal() {
   if (!isOpen || !file) {
     return null;
   }
-
-  const timeDisplay = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+  const timeCurrent = formatTime(currentTime);
+  const timeDuration = formatTime(duration);
   const maxSeek = duration > 0 ? duration : 0;
   const seekValue = maxSeek > 0 ? currentTime : 0;
   const volumeValue = Math.round(Math.min(1, Math.max(0, volume)) * 100);
@@ -456,7 +475,10 @@ export function PlayerModal() {
     ? loadingMessage
     : status === 'error'
       ? errorMessage ?? genericErrorMessage
-      : null;
+      : status === 'ready'
+        ? readyMessage
+        : '';
+  const describedBy = statusMessage ? statusId : undefined;
 
   return (
     <div
@@ -468,16 +490,31 @@ export function PlayerModal() {
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label={modalLabel}
+        aria-labelledby={headingId}
+        aria-describedby={describedBy}
         className="w-full max-w-3xl rounded-lg border border-slate-700 bg-slate-900 p-4 shadow-xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-100">{file.name}</h2>
-            <p className="mt-1 font-mono text-sm text-slate-300" aria-live="polite">
-              {timeDisplay}
-            </p>
+          <div className="min-w-0 flex-1">
+            <h2 id={headingId} className="text-lg font-semibold text-slate-100">
+              {modalLabel}
+            </h2>
+            <p className="mt-1 truncate text-sm text-slate-300">{file.name}</p>
+            <dl className="mt-2 flex flex-wrap gap-4 text-sm text-slate-300" aria-live="polite">
+              <div className="flex flex-col">
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                  {currentTimeLabel}
+                </dt>
+                <dd className="font-mono text-slate-100">{timeCurrent}</dd>
+              </div>
+              <div className="flex flex-col">
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                  {durationLabel}
+                </dt>
+                <dd className="font-mono text-slate-100">{timeDuration}</dd>
+              </div>
+            </dl>
           </div>
           <button
             type="button"
@@ -493,31 +530,43 @@ export function PlayerModal() {
           aria-busy={isLoading}
         >
           <div ref={waveRef} id="wave" className="absolute inset-0" />
-          {statusMessage ? (
+          {status !== 'ready' && statusMessage ? (
             <div
               className="absolute inset-0 flex items-center justify-center bg-slate-900/80 text-sm font-medium text-slate-200"
-              aria-live="polite"
-              aria-atomic="true"
+              aria-hidden="true"
             >
               {statusMessage}
             </div>
           ) : null}
         </div>
+        {statusMessage ? (
+          <div
+            id={statusId}
+            className="mt-3 text-sm text-slate-200"
+            role={status === 'error' ? 'alert' : 'status'}
+            aria-live="polite"
+          >
+            {statusMessage}
+          </div>
+        ) : null}
         <div className="mt-6 flex flex-col gap-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <button
               ref={playButtonRef}
               type="button"
               onClick={handleTogglePlayback}
-              aria-label={playPauseLabel}
+              aria-label={isPlaying ? pauseLabel : playLabel}
+              aria-pressed={isPlaying}
               className={clsx(
                 'inline-flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-200 transition hover:bg-slate-700 focus-visible:ring focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900',
                 isPlaying && 'bg-emerald-600 text-white hover:bg-emerald-500',
                 !isReady && 'cursor-not-allowed opacity-60'
               )}
               disabled={!isReady}
+              title={isPlaying ? pauseLabel : playLabel}
             >
               <MaterialIcon icon={isPlaying ? 'pause' : 'play_arrow'} />
+              <span className="sr-only">{isPlaying ? pauseLabel : playLabel}</span>
             </button>
             <div className="flex-1">
               <label className="sr-only" htmlFor="player-seek">
@@ -537,7 +586,7 @@ export function PlayerModal() {
               />
             </div>
             <div className="flex items-center gap-2 md:ml-4">
-              <span className="text-sm text-slate-300" aria-hidden="true">
+              <span className="text-sm text-slate-300" id={volumeLabelId}>
                 {volumeLabel}
               </span>
               <label className="sr-only" htmlFor="player-volume">
@@ -556,7 +605,7 @@ export function PlayerModal() {
                     setVolume(nextValue / 100);
                   }
                 }}
-                aria-label={volumeLabel}
+                aria-labelledby={volumeLabelId}
                 className="h-2 w-32 cursor-pointer appearance-none rounded-full bg-slate-700 focus-visible:ring focus-visible:ring-emerald-400"
                 disabled={!isReady}
               />

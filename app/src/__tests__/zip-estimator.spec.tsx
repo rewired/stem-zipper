@@ -72,7 +72,9 @@ function TestHarness({ files, maxSizeMb }: HarnessProps) {
         onToggleAll={() => {}}
         selectLabel="Select"
         selectAllLabel="Select all"
-        previewLabel="Preview"
+        previewLabel="Open audio preview"
+        playLabel="Play"
+        previewUnavailableLabel="Cannot decode this file"
         estimateLabel="Estimate"
         masterChecked
         masterIndeterminate={false}
