@@ -65,6 +65,10 @@ Run the following steps from the repository root.
 pnpm install
 ```
 
+The post-install hook downloads the precompiled 7-Zip command-line binaries from the
+`7zip-bin` package and stages them under `app/resources/bin/<platform>/<arch>/`. This keeps
+packaging ready on fresh checkouts without relying on a system-level 7z installation.
+
 ### Development workflow
 
 ```bash
