@@ -38,6 +38,8 @@ All notable changes to this project will be documented in this file.
   main-process watcher aware of the new source file.
 - Renderer now force-dismisses the ZIP estimate toast when analysis or packing begins, keeping the notification hidden during
   heavy work and final states.
+- Electron stereo splitter now processes drain events sequentially, preventing `MaxListenersExceededWarning` spam during
+  packaging.
 - Electron packaging probes audio headers to split only real stereo WAV (PCM/IEEE float) files, logging and skipping malformed inputs without crashing the pack flow.
 - Renderer pack badges and estimate chips now pull localized copy via `tNS('pack', ...)`, eliminating raw key output in the table.
 - Renderer silences the ZIP estimate toast during the post-pack analysis cycle, preventing the notification from reappearing until the next manual scan or size change.

@@ -97,48 +97,75 @@ export async function splitStereoWav(
 
     await new Promise<void>((resolve, reject) => {
       let remainder = Buffer.alloc(0);
-      const handleError = (error: Error) => {
+      let processing: Promise<void> = Promise.resolve();
+      let settled = false;
+
+      const handleFailure = (error: Error) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
         readStream.destroy();
         leftStream.destroy();
         rightStream.destroy();
         reject(error);
       };
 
-      readStream.on('data', (chunk) => {
-        const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, 'binary');
-        const combined = remainder.length > 0 ? Buffer.concat([remainder, bufferChunk]) : bufferChunk;
+      const processChunk = async (chunk: Buffer) => {
+        const combined = remainder.length > 0 ? Buffer.concat([remainder, chunk]) : chunk;
         const usableLength = Math.floor(combined.length / frameSize) * frameSize;
         remainder = combined.subarray(usableLength);
+
         for (let offset = 0; offset < usableLength; offset += frameSize) {
           const leftSample = combined.subarray(offset, offset + bytesPerSample);
           const rightSample = combined.subarray(offset + bytesPerSample, offset + frameSize);
-          if (!leftStream.write(leftSample) || !rightStream.write(rightSample)) {
-            readStream.pause();
-            const resume = () => {
-              if (!leftStream.writableNeedDrain && !rightStream.writableNeedDrain) {
-                readStream.resume();
-                leftStream.off('drain', resume);
-                rightStream.off('drain', resume);
-              }
-            };
-            leftStream.on('drain', resume);
-            rightStream.on('drain', resume);
+
+          if (!leftStream.write(leftSample)) {
+            await once(leftStream, 'drain');
+          }
+          if (!rightStream.write(rightSample)) {
+            await once(rightStream, 'drain');
           }
         }
+      };
+
+      const handleStreamError = (error: Error | unknown) => {
+        const err = error instanceof Error ? error : new Error(String(error));
+        handleFailure(err);
+      };
+
+      readStream.on('data', (chunk) => {
+        readStream.pause();
+        const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string, 'binary');
+        processing = processing
+          .then(() => processChunk(bufferChunk))
+          .then(() => {
+            if (!settled) {
+              readStream.resume();
+            }
+          });
+
+        processing.catch(handleStreamError);
       });
 
       readStream.on('end', () => {
-        if (remainder.length > 0) {
-          console.warn('Dropping incomplete WAV frame during split', filePath);
-        }
-        Promise.all([ensureStreamClosed(leftStream), ensureStreamClosed(rightStream)])
-          .then(() => resolve())
-          .catch(reject);
+        processing
+          .then(async () => {
+            if (remainder.length > 0) {
+              console.warn('Dropping incomplete WAV frame during split', filePath);
+            }
+            await Promise.all([ensureStreamClosed(leftStream), ensureStreamClosed(rightStream)]);
+            if (!settled) {
+              settled = true;
+              resolve();
+            }
+          })
+          .catch(handleStreamError);
       });
 
-      readStream.on('error', handleError);
-      leftStream.on('error', handleError);
-      rightStream.on('error', handleError);
+      readStream.on('error', handleStreamError);
+      leftStream.on('error', handleStreamError);
+      rightStream.on('error', handleStreamError);
     });
 
     const [leftStats, rightStats] = await Promise.all([fs.promises.stat(leftPath), fs.promises.stat(rightPath)]);
