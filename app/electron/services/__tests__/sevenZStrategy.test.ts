@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
+import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sevenZSplitStrategy } from '../pack/sevenZStrategy';
 import { normalizePackMetadata } from '../packMetadata';
@@ -12,21 +14,37 @@ vi.mock('../pack/binaries', () => ({
   resolve7zBinary: vi.fn()
 }));
 
-vi.mock('execa', () => ({
-  execa: vi.fn()
+vi.mock('node:child_process', () => ({
+  spawn: vi.fn()
 }));
 
 import { resolve7zBinary as resolve7zBinaryMock } from '../pack/binaries';
-import { execa as execaMock } from 'execa';
+import { spawn as spawnMock } from 'node:child_process';
 
 const resolve7zBinary = vi.mocked(resolve7zBinaryMock);
-const execa = vi.mocked(execaMock);
+const spawn = vi.mocked(spawnMock);
+
+function createMockChildProcess() {
+  const stdout = new PassThrough();
+  const stderr = new PassThrough();
+  const stdin = new PassThrough();
+  const child = new EventEmitter() as unknown as ChildProcessWithoutNullStreams;
+  Object.assign(child, {
+    stdout,
+    stderr,
+    stdin,
+    pid: 1234,
+    kill: vi.fn()
+  });
+  return { child, stdout, stderr };
+}
 
 describe('sevenZSplitStrategy', () => {
   const tempDirs: string[] = [];
 
   afterEach(async () => {
     vi.resetAllMocks();
+    spawn.mockReset();
     while (tempDirs.length > 0) {
       const dir = tempDirs.pop();
       if (dir) {
@@ -56,17 +74,20 @@ describe('sevenZSplitStrategy', () => {
     const reporter = createProgressReporter((event) => events.push(event));
 
     resolve7zBinary.mockReturnValue('/bin/7zz');
-    execa.mockImplementation(() => {
+    spawn.mockImplementation(() => {
       expect(fs.existsSync(staleArchive)).toBe(false);
       expect(fs.existsSync(staleVolume)).toBe(false);
-      const emitter = new EventEmitter();
-      const promise = (async () => {
-        emitter.emit('data', Buffer.from('10%'));
-        await fs.promises.writeFile(path.join(tempRoot, 'stems.7z'), Buffer.from('archive'));
-        return { exitCode: 0, stderr: '' };
-      })();
-      Object.assign(promise, { stdout: emitter });
-      return promise as unknown as ReturnType<typeof execa>;
+      const { child, stdout, stderr } = createMockChildProcess();
+      setTimeout(() => {
+        stdout.write(' 10%\r');
+        stdout.write(' 40%\n');
+        stderr.write(' 80%\r');
+        stdout.end();
+        stderr.end();
+        fs.writeFileSync(path.join(tempRoot, 'stems.7z'), Buffer.from('archive'));
+        child.emit('close', 0);
+      }, 10);
+      return child;
     });
 
     const context: PackStrategyContext = {
@@ -89,12 +110,13 @@ describe('sevenZSplitStrategy', () => {
     const result = await sevenZSplitStrategy(context);
 
     expect(resolve7zBinary).toHaveBeenCalledTimes(1);
-    expect(execa).toHaveBeenCalledTimes(1);
-    const [, args] = execa.mock.calls[0];
+    expect(spawn).toHaveBeenCalledTimes(1);
+    const [, args, spawnOptions] = spawn.mock.calls[0];
     expect(args).toContain('-t7z');
     expect(args).toContain('-v50m');
     expect(args).toContain('-y');
     expect(args).toContain(path.join(tempRoot, 'stems.7z'));
+    expect(spawnOptions?.stdio).toEqual(['ignore', 'pipe', 'pipe']);
     expect(events.find((event) => event.state === 'packing')).toBeTruthy();
     expect(events.at(-1)?.state).toBe('done');
     expect(result.archives).toEqual([path.join(tempRoot, 'stems.7z')]);
@@ -120,19 +142,20 @@ describe('sevenZSplitStrategy', () => {
     resolve7zBinary.mockReturnValue('/bin/7zz');
     const stagedPaths: string[] = [];
 
-    execa.mockImplementation(() => {
+    spawn.mockImplementation(() => {
       expect(fs.existsSync(leftSource)).toBe(false);
       expect(fs.existsSync(rightSource)).toBe(false);
       expect(fs.existsSync(path.join(tempRoot, 'beat-L.wav'))).toBe(true);
       expect(fs.existsSync(path.join(tempRoot, 'beat-R.wav'))).toBe(true);
-      const emitter = new EventEmitter();
-      const promise = (async () => {
-        emitter.emit('data', Buffer.from('25%'));
-        await fs.promises.writeFile(path.join(tempRoot, 'stems.7z'), Buffer.from('archive'));
-        return { exitCode: 0, stderr: '' };
-      })();
-      Object.assign(promise, { stdout: emitter });
-      return promise as unknown as ReturnType<typeof execa>;
+      const { child, stdout, stderr } = createMockChildProcess();
+      setTimeout(() => {
+        stdout.write(' 25%\r');
+        stdout.end();
+        stderr.end();
+        fs.writeFileSync(path.join(tempRoot, 'stems.7z'), Buffer.from('archive'));
+        child.emit('close', 0);
+      }, 10);
+      return child;
     });
 
     const context: PackStrategyContext = {
@@ -159,12 +182,12 @@ describe('sevenZSplitStrategy', () => {
     const result = await sevenZSplitStrategy(context);
 
     expect(resolve7zBinary).toHaveBeenCalledTimes(1);
-    expect(execa).toHaveBeenCalledTimes(1);
+    expect(spawn).toHaveBeenCalledTimes(1);
     expect(stagedPaths).toEqual([
       path.join(tempRoot, 'beat-L.wav'),
       path.join(tempRoot, 'beat-R.wav')
     ]);
-    const [, args] = execa.mock.calls[0];
+    const [, args] = spawn.mock.calls[0];
     expect(args).toContain('beat-L.wav');
     expect(args).toContain('beat-R.wav');
     expect(result.archives).toEqual([path.join(tempRoot, 'stems.7z')]);

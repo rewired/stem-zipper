@@ -1,5 +1,7 @@
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import readline from 'node:readline';
 import { resolve7zBinary } from './binaries';
 import { createMetadataEntries, STAMP_FILENAME } from './metadata';
 import { expandFiles } from './expandFiles';
@@ -12,8 +14,9 @@ function clampVolumeSize(value: number): number {
   return Math.max(10, Math.floor(value));
 }
 
-function parseProgressLine(line: string): number | null {
-  const match = line.match(/(\d+)%/);
+export function parseProgressLine(line: string): number | null {
+  const sanitized = line.replace(/\r/g, '');
+  const match = sanitized.match(/(\d+)\s*%/);
   if (!match) {
     return null;
   }
@@ -22,6 +25,140 @@ function parseProgressLine(line: string): number | null {
     return null;
   }
   return Math.max(0, Math.min(percent, 100));
+}
+
+interface Run7zOptions {
+  cwd: string;
+  heartbeatMs?: number;
+  onPercent: (percent: number) => void;
+}
+
+export async function run7zWithProgress(
+  binary: string,
+  args: string[],
+  options: Run7zOptions
+): Promise<void> {
+  const heartbeatMs = options.heartbeatMs ?? 2000;
+
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(binary, args, {
+      cwd: options.cwd,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+
+    let lastPercent: number | undefined;
+    const nonProgressMessages: string[] = [];
+    let settled = false;
+
+    const cleanup: Array<() => void> = [];
+    let heartbeatTimer: NodeJS.Timeout | undefined;
+
+    const clearHeartbeat = () => {
+      if (heartbeatTimer) {
+        clearTimeout(heartbeatTimer);
+        heartbeatTimer = undefined;
+      }
+    };
+
+    cleanup.push(clearHeartbeat);
+
+    const emitPercent = (percent: number) => {
+      lastPercent = percent;
+      options.onPercent(percent);
+      scheduleHeartbeat();
+    };
+
+    const handleLine = (rawLine: string, trackForError: boolean) => {
+      const percent = parseProgressLine(rawLine);
+      if (percent !== null) {
+        emitPercent(percent);
+        return;
+      }
+
+      if (!trackForError) {
+        return;
+      }
+
+      const cleaned = rawLine.replace(/\r/g, '').trim();
+      if (cleaned.length > 0) {
+        nonProgressMessages.push(cleaned);
+      }
+    };
+
+    const scheduleHeartbeat = () => {
+      clearHeartbeat();
+      if (lastPercent === undefined) {
+        return;
+      }
+      heartbeatTimer = setTimeout(() => {
+        if (lastPercent !== undefined) {
+          options.onPercent(lastPercent);
+          scheduleHeartbeat();
+        }
+      }, heartbeatMs);
+      heartbeatTimer.unref?.();
+    };
+
+    const attachReader = (stream: NodeJS.ReadableStream | null, trackForError: boolean) => {
+      if (!stream) {
+        return;
+      }
+      let pending = '';
+      let onData: ((chunk: Buffer) => void) | undefined;
+      if (trackForError) {
+        onData = (chunk: Buffer) => {
+          pending += chunk.toString();
+        };
+        stream.on('data', onData);
+        cleanup.push(() => {
+          if (onData) {
+            stream.off('data', onData);
+          }
+        });
+      }
+      const reader = readline.createInterface({ input: stream, crlfDelay: Infinity });
+      reader.on('line', (line) => handleLine(line, trackForError));
+      if (trackForError) {
+        reader.on('line', () => {
+          pending = '';
+        });
+        reader.once('close', () => {
+          const remainder = pending.replace(/\r/g, '').trim();
+          if (remainder.length > 0) {
+            nonProgressMessages.push(remainder);
+          }
+        });
+      }
+      cleanup.push(() => reader.close());
+    };
+
+    attachReader(child.stdout, false);
+    attachReader(child.stderr, true);
+
+    child.once('error', (error) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup.forEach((close) => close());
+      reject(error);
+    });
+
+    child.once('close', (code) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup.forEach((close) => close());
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      const message = nonProgressMessages.join('\n').trim();
+      reject(new Error(message || 'error_7z_spawn_failed'));
+    });
+  });
 }
 
 async function removeExistingArchives(outputDir: string): Promise<void> {
@@ -157,8 +294,6 @@ export const sevenZSplitStrategy: PackStrategy = async (context) => {
   context.progress.tick({ state: 'preparing', percent: 100 });
   context.progress.tick({ state: 'packing', percent: 0, currentArchive: archiveName });
 
-  let stdoutBuffer = '';
-
   try {
     const binary = resolve7zBinary();
     const stagedFiles = await stageFilesForArchive(
@@ -182,26 +317,11 @@ export const sevenZSplitStrategy: PackStrategy = async (context) => {
       archivePath,
       ...filesToPack
     ];
-    const { execa } = await import('execa');
-    const subprocess = execa(binary, args, { cwd: context.options.outputDir });
-    if (subprocess.stdout) {
-      subprocess.stdout.on('data', (chunk: Buffer) => {
-        stdoutBuffer += chunk.toString();
-        const lines = stdoutBuffer.split(/\r?\n/);
-        stdoutBuffer = lines.pop() ?? '';
-        for (const line of lines) {
-          const percent = parseProgressLine(line);
-          if (percent !== null) {
-            context.progress.tick({ state: 'packing', percent, currentArchive: archiveName });
-          }
-        }
-      });
-    }
-
-    const result = await subprocess;
-    if (result.exitCode !== 0) {
-      throw new Error(result.stderr || 'error_7z_spawn_failed');
-    }
+    await run7zWithProgress(binary, args, {
+      cwd: context.options.outputDir,
+      onPercent: (percent) =>
+        context.progress.tick({ state: 'packing', percent, currentArchive: archiveName })
+    });
   } catch (error) {
     context.progress.error({
       error: error instanceof Error ? error : String(error),

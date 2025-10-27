@@ -30,5 +30,8 @@ export function resolve7zBinary(): string {
   if (!fs.existsSync(resolved)) {
     throw new Error('error_7z_binary_missing');
   }
+  if (process.env.DEBUG_STEM_ZIPPER === '1') {
+    console.debug('[stem-zipper] resolved 7z binary', resolved);
+  }
   return resolved;
 }
