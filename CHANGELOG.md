@@ -35,6 +35,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- Renderer audio preview modal now allows WaveSurfer to fetch blob URLs under the dev CSP, restoring waveform loads in the
+  strict preview environment.
 - `pnpm run dev` now registers the Electron launcher script again, restoring the
   development workflow after the missing `dev:electron` target regression.
 - Preview launcher now reinstalls Electron binaries automatically, preventing `Electron failed to install correctly` crashes
