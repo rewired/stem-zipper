@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { MockedFunction } from 'vitest';
+import type { SpyInstance } from 'vitest';
 
 
 vi.mock('../resolve7zBinary', () => ({
@@ -59,12 +59,12 @@ const run7zWithProgressMock = vi
   .spyOn(strategyModule, 'run7zWithProgress')
   .mockResolvedValue();
 
-let readdirMock: MockedFunction<typeof fs.promises.readdir>;
-let writeFileMock: MockedFunction<typeof fs.promises.writeFile>;
-let renameMock: MockedFunction<typeof fs.promises.rename>;
-let accessMock: MockedFunction<typeof fs.promises.access>;
-let unlinkMock: MockedFunction<typeof fs.promises.unlink>;
-let copyFileMock: MockedFunction<typeof fs.promises.copyFile>;
+let readdirMock: SpyInstance;
+let writeFileMock: SpyInstance;
+let renameMock: SpyInstance;
+let accessMock: SpyInstance;
+let unlinkMock: SpyInstance;
+let copyFileMock: SpyInstance;
 
 function createContext(): PackStrategyContext {
   return {
@@ -89,7 +89,10 @@ function createContext(): PackStrategyContext {
     },
     progress: {
       start: vi.fn(),
+      setTotal: vi.fn(),
+      addToTotal: vi.fn(),
       tick: vi.fn(),
+      fileStart: vi.fn(),
       fileDone: vi.fn(),
       done: vi.fn(),
       error: vi.fn()
@@ -153,15 +156,17 @@ describe('sevenZ volumes', () => {
   it('sorts multi-volume archives numerically and filters unrelated files', async () => {
     const context = createContext();
     expandFilesMock.mockResolvedValue(context.files);
-    readdirMock.mockResolvedValueOnce([]);
-    readdirMock.mockResolvedValueOnce([
-      createDirent('stems.7z.010'),
-      createDirent('notes.txt'),
-      createDirent('stems.7z.002'),
-      createDirent('stems.7z.001'),
-      createDirent('cover.png'),
-      createDirent('stems.7z.100')
-    ]);
+    readdirMock.mockResolvedValueOnce([] as unknown as fs.Dirent[]);
+    readdirMock.mockResolvedValueOnce(
+      [
+        createDirent('stems.7z.010'),
+        createDirent('notes.txt'),
+        createDirent('stems.7z.002'),
+        createDirent('stems.7z.001'),
+        createDirent('cover.png'),
+        createDirent('stems.7z.100')
+      ] as unknown as fs.Dirent[]
+    );
 
     const result = await strategyModule.sevenZSplitStrategy(context);
 
@@ -176,8 +181,8 @@ describe('sevenZ volumes', () => {
   it('returns a single archive path when only stems.7z exists', async () => {
     const context = createContext();
     expandFilesMock.mockResolvedValue(context.files);
-    readdirMock.mockResolvedValueOnce([]);
-    readdirMock.mockResolvedValueOnce([createDirent('stems.7z')]);
+    readdirMock.mockResolvedValueOnce([] as unknown as fs.Dirent[]);
+    readdirMock.mockResolvedValueOnce([createDirent('stems.7z')] as unknown as fs.Dirent[]);
 
     const result = await strategyModule.sevenZSplitStrategy(context);
 
