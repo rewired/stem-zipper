@@ -25,6 +25,7 @@ const binaryName = process.platform === 'win32' ? '7zz.exe' : '7zz';
 const processWithResources = process as NodeJS.Process & { resourcesPath?: string };
 const createdPaths: string[] = [];
 let originalResourcesPath: string | undefined;
+let originalPath: string | undefined;
 let chmodSpy: SpyInstance<
   Parameters<typeof fs.promises.chmod>,
   ReturnType<typeof fs.promises.chmod>
@@ -41,6 +42,7 @@ async function createBinary(baseDir: string): Promise<string> {
 
 beforeEach(() => {
   originalResourcesPath = processWithResources.resourcesPath;
+  originalPath = process.env.PATH;
   chmodSpy = vi.spyOn(fs.promises, 'chmod').mockResolvedValue(undefined);
   mockApp.getAppPath.mockReturnValue(process.cwd());
 });
@@ -48,6 +50,11 @@ beforeEach(() => {
 afterEach(async () => {
   delete process.env.STEM_ZIPPER_7Z_PATH;
   delete process.env.DEBUG_STEM_ZIPPER;
+  if (originalPath === undefined) {
+    delete process.env.PATH;
+  } else {
+    process.env.PATH = originalPath;
+  }
   mockApp.isPackaged = false;
   mockApp.getAppPath.mockReset();
   if (originalResourcesPath === undefined) {
@@ -122,7 +129,23 @@ describe('resolve7zBinary', () => {
     await fs.promises.rm(resourcesRoot, { recursive: true, force: true });
   });
 
-  it('ignores EROFS errors when adjusting permissions', async () => {
+  it('falls back to binaries available on the system PATH', async () => {
+    const resourcesRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'stem-zipper-7z-path-'));
+    processWithResources.resourcesPath = resourcesRoot;
+    mockApp.isPackaged = true;
+
+    const systemDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'stem-zipper-7z-system-'));
+    const binaryPath = path.join(systemDir, binaryName);
+    await fs.promises.writeFile(binaryPath, Buffer.from('system'));
+    process.env.PATH = `${systemDir}${path.delimiter}${originalPath ?? ''}`;
+
+    await expect(resolve7zBinary()).resolves.toBe(binaryPath);
+
+    await fs.promises.rm(resourcesRoot, { recursive: true, force: true });
+    await fs.promises.rm(systemDir, { recursive: true, force: true });
+  });
+
+  it('ignores permission errors when adjusting permissions', async () => {
     const resourcesRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'stem-zipper-7z-erofs-'));
     processWithResources.resourcesPath = resourcesRoot;
     mockApp.isPackaged = true;
@@ -130,7 +153,9 @@ describe('resolve7zBinary', () => {
     const binaryPath = await createBinary(resourcesRoot);
 
     chmodSpy.mockRejectedValueOnce(Object.assign(new Error('read-only'), { code: 'EROFS' }));
+    chmodSpy.mockRejectedValueOnce(Object.assign(new Error('nope'), { code: 'EACCES' }));
 
+    await expect(resolve7zBinary()).resolves.toBe(binaryPath);
     await expect(resolve7zBinary()).resolves.toBe(binaryPath);
     await fs.promises.rm(resourcesRoot, { recursive: true, force: true });
   });

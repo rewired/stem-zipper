@@ -36,8 +36,11 @@ async function ensureExecutablePermissions(filePath: string): Promise<void> {
   try {
     await fs.promises.chmod(filePath, 0o755);
   } catch (error) {
-    if (isErrnoException(error) && error.code === 'EROFS') {
-      logDebug('Skipping chmod on read-only filesystem', filePath);
+    if (
+      isErrnoException(error) &&
+      (error.code === 'EROFS' || error.code === 'EACCES' || error.code === 'EPERM')
+    ) {
+      logDebug('Skipping chmod on read-only or permission-restricted filesystem', filePath);
       return;
     }
     console.warn('Failed to adjust 7z binary permissions', filePath, error);
@@ -87,7 +90,38 @@ function resolveCandidates(): string[] {
   }
   const baseCandidates = resolveBaseCandidates(app.isPackaged);
   candidates.push(...baseCandidates);
+  const systemCandidates = resolveSystemCandidates();
+  candidates.push(...systemCandidates);
   return candidates;
+}
+
+function resolveSystemCandidates(): string[] {
+  const pathEnv = process.env.PATH;
+  if (!pathEnv) {
+    return [];
+  }
+
+  const binaryNames = new Set<string>([resolveBinaryName()]);
+  if (process.platform === 'win32') {
+    binaryNames.add('7z.exe');
+    binaryNames.add('7za.exe');
+  } else {
+    binaryNames.add('7z');
+    binaryNames.add('7za');
+  }
+
+  const systemCandidates = new Set<string>();
+  for (const segment of pathEnv.split(path.delimiter)) {
+    if (!segment) {
+      continue;
+    }
+    const dir = path.resolve(segment);
+    for (const name of binaryNames) {
+      systemCandidates.add(path.join(dir, name));
+    }
+  }
+
+  return Array.from(systemCandidates);
 }
 
 export async function resolve7zBinary(): Promise<string> {
