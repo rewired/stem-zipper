@@ -51,7 +51,7 @@ afterEach(async () => {
   mockApp.isPackaged = false;
   mockApp.getAppPath.mockReset();
   if (originalResourcesPath === undefined) {
-    delete processWithResources.resourcesPath;
+    Reflect.deleteProperty(processWithResources, 'resourcesPath');
   } else {
     processWithResources.resourcesPath = originalResourcesPath;
   }
