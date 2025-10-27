@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createProgressReporter } from '../pack/progress';
 import { expandFiles } from '../pack/expandFiles';
 import { splitStereoWav } from '../pack/splitStereo';
+import type { SplitStereoWavOptions } from '../pack/splitStereo';
 import type { ProgressEvent, SizedFile } from '../pack/types';
 import * as audioProbeModule from '../audioProbe';
 
@@ -58,12 +59,15 @@ describe('splitStereoWav progress integration', () => {
       path: files[0]?.path
     });
 
-    const splitter = vi.fn(async (filePath: string) => {
+    const splitter = vi.fn<
+      [filePath: string, options?: SplitStereoWavOptions],
+      Promise<SizedFile[]>
+    >(async (filePath: string) => {
       const base = path.basename(filePath, '.wav');
       return [
         { path: `/tmp/${base}-L.wav`, size: 1_000_000, extension: '.wav' },
         { path: `/tmp/${base}-R.wav`, size: 1_000_000, extension: '.wav' }
-      ];
+      ] satisfies SizedFile[];
     });
 
     const events: ProgressEvent[] = [];
@@ -94,11 +98,16 @@ describe('splitStereoWav progress integration', () => {
       path: file.path
     });
 
-    const splitter = vi.fn(async () => [
-      { path: '/tmp/oversplit-L.wav', size: 800_000, extension: '.wav' },
-      { path: '/tmp/oversplit-M.wav', size: 800_000, extension: '.wav' },
-      { path: '/tmp/oversplit-R.wav', size: 800_000, extension: '.wav' }
-    ]);
+    const splitter = vi.fn<
+      [filePath: string, options?: SplitStereoWavOptions],
+      Promise<SizedFile[]>
+    >(async () =>
+      [
+        { path: '/tmp/oversplit-L.wav', size: 800_000, extension: '.wav' },
+        { path: '/tmp/oversplit-M.wav', size: 800_000, extension: '.wav' },
+        { path: '/tmp/oversplit-R.wav', size: 800_000, extension: '.wav' }
+      ] satisfies SizedFile[]
+    );
 
     const events: ProgressEvent[] = [];
     const reporter = createProgressReporter((event) => events.push(event));

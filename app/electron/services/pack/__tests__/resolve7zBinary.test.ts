@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SpyInstance } from 'vitest';
 
 vi.mock('electron', () => ({
   app: {
@@ -24,7 +25,7 @@ const binaryName = process.platform === 'win32' ? '7zz.exe' : '7zz';
 const processWithResources = process as NodeJS.Process & { resourcesPath?: string };
 const createdPaths: string[] = [];
 let originalResourcesPath: string | undefined;
-let chmodSpy: ReturnType<typeof vi.spyOn<typeof fs.promises, 'chmod'>>;
+let chmodSpy: SpyInstance<[path: fs.PathLike, mode?: number | undefined], Promise<void>>;
 
 async function createBinary(baseDir: string): Promise<string> {
   const binaryDir = path.join(baseDir, 'bin', platformDir, process.arch);
@@ -47,7 +48,7 @@ afterEach(async () => {
   mockApp.isPackaged = false;
   mockApp.getAppPath.mockReset();
   if (originalResourcesPath === undefined) {
-    delete processWithResources.resourcesPath;
+    processWithResources.resourcesPath = undefined;
   } else {
     processWithResources.resourcesPath = originalResourcesPath;
   }
