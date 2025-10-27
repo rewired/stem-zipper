@@ -36,6 +36,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- Icon generation script now resolves project paths relative to the repository root, restoring `pnpm run icons` when invoked
+  from the `app` workspace on Windows terminals.
 - Electron pack handler now emits localized warning toasts and error progress updates when 7z/split operations fail,
   keeping the renderer out of indeterminate states.
 - Electron 7z split pack strategy now reports all generated volume parts in

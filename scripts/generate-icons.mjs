@@ -1,11 +1,14 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import sharp from 'sharp';
 import iconGen from 'icon-gen';
 
-const SRC_SVG = path.resolve('docs/graphics/icon.svg');
-const OUT = path.resolve('app/resources/icons');
-const TMP = path.resolve('app/resources/icons/__tmp_png');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT_DIR = path.resolve(__dirname, '..');
+const SRC_SVG = path.join(ROOT_DIR, 'docs/graphics/icon.svg');
+const OUT = path.join(ROOT_DIR, 'app/resources/icons');
+const TMP = path.join(OUT, '__tmp_png');
 
 const LINUX_SIZES = [16, 24, 32, 48, 64, 128, 256, 512, 1024];
 
