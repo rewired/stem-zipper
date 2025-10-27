@@ -127,12 +127,12 @@ describe('sevenZ volumes', () => {
 
     expandFilesMock.mockResolvedValue(createContext().files);
     run7zWithProgressMock.mockClear();
-    run7zWithProgressMock.mockResolvedValue();
+    run7zWithProgressMock.mockResolvedValue(undefined);
     accessMock.mockRejectedValue(Object.assign(new Error('missing'), { code: 'ENOENT' }));
-    renameMock.mockResolvedValue();
-    writeFileMock.mockResolvedValue();
-    unlinkMock.mockResolvedValue();
-    copyFileMock.mockResolvedValue();
+    renameMock.mockResolvedValue(undefined);
+    writeFileMock.mockResolvedValue(undefined);
+    unlinkMock.mockResolvedValue(undefined);
+    copyFileMock.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
