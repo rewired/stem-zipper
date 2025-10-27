@@ -55,7 +55,7 @@ export function PackControls({
             type="button"
             onClick={onPack}
             disabled={!canPack || isPacking}
-            className="btn btn-success focus-visible:ring-offset-slate-950"
+            className="btn btn-success font-semibold text-slate-950 shadow-lg transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 active:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed"
             aria-label={packLabel}
           >
             <MaterialIcon icon="inventory_2" />

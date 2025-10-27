@@ -52,7 +52,7 @@ describe('FileTable', () => {
         onToggleRow={handleToggleRow}
         onToggleAll={handleToggleAll}
         selectLabel="Select"
-        toggleAllLabel="Toggle all"
+        selectAllLabel="Select all"
         estimateLabel="Estimate"
         masterChecked={false}
         masterIndeterminate={false}
@@ -61,8 +61,8 @@ describe('FileTable', () => {
       />
     );
 
-    const masterSwitch = screen.getByRole('switch', { name: 'Toggle all' });
-    fireEvent.click(masterSwitch);
+    const masterCheckbox = screen.getByRole('checkbox', { name: 'Select all' });
+    fireEvent.click(masterCheckbox);
     expect(handleToggleAll).toHaveBeenCalledTimes(1);
 
     const rowCheckbox = screen.getByRole('checkbox', { name: 'Select bass.wav' });
@@ -87,7 +87,7 @@ describe('FileTable', () => {
         onToggleRow={() => {}}
         onToggleAll={() => {}}
         selectLabel="Select"
-        toggleAllLabel="Toggle all"
+        selectAllLabel="Select all"
         estimateLabel="Estimate"
         masterChecked={false}
         masterIndeterminate={false}

@@ -25,9 +25,9 @@ function TestHarness({ files, maxSizeMb }: HarnessProps) {
   }));
 
   const { badges } = useZipEstimator(rows, { maxSizeMb });
-  const badgeLabel = formatMessage('en', 'badge_no_zip_gain');
-  const badgeHint = formatMessage('en', 'badge_no_zip_gain_hint');
-  const volumeLabel = formatMessage('en', 'badge_consider_7z_volumes');
+  const badgeLabel = formatMessage('en', 'pack_badge_no_zip_gain');
+  const badgeHint = formatMessage('en', 'pack_badge_no_zip_gain_hint');
+  const volumeLabel = formatMessage('en', 'pack_badge_try_7z_volumes');
 
   return (
     <FileTable
@@ -69,7 +69,7 @@ function TestHarness({ files, maxSizeMb }: HarnessProps) {
       onToggleRow={() => {}}
       onToggleAll={() => {}}
       selectLabel="Select"
-      toggleAllLabel="Toggle all"
+      selectAllLabel="Select all"
       estimateLabel="Estimate"
       masterChecked
       masterIndeterminate={false}

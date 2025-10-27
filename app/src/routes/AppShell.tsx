@@ -71,11 +71,11 @@ export function AppShell() {
 
   const actionNames = useMemo(
     () => ({
-      normal: t('pack_option_normal'),
-      split_mono: t('pack_option_split_mono'),
-      split_zip: t('pack_option_split_zip')
+      normal: tNS('pack', 'option_normal', undefined, locale),
+      split_mono: tNS('pack', 'action_split_mono', undefined, locale),
+      split_zip: tNS('pack', 'action_split_zip', undefined, locale)
     }),
-    [t]
+    [locale]
   );
 
   const formatSize = useMemo(() => {
@@ -87,9 +87,18 @@ export function AppShell() {
   }, [locale]);
 
   const { badges } = useZipEstimator(files, { maxSizeMb: maxSize });
-  const noZipGainLabel = useMemo(() => t('badge_no_zip_gain'), [t]);
-  const noZipGainHint = useMemo(() => t('badge_no_zip_gain_hint'), [t]);
-  const considerVolumesLabel = useMemo(() => t('badge_consider_7z_volumes'), [t]);
+  const noZipGainLabel = useMemo(
+    () => tNS('pack', 'badge_no_zip_gain', undefined, locale),
+    [locale]
+  );
+  const noZipGainHint = useMemo(
+    () => tNS('pack', 'badge_no_zip_gain_hint', undefined, locale),
+    [locale]
+  );
+  const considerVolumesLabel = useMemo(
+    () => tNS('pack', 'badge_try_7z_volumes', undefined, locale),
+    [locale]
+  );
 
   const packLabel = useMemo(
     () => tNS('app', 'btn_pack_now', undefined, locale),
@@ -177,7 +186,7 @@ export function AppShell() {
   const masterDisabled = eligibleCount === 0;
 
   const selectColumnLabel = useMemo(() => tNS('pack', 'table_col_select', undefined, locale), [locale]);
-  const toggleAllLabel = useMemo(() => tNS('pack', 'table_header_toggle_all', undefined, locale), [locale]);
+  const selectAllLabel = useMemo(() => tNS('pack', 'table_select_all', undefined, locale), [locale]);
   const estimateColumnLabel = useMemo(() => tNS('pack', 'table_col_estimate', undefined, locale), [locale]);
   const formatTooltipReason = useCallback(
     (reason: string) => tNS('pack', 'tooltip_unselectable', { reason }, locale),
@@ -359,7 +368,7 @@ export function AppShell() {
             onToggleRow={handleToggleRow}
             onToggleAll={handleToggleAll}
             selectLabel={selectColumnLabel}
-            toggleAllLabel={toggleAllLabel}
+            selectAllLabel={selectAllLabel}
             estimateLabel={estimateColumnLabel}
             masterChecked={masterChecked}
             masterIndeterminate={masterIndeterminate}
