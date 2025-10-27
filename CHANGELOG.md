@@ -30,6 +30,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- Electron 7z split pack strategy now reports all generated volume parts in
+  numeric order, ensuring the renderer receives every `stems.7z` segment.
 - Electron 7z packing progress now parses stdout/stderr percentages, tolerates CR updates, and heartbeats stale output to keep
   the progress bar responsive across platforms.
 - Electron 7z split pack strategy now loads `execa` via a dynamic import, restoring packaging on

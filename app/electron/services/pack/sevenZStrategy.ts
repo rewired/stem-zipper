@@ -207,6 +207,10 @@ async function cleanupExtras(paths: string[]): Promise<void> {
   );
 }
 
+export function is7zVolume(name: string): boolean {
+  return name === 'stems.7z' || /^stems\.7z\.\d{3}$/u.test(name);
+}
+
 function isErrnoException(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && typeof (error as NodeJS.ErrnoException).code === 'string';
 }
@@ -340,10 +344,17 @@ export const sevenZSplitStrategy: PackStrategy = async (context) => {
   context.progress.tick({ state: 'finalizing', percent: 100, currentArchive: archiveName });
   context.progress.done({ message: 'pack_progress_done' });
 
-  const directoryEntries = await fs.promises.readdir(context.options.outputDir, { withFileTypes: true });
+  const directoryEntries = await fs.promises.readdir(context.options.outputDir, {
+    withFileTypes: true
+  });
   const archives = directoryEntries
-    .filter((entry) => entry.isFile() && entry.name.startsWith('stems.7z'))
-    .map((entry) => path.join(context.options.outputDir, entry.name));
+    .filter((entry) => entry.isFile() && is7zVolume(entry.name))
+    .map((entry) => path.join(context.options.outputDir, entry.name))
+    .sort((left, right) =>
+      path
+        .basename(left)
+        .localeCompare(path.basename(right), undefined, { numeric: true })
+    );
 
   return { archives };
 };
