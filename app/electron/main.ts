@@ -122,8 +122,8 @@ async function createWindow(): Promise<void> {
   const config = getRuntimeConfig();
   const preload = await resolvePreloadPath();
   mainWindow = new BrowserWindow({
-    width: 1120,
-    height: 720,
+    width: 1600,
+    height: 1000,
     minWidth: 960,
     minHeight: 640,
     backgroundColor: '#0f172a',
