@@ -2,7 +2,7 @@
   "name": "stem-zipper-electron",
   "version": "1.0.2",
   "description": "Electron desktop app for preparing ccMixter-ready stem ZIP archives.",
-  "author": "Bj\u00f6rn Ahlers",
+  "author": "Björn Ahlers",
   "private": true,
   "main": "dist-electron/main/electron/main.js",
   "license": "MIT",
@@ -18,8 +18,8 @@
     "electron": "wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 node scripts/launch-electron.cjs .",
     "build": "pnpm run build:renderer && pnpm run build:main && pnpm run build:preload",
     "package": "node scripts/package.cjs",
-    "package:win": "pnpm run clean && pnpm run build && electron-builder --win --x64 --publish never",
-    "package:linux": "pnpm run clean && pnpm run build && electron-builder --linux AppImage --x64 --publish never",
+    "package:win": "pnpm run clean && pnpm run build && pnpm run prepack:win && electron-builder --win --x64 --publish never",
+    "package:linux": "pnpm run clean && pnpm run build && pnpm run prepack:linux && electron-builder --linux AppImage --x64 --publish never",
     "build:renderer": "vite build",
     "build:main": "tsc --project electron/tsconfig.main.json",
     "build:preload": "tsc --project electron/tsconfig.preload.json",
@@ -30,7 +30,12 @@
     "licenses:txt": "pnpm dlx license-checker-rseidelsohn --production --relativeLicensePath --out THIRD_PARTY_LICENSES.txt",
     "licenses:guard": "pnpm dlx license-checker-rseidelsohn --production --onlyAllow='MIT;BSD-2-Clause;BSD-3-Clause;Apache-2.0;ISC;CC0-1.0'",
     "notices:collect": "node scripts/collect-notices.mjs",
-    "prepack": "pnpm run licenses:txt && pnpm run notices:collect"
+    "prepack": "pnpm run licenses:txt && pnpm run notices:collect",
+    "icons": "node ../scripts/generate-icons.mjs",
+    "prepack:win": "pnpm icons",
+    "prepack:mac": "pnpm icons",
+    "prepack:linux": "pnpm icons",
+    "package:mac": "pnpm run clean && pnpm run build && pnpm run prepack:mac && electron-builder --mac --x64 --publish never"
   },
   "dependencies": {
     "buffer-crc32": "^1.0.0",
@@ -172,13 +177,20 @@
             "x64"
           ]
         }
-      ]
+      ],
+      "icon": "resources/icons/win/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "license": "LICENSE"
+    },
+    "mac": {
+      "icon": "resources/icons/mac/icon.icns"
+    },
+    "linux": {
+      "icon": "resources/icons/linux"
     }
   },
   "packageManager": "pnpm@10.19.0"
