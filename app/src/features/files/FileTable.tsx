@@ -19,6 +19,7 @@ interface FileTableProps {
   onToggleAll: () => void;
   selectLabel: string;
   selectAllLabel: string;
+  previewLabel: string;
   estimateLabel: string;
   masterChecked: boolean;
   masterIndeterminate: boolean;
@@ -43,6 +44,7 @@ export function FileTable({
   onToggleAll,
   selectLabel,
   selectAllLabel,
+  previewLabel,
   estimateLabel,
   masterChecked,
   masterIndeterminate,
@@ -101,6 +103,9 @@ export function FileTable({
                 />
               </div>
             </th>
+            <th scope="col" className="w-12 px-4 py-3 text-center">
+              <span className="sr-only">{previewLabel}</span>
+            </th>
             <th
               scope="col"
               className="w-5/12 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400"
@@ -136,6 +141,7 @@ export function FileTable({
               renderEstimate={renderEstimate}
               onToggle={onToggleRow}
               selectLabel={selectLabel}
+              previewLabel={previewLabel}
               formatTooltip={formatTooltip}
               splitMonoHint={splitMonoHint}
             />

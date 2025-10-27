@@ -2,6 +2,8 @@ import clsx from 'clsx';
 import type { ReactNode } from 'react';
 import { MaterialIcon } from '../../components/icons/MaterialIcon';
 import type { FileRow as FileRowModel } from '../../types/fileRow';
+import { usePlayer } from '../player/PlayerProvider';
+import { isPreviewable } from '../player/previewUtils';
 
 interface FileRowProps {
   file: FileRowModel;
@@ -12,6 +14,7 @@ interface FileRowProps {
   renderEstimate?: (file: FileRowModel) => ReactNode;
   onToggle: (fileId: string) => void;
   selectLabel: string;
+  previewLabel: string;
   formatTooltip: (reason: string) => string;
   splitMonoHint: string;
 }
@@ -25,12 +28,29 @@ export function FileRow({
   renderEstimate,
   onToggle,
   selectLabel,
+  previewLabel,
   formatTooltip,
   splitMonoHint
 }: FileRowProps) {
+  const player = usePlayer();
   const tooltip = file.estimate?.reason ? formatTooltip(file.estimate.reason) : undefined;
   const rowClass = clsx('hover:bg-slate-800/50', !file.selectable && 'opacity-50');
   const checkboxTitle = file.suggest_split_mono ? splitMonoHint : undefined;
+  const previewable = isPreviewable(file);
+  const isActivePreview = previewable && player.isOpen && player.file?.id === file.id;
+  const previewButtonClasses = clsx(
+    'inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-800 text-slate-200 transition hover:bg-slate-700 focus-visible:ring focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900',
+    isActivePreview && 'bg-emerald-600/20 text-emerald-200 hover:bg-emerald-600/30',
+    !previewable && 'cursor-not-allowed opacity-50 hover:bg-slate-800'
+  );
+  const previewTitle = `${previewLabel} ${file.name}`.trim();
+
+  const handlePreviewClick = () => {
+    if (!previewable) {
+      return;
+    }
+    player.open(file);
+  };
 
   return (
     <tr className={rowClass} key={file.id} aria-disabled={!file.selectable}>
@@ -46,6 +66,18 @@ export function FileRow({
             title={checkboxTitle}
           />
         </div>
+      </td>
+      <td className="w-12 px-4 py-3 text-center">
+        <button
+          type="button"
+          onClick={handlePreviewClick}
+          className={previewButtonClasses}
+          disabled={!previewable}
+          aria-label={previewTitle}
+          title={previewTitle}
+        >
+          <MaterialIcon icon="play_arrow" />
+        </button>
       </td>
       <td className="w-5/12 px-4 py-3 text-slate-100">
         <div className="flex items-center justify-between gap-2">

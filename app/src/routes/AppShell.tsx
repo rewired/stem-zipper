@@ -18,6 +18,7 @@ import { FileBadge } from '../components/FileBadge';
 import { DiagOverlay } from '../components/DiagOverlay';
 import { useZipEstimator } from '../hooks/useZipEstimator';
 import type { FileRow } from '../types/fileRow';
+import { PlayerModal } from '../features/player';
 
 export function AppShell() {
   const { locale, files, folderPath, maxSize, setMaxSize, statusText, setFiles } = useAppStore();
@@ -109,6 +110,10 @@ export function AppShell() {
   );
   const splitMonoAria = useMemo(
     () => tNS('pack', 'aria_label_badge_split_mono', undefined, locale),
+    [locale]
+  );
+  const previewLabel = useMemo(
+    () => tNS('player', 'open_preview_button_label', undefined, locale),
     [locale]
   );
 
@@ -398,6 +403,7 @@ export function AppShell() {
             onToggleAll={handleToggleAll}
             selectLabel={selectColumnLabel}
             selectAllLabel={selectAllLabel}
+            previewLabel={previewLabel}
             estimateLabel={estimateColumnLabel}
             masterChecked={masterChecked}
             masterIndeterminate={masterIndeterminate}
@@ -527,6 +533,7 @@ export function AppShell() {
         </div>
       ) : null}
       <DiagOverlay hasElectronAPI={hasElectronAPI} hasRuntimeConfig={hasRuntimeConfig} isDev={isDevMode} />
+      <PlayerModal />
     </div>
   );
 }

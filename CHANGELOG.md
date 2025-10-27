@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [1.0.2 unreleased]
 
 ### Added
+- Renderer file table now includes per-row audio preview launchers with an accessible modal skeleton and keyboard controls.
 - Renderer file table now includes selection checkboxes, a master toggle, and per-row archive estimate badges with ZIP gating
   feedback.
 - Renderer estimated archive column now exposes a localized screen-reader label for improved accessibility.

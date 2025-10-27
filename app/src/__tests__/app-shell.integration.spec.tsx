@@ -8,6 +8,7 @@ import { PackStateProvider } from '../features/pack/usePackState';
 import { AppShell } from '../routes/AppShell';
 import type { FileEntry, PackErrorPayload, PackProgress, PackResult, PackStatusEvent } from '@common/ipc';
 import type { RuntimeConfig } from '@common/runtime';
+import { PlayerProvider } from '../features/player';
 
 const MB = 1024 * 1024;
 
@@ -165,7 +166,9 @@ describe('AppShell integration', () => {
         <AppStoreProvider>
           <MetadataProvider>
             <PackStateProvider>
-              <AppShell />
+              <PlayerProvider>
+                <AppShell />
+              </PlayerProvider>
             </PackStateProvider>
           </MetadataProvider>
         </AppStoreProvider>
