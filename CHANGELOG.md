@@ -30,6 +30,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- Electron 7z split pack strategy now loads `execa` via a dynamic import, restoring packaging on
+  Node 18+ where the dependency ships as ESM-only.
 - Electron 7z pack strategy now clears stale `stems.7z` volumes and forces non-interactive
   overwrites, preventing packing from hanging on overwrite prompts.
 - `pnpm run dev` now registers the Electron launcher script again, restoring the

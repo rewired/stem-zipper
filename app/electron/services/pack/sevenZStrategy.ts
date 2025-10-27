@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { execa } from 'execa';
 import { resolve7zBinary } from './binaries';
 import { createMetadataEntries, STAMP_FILENAME } from './metadata';
 import { expandFiles } from './expandFiles';
@@ -118,6 +117,7 @@ export const sevenZSplitStrategy: PackStrategy = async (context) => {
 
   try {
     const binary = resolve7zBinary();
+    const { execa } = await import('execa');
     const subprocess = execa(binary, args, { cwd: context.options.outputDir });
     if (subprocess.stdout) {
       subprocess.stdout.on('data', (chunk: Buffer) => {
