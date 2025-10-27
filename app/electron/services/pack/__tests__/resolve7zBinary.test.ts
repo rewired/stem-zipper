@@ -119,6 +119,7 @@ describe('resolve7zBinary', () => {
     processWithResources.resourcesPath = resourcesRoot;
     const missingOverride = path.join(os.tmpdir(), 'missing-7z');
     process.env.STEM_ZIPPER_7Z_PATH = missingOverride;
+    process.env.PATH = '';
 
     await expect(resolve7zBinary()).rejects.toMatchObject({
       message: 'pack_error_7z_binary_missing',

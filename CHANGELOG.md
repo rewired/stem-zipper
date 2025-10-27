@@ -36,6 +36,9 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- Electron 7z resolver now enforces executable permissions on every platform and
+  treats Windows-specific `chmod` errors as non-fatal, keeping binary resolution
+  consistent for development and packaged builds.
 - Electron packaging now syncs platform 7-Zip binaries from the `7zip-bin` package during
   `pnpm install`, ensuring installers ship the CLI even on clean machines without a
   system-level 7z installation.

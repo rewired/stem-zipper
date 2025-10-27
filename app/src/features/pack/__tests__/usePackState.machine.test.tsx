@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PackProgress } from '@common/ipc';
+import type { TranslationKey } from '@common/i18n';
 import {
   buildProgressUpdate,
   initialProgressView,
@@ -9,12 +10,15 @@ import {
 } from '../usePackState';
 
 describe('buildProgressUpdate', () => {
-  const translate = vi.fn<(key: string, params?: Record<string, string | number>) => string>(
+  const translateMock = vi.fn<[TranslationKey, Record<string, string | number>?], string>(
     (key, params) => `${key}:${JSON.stringify(params ?? {})}`
   );
 
+  const translate = (key: TranslationKey, params?: Record<string, string | number>) =>
+    params ? translateMock(key, params) : translateMock(key);
+
   beforeEach(() => {
-    translate.mockClear();
+    translateMock.mockClear();
   });
 
   function makeEvent(overrides: Partial<PackProgress> = {}): PackProgress {
@@ -38,7 +42,7 @@ describe('buildProgressUpdate', () => {
       percent: 12,
       label: 'pack_progress_preparing:{"percent":12}'
     });
-    expect(translate).toHaveBeenCalledWith('pack_progress_preparing', { percent: 12 });
+    expect(translateMock).toHaveBeenCalledWith('pack_progress_preparing', { percent: 12 });
   });
 
   it('returns packing updates with archive context when provided', () => {
@@ -57,7 +61,7 @@ describe('buildProgressUpdate', () => {
       label: 'pack_progress_packing:{"name":"Archive A","percent":54}',
       archiveLabel: 'Archive A'
     });
-    expect(translate).toHaveBeenCalledWith('pack_progress_packing', {
+    expect(translateMock).toHaveBeenCalledWith('pack_progress_packing', {
       name: 'Archive A',
       percent: 54
     });
@@ -74,7 +78,7 @@ describe('buildProgressUpdate', () => {
       label: 'pack_progress_packing_generic:{"percent":33}',
       archiveLabel: null
     });
-    expect(translate).toHaveBeenCalledWith('pack_progress_packing_generic', { percent: 33 });
+    expect(translateMock).toHaveBeenCalledWith('pack_progress_packing_generic', { percent: 33 });
   });
 
   it('marks completion with a done label', () => {
@@ -87,7 +91,7 @@ describe('buildProgressUpdate', () => {
       percent: 100,
       label: 'pack_progress_done:{}'
     });
-    expect(translate).toHaveBeenCalledWith('pack_progress_done');
+    expect(translateMock).toHaveBeenCalledWith('pack_progress_done');
   });
 
   it('captures error details', () => {
@@ -101,7 +105,7 @@ describe('buildProgressUpdate', () => {
       label: 'pack_progress_error:{}',
       errorMessage: 'network down'
     });
-    expect(translate).toHaveBeenCalledWith('pack_progress_error');
+    expect(translateMock).toHaveBeenCalledWith('pack_progress_error');
   });
 });
 
