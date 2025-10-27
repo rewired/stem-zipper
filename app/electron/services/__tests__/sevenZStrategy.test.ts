@@ -42,6 +42,10 @@ describe('sevenZSplitStrategy', () => {
     await fs.promises.writeFile(source, Buffer.from('fake-wav'));
 
     const sizedFile: SizedFile = { path: source, size: 8, extension: '.wav' };
+    const staleArchive = path.join(tempRoot, 'stems.7z');
+    const staleVolume = path.join(tempRoot, 'stems.7z.002');
+    await fs.promises.writeFile(staleArchive, Buffer.from('old-archive'));
+    await fs.promises.writeFile(staleVolume, Buffer.from('old-volume'));
     const metadata = normalizePackMetadata({
       title: 'Fixture',
       artist: 'Test Artist',
@@ -53,6 +57,8 @@ describe('sevenZSplitStrategy', () => {
 
     resolve7zBinary.mockReturnValue('/bin/7zz');
     execa.mockImplementation(() => {
+      expect(fs.existsSync(staleArchive)).toBe(false);
+      expect(fs.existsSync(staleVolume)).toBe(false);
       const emitter = new EventEmitter();
       const promise = (async () => {
         emitter.emit('data', Buffer.from('10%'));
@@ -87,6 +93,7 @@ describe('sevenZSplitStrategy', () => {
     const [, args] = execa.mock.calls[0];
     expect(args).toContain('-t7z');
     expect(args).toContain('-v50m');
+    expect(args).toContain('-y');
     expect(args).toContain(path.join(tempRoot, 'stems.7z'));
     expect(events.find((event) => event.state === 'packing')).toBeTruthy();
     expect(events.at(-1)?.state).toBe('done');
