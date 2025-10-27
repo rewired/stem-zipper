@@ -76,7 +76,8 @@ describe('sevenZSplitStrategy', () => {
       },
       progress: reporter,
       extras: [],
-      emitToast: undefined
+      emitToast: undefined,
+      registerTempFile: () => {}
     };
 
     const result = await sevenZSplitStrategy(context);
@@ -119,7 +120,8 @@ describe('sevenZSplitStrategy', () => {
       },
       progress: createProgressReporter(() => {}),
       extras: [],
-      emitToast: undefined
+      emitToast: undefined,
+      registerTempFile: () => {}
     };
 
     await expect(sevenZSplitStrategy(context)).rejects.toThrow('error_7z_binary_missing');

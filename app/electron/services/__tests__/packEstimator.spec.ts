@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { estimatePackingPlan } from '../packEstimator';
-import type { PackingPlanRequest } from '../../../common/ipc/contracts';
+import type { PackingPlanFileInput, PackingPlanRequest } from '../../../common/ipc/contracts';
 
 const MB = 1024 * 1024;
 
@@ -17,16 +17,15 @@ function createRequest(partial: Partial<PackingPlanRequest>): PackingPlanRequest
 describe('estimatePackingPlan', () => {
   it('suggests split-mono for stereo WAV that exceeds the archive limit', () => {
     const stereoSize = Math.floor(94.51 * MB);
+    const stereoProbe: PackingPlanFileInput = {
+      path: '/stereo.wav',
+      sizeBytes: stereoSize,
+      codec: 'wav_pcm',
+      num_channels: 2,
+      header_bytes: 44
+    };
     const request = createRequest({
-      files: [
-        {
-          path: '/stereo.wav',
-          sizeBytes: stereoSize,
-          codec: 'wav_pcm',
-          num_channels: 2,
-          header_bytes: 44
-        }
-      ]
+      files: [stereoProbe]
     });
 
     const result = estimatePackingPlan(request);
@@ -41,16 +40,15 @@ describe('estimatePackingPlan', () => {
 
   it('marks split mono infeasible when per-channel size still exceeds capacity', () => {
     const hugeStereo = Math.floor(160 * MB);
+    const probe: PackingPlanFileInput = {
+      path: '/oversized.wav',
+      sizeBytes: hugeStereo,
+      codec: 'wav_pcm',
+      num_channels: 2,
+      header_bytes: 44
+    };
     const request = createRequest({
-      files: [
-        {
-          path: '/oversized.wav',
-          sizeBytes: hugeStereo,
-          codec: 'wav_pcm',
-          num_channels: 2,
-          header_bytes: 44
-        }
-      ]
+      files: [probe]
     });
 
     const result = estimatePackingPlan(request);
@@ -61,7 +59,7 @@ describe('estimatePackingPlan', () => {
   });
 
   it('keeps output deterministic across calls', () => {
-    const files = [
+    const files: PackingPlanFileInput[] = [
       {
         path: '/alpha.wav',
         sizeBytes: Math.floor(32 * MB),
