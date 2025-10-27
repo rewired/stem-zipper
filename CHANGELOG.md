@@ -18,6 +18,9 @@ All notable changes to this project will be documented in this file.
 - Renderer exposes a shared `getFileExtension` helper for consistent lowercase extension parsing across platforms.
 
 ### Changed
+- Renderer pack progress UI now uses a reducer-driven state machine that keeps the bar visible
+  through preparing/packing/finalizing phases and shows explicit done/error feedback once the
+  run completes.
 - UI: Primary action "Pack Now" now green; "~ no zip gain" shown as blue info badge.
 - Renderer "Pack Now" CTA now leans into the success palette with higher-contrast focus/hover states for AA compliance.
 - File table select column swaps the slider toggle for an indeterminate-aware master checkbox with an accessible select-all label.
