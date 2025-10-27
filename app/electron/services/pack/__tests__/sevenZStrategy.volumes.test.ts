@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MockedFunction } from 'vitest';
 
 
-vi.mock('../binaries', () => ({
-  resolve7zBinary: vi.fn(() => '/bin/7zz')
+vi.mock('../resolve7zBinary', () => ({
+  resolve7zBinary: vi.fn(async () => '/bin/7zz')
 }));
 
 vi.mock('../expandFiles', () => ({

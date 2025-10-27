@@ -30,6 +30,7 @@ All notable changes to this project will be documented in this file.
 - Repository root now exposes pnpm workspace scripts, enabling `pnpm run dev|build|lint|typecheck|test|package` without `cd app` and aligning CI with the monorepo layout.
 - Renderer shell split into feature-focused providers and routes, shrinking `App.tsx` while clarifying pack and metadata flows.- Electron packaging pipeline refactored into modular pack strategies with a single progress stream for renderer updates.
 - Electron stereo splitting progress now adjusts totals dynamically, emits mono file lifecycle events, and heartbeats long splits so the renderer progress indicators remain accurate.
+- Electron packaging now resolves the bundled 7z binary per platform/architecture, honours the `STEM_ZIPPER_7Z_PATH` override, and enforces executable permissions for Unix builds.
 
 ### Removed
 

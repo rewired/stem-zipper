@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
-import { resolve7zBinary } from './binaries';
+import { resolve7zBinary } from './resolve7zBinary';
 import { createMetadataEntries, STAMP_FILENAME } from './metadata';
 import { expandFiles } from './expandFiles';
 import type { PackStrategy, SizedFile } from './types';
@@ -299,7 +299,7 @@ export const sevenZSplitStrategy: PackStrategy = async (context) => {
   context.progress.tick({ state: 'packing', percent: 0, currentArchive: archiveName });
 
   try {
-    const binary = resolve7zBinary();
+    const binary = await resolve7zBinary();
     const stagedFiles = await stageFilesForArchive(
       expanded,
       context.options.outputDir,
@@ -333,7 +333,7 @@ export const sevenZSplitStrategy: PackStrategy = async (context) => {
     });
     await cleanupExtras(writtenExtras);
     if (error instanceof Error) {
-      if (error.message === 'error_7z_binary_missing') {
+      if (error.message === 'pack_error_7z_binary_missing') {
         throw error;
       }
       throw error;
