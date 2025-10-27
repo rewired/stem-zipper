@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.2 unreleased]
+## [1.0.2]
 
 ### Added
 - Automated cross-platform icon generation now builds platform-specific icon assets via `pnpm icons`, feeding electron-builder packaging for macOS, Windows, and Linux.
