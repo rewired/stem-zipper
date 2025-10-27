@@ -35,6 +35,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- Renderer audio preview modal now streams blobs via WaveSurfer's `loadBlob`, preventing the preview from hanging on "Loading
+  preview…" in production builds.
 - Renderer audio preview now tags blob URLs with the correct MIME type, preventing high-resolution FLAC playback from blanking
   the Electron renderer window.
 - Renderer audio preview modal now allows WaveSurfer to fetch blob URLs under the dev CSP, restoring waveform loads in the

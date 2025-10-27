@@ -318,8 +318,6 @@ export function PlayerModal() {
         }
         const mimeType = getPreviewMimeType(file.path);
         const blob = mimeType ? new Blob([buffer], { type: mimeType }) : new Blob([buffer]);
-        const url = URL.createObjectURL(blob);
-        objectUrlRef.current = url;
         const wave = createWaveSurfer(container);
         waveSurferRef.current = wave;
 
@@ -406,7 +404,26 @@ export function PlayerModal() {
           wave.un('error', errorListener);
         };
 
-        wave.load(url);
+        const loadBlob = (wave as WaveSurfer & {
+          loadBlob?: (audioBlob: Blob) => Promise<void> | void;
+        }).loadBlob;
+        if (typeof loadBlob === 'function') {
+          try {
+            await loadBlob.call(wave, blob);
+            objectUrlRef.current = null;
+            if (disposed) {
+              return;
+            }
+          } catch (error) {
+            console.error('Failed to load audio preview blob', file.path, error);
+            handleError(decodeFailedMessage);
+            return;
+          }
+        } else {
+          const url = URL.createObjectURL(blob);
+          objectUrlRef.current = url;
+          wave.load(url);
+        }
       } catch (error) {
         console.error('Failed to load audio preview', file.path, error);
         handleError(decodeFailedMessage);

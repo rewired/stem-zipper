@@ -41,6 +41,8 @@ vi.mock('../waveSurfer', () => {
 
     load = vi.fn();
 
+    loadBlob = vi.fn(() => Promise.resolve());
+
     destroy = vi.fn(() => {
       this.listeners.clear();
     });
@@ -274,7 +276,7 @@ describe('PlayerModal', () => {
     await waitFor(() => expect(wave.seekTo).toHaveBeenCalledWith(0.5));
   });
 
-  it('close destroys ws and revokes URL', async () => {
+  it('close destroys ws and tears down audio', async () => {
     renderModal(sampleFile);
 
     const waveInstances = waveSurferModule.__getWaveSurferInstances();
@@ -287,9 +289,24 @@ describe('PlayerModal', () => {
 
     await waitFor(() => {
       expect(wave.destroy).toHaveBeenCalled();
-      expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock');
       expect(window.api?.teardownAudio).toHaveBeenCalled();
     });
+    expect(window.URL.revokeObjectURL).not.toHaveBeenCalled();
+  });
+
+  it('loads the preview blob directly when supported', async () => {
+    renderModal(sampleFile);
+
+    const waveInstances = waveSurferModule.__getWaveSurferInstances();
+    await waitFor(() => expect(waveInstances.length).toBeGreaterThan(0));
+    const wave = waveInstances[0] as unknown as {
+      loadBlob: ReturnType<typeof vi.fn>;
+      load: ReturnType<typeof vi.fn>;
+    };
+
+    await waitFor(() => expect(wave.loadBlob).toHaveBeenCalledTimes(1));
+    expect(wave.load).not.toHaveBeenCalled();
+    expect(window.URL.createObjectURL).not.toHaveBeenCalled();
   });
 
   it('no hard-coded strings; i18n keys resolved', async () => {
