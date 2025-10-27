@@ -11,7 +11,7 @@ import { useAppStore } from '../store/appStore';
 import { usePackState } from '../features/pack/usePackState';
 import { useMetadata } from '../features/metadata/useMetadata';
 import { MetadataModal } from '../features/metadata/MetadataModal';
-import { ProgressPanel } from '../components/ProgressPanel';
+import { PackProgress } from '../components/PackProgress';
 import { ChoiceModal } from '../components/ChoiceModal';
 import { InfoModal } from '../components/InfoModal';
 import { FileBadge } from '../components/FileBadge';
@@ -408,7 +408,7 @@ export function AppShell() {
         </div>
         <div className="sticky bottom-0 z-30 border-t border-slate-800 bg-slate-950/90 px-8 py-4 backdrop-blur">
           <div className="space-y-4">
-            <ProgressPanel progress={progress} statusText={statusText} />
+            <PackProgress progress={progress} statusText={statusText} />
             <PackControls
               canPack={canPack}
               isPacking={isPacking}

@@ -18,6 +18,9 @@ All notable changes to this project will be documented in this file.
 - Renderer exposes a shared `getFileExtension` helper for consistent lowercase extension parsing across platforms.
 
 ### Changed
+- Renderer pack progress UI now uses a reducer-driven state machine that keeps the bar visible
+  through preparing/packing/finalizing phases and shows explicit done/error feedback once the
+  run completes.
 - UI: Primary action "Pack Now" now green; "~ no zip gain" shown as blue info badge.
 - Renderer "Pack Now" CTA now leans into the success palette with higher-contrast focus/hover states for AA compliance.
 - File table select column swaps the slider toggle for an indeterminate-aware master checkbox with an accessible select-all label.
@@ -26,10 +29,13 @@ All notable changes to this project will be documented in this file.
 - Development workflow now delegates to `concurrently` with named stream prefixes and signal-aware teardown so `pnpm run dev` exits cleanly across platforms.
 - Repository root now exposes pnpm workspace scripts, enabling `pnpm run dev|build|lint|typecheck|test|package` without `cd app` and aligning CI with the monorepo layout.
 - Renderer shell split into feature-focused providers and routes, shrinking `App.tsx` while clarifying pack and metadata flows.- Electron packaging pipeline refactored into modular pack strategies with a single progress stream for renderer updates.
+- Electron stereo splitting progress now adjusts totals dynamically, emits mono file lifecycle events, and heartbeats long splits so the renderer progress indicators remain accurate.
 
 ### Removed
 
 ### Fixed
+- Electron pack handler now emits localized warning toasts and error progress updates when 7z/split operations fail,
+  keeping the renderer out of indeterminate states.
 - Electron 7z split pack strategy now reports all generated volume parts in
   numeric order, ensuring the renderer receives every `stems.7z` segment.
 - Electron 7z packing progress now parses stdout/stderr percentages, tolerates CR updates, and heartbeats stale output to keep

@@ -35,6 +35,17 @@ function clampPercent(value: number): number {
 export function createProgressReporter(onProgress: (event: ProgressEvent) => void): ProgressReporter {
   let current = 0;
   let total = 0;
+  let lastState: ProgressState = 'preparing';
+  let lastMessage: ProgressMessage = resolveMessage('preparing');
+  let lastArchive: string | undefined;
+  let lastErrorMessage: string | undefined;
+
+  const clampCount = (value: number): number => {
+    if (Number.isNaN(value) || !Number.isFinite(value)) {
+      return 0;
+    }
+    return Math.max(0, Math.round(value));
+  };
 
   const emit = (state: ProgressState, payload: Partial<ProgressEvent> = {}) => {
     const percent =
@@ -43,29 +54,74 @@ export function createProgressReporter(onProgress: (event: ProgressEvent) => voi
         : total === 0
           ? 0
           : clampPercent((current / total) * 100);
-    onProgress({
+    const message = resolveMessage(state, payload.message);
+    const event: ProgressEvent = {
       state,
       current,
       total,
       percent,
-      message: resolveMessage(state, payload.message),
+      message,
       currentArchive: payload.currentArchive,
       errorMessage: payload.errorMessage
+    };
+    lastState = state;
+    lastMessage = message;
+    lastArchive = event.currentArchive;
+    lastErrorMessage = event.errorMessage;
+    onProgress(event);
+  };
+
+  const reemit = () => {
+    if (lastState === 'done' || lastState === 'error') {
+      return;
+    }
+    emit(lastState, {
+      message: lastMessage,
+      currentArchive: lastArchive,
+      errorMessage: lastErrorMessage
     });
   };
 
   const reporter: ProgressReporter = {
     start({ total: nextTotal, message }) {
-      total = nextTotal;
+      total = clampCount(nextTotal);
       current = 0;
       emit('preparing', { message, percent: 0 });
+    },
+    setTotal(nextTotal) {
+      const clamped = clampCount(nextTotal);
+      if (clamped === total) {
+        return;
+      }
+      total = clamped;
+      if (current > total) {
+        current = total;
+      }
+      reemit();
+    },
+    addToTotal(delta) {
+      if (delta === 0) {
+        return;
+      }
+      const nextTotal = clampCount(total + delta);
+      if (nextTotal === total) {
+        return;
+      }
+      total = nextTotal;
+      if (current > total) {
+        current = total;
+      }
+      reemit();
     },
     tick(info) {
       emit(info?.state ?? 'packing', info ?? {});
     },
+    fileStart(info) {
+      emit(info?.state ?? 'packing', info ?? {});
+    },
     fileDone(info) {
       current = Math.min(current + 1, total);
-      emit('packing', info ?? {});
+      emit(info?.state ?? 'packing', info ?? {});
     },
     done(info) {
       current = total;

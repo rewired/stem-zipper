@@ -98,6 +98,7 @@
   "pack_error_no_files": "No supported audio files were found.",
   "error_7z_binary_missing": "7z binary is missing. Install the platform binary under resources/bin.",
   "error_7z_spawn_failed": "7z compression failed. Verify the bundled binary and file permissions.",
+  "pack_error_generic": "Packing failed: {{message}}",
   "pack_error_unknown": "Packing failed due to an unknown error.",
   "table_col_select": "Select",
   "pack_table_col_select": "Select",

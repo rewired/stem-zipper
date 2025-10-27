@@ -88,6 +88,7 @@ export interface PackToast {
   level: PackToastLevel;
   messageKey: TranslationKey;
   params?: Record<string, string>;
+  titleKey?: TranslationKey;
 }
 
 export interface PackProgress {
@@ -104,6 +105,10 @@ export type PackStatusEvent =
   | {
       type: 'toast';
       toast: PackToast;
+    }
+  | {
+      type: 'progress';
+      progress: PackProgress;
     };
 
 export interface PackResult {
