@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import type { Stats } from 'node:fs';
 import path from 'node:path';
 import type { AudioCodec } from '../../common/types';
 
@@ -57,7 +58,7 @@ function hasMp3FrameSync(buffer: Buffer, bytesRead: number): boolean {
   return buffer[0] === 0xff && (buffer[1] & MP3_FRAME_SYNC) === MP3_FRAME_SYNC;
 }
 
-async function statSafe(filePath: string): Promise<fs.Stats | null> {
+async function statSafe(filePath: string): Promise<Stats | null> {
   try {
     return await fs.stat(filePath);
   } catch (error) {

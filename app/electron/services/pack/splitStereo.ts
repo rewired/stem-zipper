@@ -105,7 +105,8 @@ export async function splitStereoWav(
       };
 
       readStream.on('data', (chunk) => {
-        const combined = remainder.length > 0 ? Buffer.concat([remainder, chunk]) : chunk;
+        const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, 'binary');
+        const combined = remainder.length > 0 ? Buffer.concat([remainder, bufferChunk]) : bufferChunk;
         const usableLength = Math.floor(combined.length / frameSize) * frameSize;
         remainder = combined.subarray(usableLength);
         for (let offset = 0; offset < usableLength; offset += frameSize) {
