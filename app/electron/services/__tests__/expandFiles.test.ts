@@ -96,7 +96,7 @@ describe('expandFiles', () => {
     );
   });
 
-  it('skips the file entirely when splitting throws an unexpected error', async () => {
+  it('falls back to the original file when splitting throws an unexpected error', async () => {
     const file = makeSizedFile('/audio/broken.wav', 9_000_000);
     probeAudioMock.mockResolvedValue({
       codec: 'wav_pcm',
@@ -114,11 +114,11 @@ describe('expandFiles', () => {
       splitter
     });
 
-    expect(result).toEqual([]);
+    expect(result).toEqual([file]);
     expect(emitToast).toHaveBeenCalledWith(
       expect.objectContaining({
         level: 'warning',
-        messageKey: 'pack_warn_file_skipped',
+        messageKey: 'pack_warn_split_fallback',
         params: { file: formatPathForDisplay(file.path) }
       })
     );
@@ -143,7 +143,7 @@ describe('expandFiles', () => {
       forceSplit: new Set([file.path])
     });
 
-    expect(result).toEqual([]);
+    expect(result).toEqual([file]);
     expect(emitToast).toHaveBeenCalledWith(
       expect.objectContaining({
         level: 'warning',

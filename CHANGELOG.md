@@ -51,6 +51,7 @@ All notable changes to this project will be documented in this file.
 - Router shell now opts the React Router `RouterProvider` into the `v7_startTransition` future flag, eliminating the transition
   mode warning ahead of the v7 release.
 - Renderer pack badge for Split Mono now resolves via the `pack_badge_split_mono` key across all locales, restoring the localized label and aria text.
+- Electron ZIP packer now falls back to packaging the original stem when stereo splitting fails, ensuring archives are still produced.
 
 ## [1.0.1]
 
