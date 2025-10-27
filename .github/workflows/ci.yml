@@ -88,6 +88,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate icons
+        run: pnpm icons
       - name: Package Windows (x64)
         run: pnpm run package:win
 
@@ -131,6 +133,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate icons
+        run: pnpm icons
       - name: Package Linux (x64)
         run: pnpm run package:linux
 

@@ -70,3 +70,5 @@ app/node_modules/
 # -----------------------------------------------------------------------------
 audio_input
 /app/release
+
+/app/resources/icons/
