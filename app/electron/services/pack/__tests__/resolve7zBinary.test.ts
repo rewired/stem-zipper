@@ -20,7 +20,8 @@ const mockApp = app as unknown as {
 };
 
 const platformDir = process.platform === 'win32' ? 'win' : process.platform === 'darwin' ? 'mac' : 'linux';
-const binaryName = process.platform === 'win32' ? '7zz.exe' : '7zz';
+const binaryNames = process.platform === 'win32' ? ['7zz.exe', '7z.exe', '7za.exe'] : ['7zz', '7z', '7za'];
+const preferredBinaryName = binaryNames[0];
 
 const processWithResources = process as NodeJS.Process & { resourcesPath?: string };
 const createdPaths: string[] = [];
@@ -31,10 +32,10 @@ let chmodSpy: SpyInstance<
   ReturnType<typeof fs.promises.chmod>
 >;
 
-async function createBinary(baseDir: string): Promise<string> {
+async function createBinary(baseDir: string, name: string = preferredBinaryName): Promise<string> {
   const binaryDir = path.join(baseDir, 'bin', platformDir, process.arch);
   await fs.promises.mkdir(binaryDir, { recursive: true });
-  const binaryPath = path.join(binaryDir, binaryName);
+  const binaryPath = path.join(binaryDir, name);
   await fs.promises.writeFile(binaryPath, Buffer.from('binary'));
   createdPaths.push(binaryPath);
   return binaryPath;
@@ -73,7 +74,7 @@ afterEach(async () => {
 describe('resolve7zBinary', () => {
   it('prefers the environment override when present', async () => {
     const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'stem-zipper-7z-override-'));
-    const overridePath = path.join(tempDir, binaryName);
+    const overridePath = path.join(tempDir, preferredBinaryName);
     await fs.promises.writeFile(overridePath, Buffer.from('custom'));
     process.env.STEM_ZIPPER_7Z_PATH = overridePath;
 
@@ -135,7 +136,7 @@ describe('resolve7zBinary', () => {
     mockApp.isPackaged = true;
 
     const systemDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'stem-zipper-7z-system-'));
-    const binaryPath = path.join(systemDir, binaryName);
+    const binaryPath = path.join(systemDir, preferredBinaryName);
     await fs.promises.writeFile(binaryPath, Buffer.from('system'));
     process.env.PATH = `${systemDir}${path.delimiter}${originalPath ?? ''}`;
 
@@ -157,6 +158,19 @@ describe('resolve7zBinary', () => {
 
     await expect(resolve7zBinary()).resolves.toBe(binaryPath);
     await expect(resolve7zBinary()).resolves.toBe(binaryPath);
+    await fs.promises.rm(resourcesRoot, { recursive: true, force: true });
+  });
+
+  it('falls back to alternative bundled binary names when the preferred one is unavailable', async () => {
+    mockApp.isPackaged = true;
+    const resourcesRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'stem-zipper-7z-alt-'));
+    processWithResources.resourcesPath = resourcesRoot;
+
+    const fallbackName = binaryNames[1] ?? preferredBinaryName;
+    const binaryPath = await createBinary(resourcesRoot, fallbackName);
+
+    await expect(resolve7zBinary()).resolves.toBe(binaryPath);
+
     await fs.promises.rm(resourcesRoot, { recursive: true, force: true });
   });
 });

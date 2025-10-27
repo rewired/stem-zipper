@@ -72,3 +72,4 @@ audio_input
 /app/release
 
 /app/resources/icons/
+/app/resources/bin/**/7z*

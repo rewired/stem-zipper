@@ -51,21 +51,30 @@ function resolvePlatformDir(): string {
   return PLATFORM_DIR_MAP[process.platform] ?? process.platform;
 }
 
-function resolveBinaryName(): string {
-  return process.platform === 'win32' ? '7zz.exe' : '7zz';
+function resolveBinaryNames(): string[] {
+  if (process.platform === 'win32') {
+    return ['7zz.exe', '7z.exe', '7za.exe'];
+  }
+  return ['7zz', '7z', '7za'];
 }
 
 function resolveBaseCandidates(isPackaged: boolean): string[] {
   const platformDir = resolvePlatformDir();
   const arch = process.arch;
-  const binaryName = resolveBinaryName();
+  const binaryNames = resolveBinaryNames();
 
   const candidates = new Set<string>();
 
+  const appendCandidates = (base: string) => {
+    for (const name of binaryNames) {
+      candidates.add(path.join(base, platformDir, arch, name));
+      candidates.add(path.join(base, platformDir, name));
+    }
+  };
+
   if (isPackaged) {
     const packagedBase = path.join(process.resourcesPath, 'bin');
-    candidates.add(path.join(packagedBase, platformDir, arch, binaryName));
-    candidates.add(path.join(packagedBase, platformDir, binaryName));
+    appendCandidates(packagedBase);
   } else {
     const appPath = app.getAppPath();
     const devBases = [
@@ -74,8 +83,7 @@ function resolveBaseCandidates(isPackaged: boolean): string[] {
       path.join(appPath, '..', '..', 'resources', 'bin')
     ];
     for (const base of devBases) {
-      candidates.add(path.join(base, platformDir, arch, binaryName));
-      candidates.add(path.join(base, platformDir, binaryName));
+      appendCandidates(base);
     }
   }
 
@@ -101,14 +109,7 @@ function resolveSystemCandidates(): string[] {
     return [];
   }
 
-  const binaryNames = new Set<string>([resolveBinaryName()]);
-  if (process.platform === 'win32') {
-    binaryNames.add('7z.exe');
-    binaryNames.add('7za.exe');
-  } else {
-    binaryNames.add('7z');
-    binaryNames.add('7za');
-  }
+  const binaryNames = new Set<string>(resolveBinaryNames());
 
   const systemCandidates = new Set<string>();
   for (const segment of pathEnv.split(path.delimiter)) {

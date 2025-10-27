@@ -19,6 +19,11 @@ function run(command, args) {
   }
 }
 
+const ensure7zipScript = path.join(__dirname, 'ensure-7zip.cjs');
+if (fs.existsSync(ensure7zipScript)) {
+  run(process.execPath, [ensure7zipScript]);
+}
+
 if (process.platform === 'win32') {
   const ps1Script = path.join(__dirname, 'postinstall.ps1');
   if (fs.existsSync(ps1Script)) {

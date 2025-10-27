@@ -36,6 +36,9 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- Electron packaging now syncs platform 7-Zip binaries from the `7zip-bin` package during
+  `pnpm install`, ensuring installers ship the CLI even on clean machines without a
+  system-level 7z installation.
 - Electron packer now falls back to 7z binaries available on the system `PATH`
   when bundled archives are missing, restoring packing on developer machines
   without the packaged helper.

@@ -39,6 +39,9 @@ importers:
         specifier: ^2.5.1
         version: 2.5.1
     devDependencies:
+      7zip-bin:
+        specifier: ^5.2.0
+        version: 5.2.0
       '@material-symbols/svg-400':
         specifier: ^0.38.0
         version: 0.38.0
