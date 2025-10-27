@@ -12,7 +12,12 @@ import { formatMessage, tNS } from '@common/i18n';
 import { MaterialIcon } from '../../components/icons/MaterialIcon';
 import { useAppStore } from '../../store/appStore';
 import { usePlayer } from './PlayerProvider';
-import { MAX_PREVIEW_FILE_SIZE_BYTES, clampTime, clampVolume } from './previewUtils';
+import {
+  MAX_PREVIEW_FILE_SIZE_BYTES,
+  clampTime,
+  clampVolume,
+  getPreviewMimeType
+} from './previewUtils';
 import { createWaveSurfer } from './waveSurfer';
 import { useToast } from '../../providers/ToastProvider';
 import type WaveSurfer from 'wavesurfer.js';
@@ -311,7 +316,8 @@ export function PlayerModal() {
         if (disposed) {
           return;
         }
-        const blob = new Blob([buffer]);
+        const mimeType = getPreviewMimeType(file.path);
+        const blob = mimeType ? new Blob([buffer], { type: mimeType }) : new Blob([buffer]);
         const url = URL.createObjectURL(blob);
         objectUrlRef.current = url;
         const wave = createWaveSurfer(container);

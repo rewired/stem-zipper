@@ -152,6 +152,8 @@ describe('PlayerModal', () => {
   const originalApi = window.api;
   const originalCreateObjectUrl = window.URL.createObjectURL;
   const originalRevokeObjectUrl = window.URL.revokeObjectURL;
+  const originalBlob = window.Blob;
+  let blobSpy: ReturnType<typeof vi.fn<[BlobPart[], BlobPropertyBag | undefined], void>>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -166,6 +168,18 @@ describe('PlayerModal', () => {
     });
     window.URL.createObjectURL = vi.fn(() => 'blob:mock') as unknown as typeof window.URL.createObjectURL;
     window.URL.revokeObjectURL = vi.fn() as unknown as typeof window.URL.revokeObjectURL;
+    blobSpy = vi.fn<[BlobPart[], BlobPropertyBag | undefined], void>();
+    class SpyBlob extends originalBlob {
+      constructor(blobParts?: BlobPart[], options?: BlobPropertyBag) {
+        super(blobParts ?? [], options);
+        blobSpy(blobParts ?? [], options);
+      }
+    }
+    Object.defineProperty(window, 'Blob', {
+      value: SpyBlob,
+      configurable: true,
+      writable: true
+    });
   });
 
   afterEach(() => {
@@ -178,6 +192,11 @@ describe('PlayerModal', () => {
     });
     window.URL.createObjectURL = originalCreateObjectUrl;
     window.URL.revokeObjectURL = originalRevokeObjectUrl;
+    Object.defineProperty(window, 'Blob', {
+      value: originalBlob,
+      configurable: true,
+      writable: true
+    });
   });
 
   it('opens modal and focuses Play', async () => {
@@ -311,5 +330,20 @@ describe('PlayerModal', () => {
     expect(errorMessage.textContent ?? '').toContain('Cannot decode this file');
     expect(failingApi.readFileBlob).toHaveBeenCalledWith(sampleFile.path);
     await waitFor(() => expect(failingApi.teardownAudio).toHaveBeenCalled());
+  });
+
+  it('creates preview blob with detected mime type', async () => {
+    const flacFile: FileRow = {
+      ...sampleFile,
+      name: 'clip.flac',
+      path: '/tmp/clip.flac',
+      kind: 'flac'
+    };
+
+    renderModal(flacFile);
+
+    await waitFor(() => expect(blobSpy).toHaveBeenCalled());
+    const [, options] = blobSpy.mock.calls[0];
+    expect(options?.type).toBe('audio/flac');
   });
 });
