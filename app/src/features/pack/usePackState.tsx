@@ -184,6 +184,55 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
     progressStateRef.current = initialProgress.state;
   }, []);
 
+  const applyProgressEvent = useCallback(
+    (event: PackProgress) => {
+      progressStateRef.current = event.state;
+      setProgress(event);
+      switch (event.state) {
+        case 'preparing':
+          emit({ type: 'dismiss', id: 'estimate' });
+          setStatusText(
+            t(event.message, {
+              percent: event.percent
+            })
+          );
+          break;
+        case 'packing':
+          emit({ type: 'dismiss', id: 'estimate' });
+          if (event.currentArchive) {
+            setStatusText(
+              t(event.message, {
+                name: event.currentArchive,
+                percent: event.percent
+              })
+            );
+          } else {
+            setStatusText(t('pack_progress_packing_generic', { percent: event.percent }));
+          }
+          break;
+        case 'finalizing':
+          setStatusText(t(event.message));
+          emit({ type: 'dismiss', id: 'estimate' });
+          break;
+        case 'done':
+          setStatusText(t('pack_status_done'));
+          emit({ type: 'dismiss', id: 'estimate' });
+          break;
+        case 'error':
+          setStatusText(
+            event.errorMessage
+              ? `${t('common_error_title')}: ${event.errorMessage}`
+              : t('common_error_title')
+          );
+          emit({ type: 'dismiss', id: 'estimate' });
+          break;
+        default:
+          break;
+      }
+    },
+    [emit, setProgress, setStatusText, t]
+  );
+
   const analyze = useCallback(
     async (targetFolder: string, currentMaxSize: number) => {
       if (!window.electronAPI || typeof window.electronAPI.analyzeFolder !== 'function') {
@@ -399,62 +448,28 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
       return () => {};
     }
     const removeListener = window.electronAPI.onPackProgress((event) => {
-      progressStateRef.current = event.state;
-      setProgress(event);
-      switch (event.state) {
-        case 'preparing':
-          emit({ type: 'dismiss', id: 'estimate' });
-          setStatusText(
-            t(event.message, {
-              percent: event.percent
-            })
-          );
-          break;
-        case 'packing':
-          emit({ type: 'dismiss', id: 'estimate' });
-          if (event.currentArchive) {
-            setStatusText(
-              t(event.message, {
-                name: event.currentArchive,
-                percent: event.percent
-              })
-            );
-          } else {
-            setStatusText(t('pack_progress_packing_generic', { percent: event.percent }));
-          }
-          break;
-        case 'finalizing':
-          setStatusText(t(event.message));
-          emit({ type: 'dismiss', id: 'estimate' });
-          break;
-        case 'done':
-          setStatusText(t('pack_status_done'));
-          emit({ type: 'dismiss', id: 'estimate' });
-          break;
-        case 'error':
-          setStatusText(
-            event.errorMessage
-              ? `${t('common_error_title')}: ${event.errorMessage}`
-              : t('common_error_title')
-          );
-          emit({ type: 'dismiss', id: 'estimate' });
-          break;
-        default:
-          break;
-      }
+      applyProgressEvent(event);
     });
     return removeListener;
-  }, [emit, setStatusText, t]);
+  }, [applyProgressEvent]);
 
   useEffect(() => {
     if (!window.electronAPI || typeof window.electronAPI.onPackStatus !== 'function') {
       return () => {};
     }
     const removeListener = window.electronAPI.onPackStatus((event: PackStatusEvent) => {
+      if (event.type === 'progress') {
+        applyProgressEvent(event.progress);
+        return;
+      }
       if (event.type !== 'toast') {
         return;
       }
-      const titleKey = event.toast.level === 'warning' ? 'toast_warning_title' : 'toast_info_title';
+      const titleKey = event.toast.titleKey
+        ? event.toast.titleKey
+        : event.toast.level === 'warning'
+          ? 'toast_warning_title'
+          : 'toast_info_title';
       emit({
         type: 'toast',
         toast: {
@@ -467,7 +482,7 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
       });
     });
     return removeListener;
-  }, [emit, locale, t]);
+  }, [applyProgressEvent, emit, locale, t]);
   useEffect(() => {
     if (!window.electronAPI || typeof window.electronAPI.onPackDone !== 'function') {
       return () => {};
