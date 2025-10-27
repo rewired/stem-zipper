@@ -4,42 +4,88 @@ import type { PackingPlanRequest } from '../../../common/ipc/contracts';
 
 const MB = 1024 * 1024;
 
+function createRequest(partial: Partial<PackingPlanRequest>): PackingPlanRequest {
+  return {
+    method: 'zip',
+    maxArchiveSizeMb: 48,
+    files: [],
+    splitStereo: false,
+    ...partial
+  };
+}
+
 describe('estimatePackingPlan', () => {
-  it('flags files larger than the ZIP capacity', () => {
-    const request: PackingPlanRequest = {
-      method: 'zip',
-      maxArchiveSizeMb: 50,
+  it('suggests split-mono for stereo WAV that exceeds the archive limit', () => {
+    const stereoSize = Math.floor(94.51 * MB);
+    const request = createRequest({
       files: [
-        { path: '/huge.wav', sizeBytes: 60 * MB },
-        { path: '/small.wav', sizeBytes: 10 * MB }
-      ],
-      splitStereo: false
-    };
+        {
+          path: '/stereo.wav',
+          sizeBytes: stereoSize,
+          codec: 'wav_pcm',
+          num_channels: 2,
+          header_bytes: 44
+        }
+      ]
+    });
 
     const result = estimatePackingPlan(request);
-    expect(result.plan).toHaveLength(2);
-    expect(result.plan[0]).toMatchObject({ path: '/huge.wav', allowed: false, reason: 'zip_too_large' });
-    expect(result.plan[1]).toMatchObject({ path: '/small.wav', allowed: true, archiveIndex: 1 });
+    expect(result.plan).toHaveLength(1);
+    const [entry] = result.plan;
+    expect(entry.allowed).toBe(true);
+    expect(entry.suggestSplitMono).toBe(true);
+    expect(entry.splitTargets).toHaveLength(2);
+    const archiveIndices = entry.splitTargets?.map((target) => target.archiveIndex) ?? [];
+    expect(archiveIndices.every((index) => typeof index === 'number' && index >= 1)).toBe(true);
   });
 
-  it('allocates additional ZIP archives when capacity is exceeded', () => {
-    const request: PackingPlanRequest = {
-      method: 'zip',
-      maxArchiveSizeMb: 20,
+  it('marks split mono infeasible when per-channel size still exceeds capacity', () => {
+    const hugeStereo = Math.floor(160 * MB);
+    const request = createRequest({
       files: [
-        { path: '/kick.wav', sizeBytes: 9 * MB },
-        { path: '/snare.wav', sizeBytes: 9 * MB },
-        { path: '/hihat.wav', sizeBytes: 9 * MB }
-      ],
-      splitStereo: false
-    };
+        {
+          path: '/oversized.wav',
+          sizeBytes: hugeStereo,
+          codec: 'wav_pcm',
+          num_channels: 2,
+          header_bytes: 44
+        }
+      ]
+    });
 
     const result = estimatePackingPlan(request);
-    expect(result.plan.map((entry) => entry.archiveIndex)).toEqual([1, 1, 2]);
-    expect(result.plan.every((entry) => entry.allowed)).toBe(true);
+    expect(result.plan).toHaveLength(1);
+    const [entry] = result.plan;
+    expect(entry.allowed).toBe(false);
+    expect(entry.suggestSplitMono).toBeUndefined();
   });
 
-  it('keeps every file selectable for 7z plans', () => {
+  it('keeps output deterministic across calls', () => {
+    const files = [
+      {
+        path: '/alpha.wav',
+        sizeBytes: Math.floor(32 * MB),
+        codec: 'wav_pcm',
+        num_channels: 2,
+        header_bytes: 44
+      },
+      {
+        path: '/bravo.wav',
+        sizeBytes: Math.floor(28 * MB),
+        codec: 'wav_pcm',
+        num_channels: 2,
+        header_bytes: 44
+      }
+    ];
+    const request = createRequest({ files });
+
+    const first = estimatePackingPlan(request);
+    const second = estimatePackingPlan(request);
+
+    expect(first.plan).toEqual(second.plan);
+  });
+
+  it('leaves seven-zip plans untouched', () => {
     const request: PackingPlanRequest = {
       method: '7z',
       maxArchiveSizeMb: 5,

@@ -215,14 +215,16 @@ export interface ExpandFilesOptions {
   progress?: ProgressReporter;
   emitToast?: (toast: PackToast) => void;
   splitter?: (filePath: string) => Promise<SizedFile[]>;
+  registerTempFile?: (filePath: string) => void;
+  forceSplit?: Set<string>;
 }
 
 export async function expandFiles(files: SizedFile[], options: ExpandFilesOptions): Promise<SizedFile[]> {
   const expanded: SizedFile[] = [];
   const threshold = options.splitThresholdBytes ?? options.maxSizeBytes;
-  const toSplit = files.filter((f) => f.size > threshold && f.extension === '.wav').length;
+  const forceSet = options.forceSplit ?? new Set<string>();
+  const toSplit = files.filter((f) => (f.size > threshold || forceSet.has(f.path)) && f.extension === '.wav').length;
   let processed = 0;
-  const performSplit = options.splitter ?? splitStereoWav;
 
   const notifySkip = (file: SizedFile, reason: string) => {
     console.info('Skipping stereo split for file', { file: file.path, reason });
@@ -246,23 +248,39 @@ export async function expandFiles(files: SizedFile[], options: ExpandFilesOption
   };
 
   for (const file of files) {
-    if (file.size > threshold && file.extension === '.wav') {
+    const mustSplit = forceSet.has(file.path);
+    const sizeExceedsThreshold = file.size > threshold;
+    if (file.extension === '.wav' && (sizeExceedsThreshold || mustSplit)) {
       try {
         const probe = await probeAudio(file.path);
-        if (probe.kind !== 'wav') {
-          notifySkip(file, `probe-kind=${probe.kind}`);
+        if (probe.codec !== 'wav_pcm' && probe.codec !== 'wav_float') {
+          notifySkip(file, `codec=${probe.codec}`);
           expanded.push(file);
-        } else if (probe.stereo !== true) {
-          notifySkip(file, `stereo=${probe.stereo ?? 'unknown'}`);
+        } else if (!probe.num_channels || probe.num_channels < 2) {
+          notifySkip(file, `channels=${probe.num_channels ?? 'unknown'}`);
           expanded.push(file);
         } else {
-          const split = await performSplit(file.path);
+          const split = options.splitter
+            ? await options.splitter(file.path)
+            : await splitStereoWav(file.path, options.registerTempFile);
+          if (options.registerTempFile && options.splitter) {
+            for (const entry of split) {
+              options.registerTempFile(entry.path);
+            }
+          }
           expanded.push(...split);
         }
       } catch (error) {
         if (error instanceof UnsupportedWavError) {
           notifySkip(file, error.message);
           expanded.push(file);
+        } else if (mustSplit) {
+          options.emitToast?.({
+            id: `split-error:${file.path}`,
+            level: 'warning',
+            messageKey: 'warn_split_mono_failed',
+            params: { name: formatPathForDisplay(file.path) }
+          });
         } else {
           notifyError(file, error);
         }

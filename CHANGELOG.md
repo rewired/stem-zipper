@@ -43,6 +43,7 @@ All notable changes to this project will be documented in this file.
 - Renderer silences the ZIP estimate toast during the post-pack analysis cycle, preventing the notification from reappearing until the next manual scan or size change.
 - Electron pack routines now await folder analysis, normalize 7z error reporting, and validate stereo split outputs to satisfy strict TypeScript checks and keep progress feedback reliable.
 - Renderer now detects all already-compressed audio formats when flagging "~ no zip gain" and suggests 7z volumes for oversized compressed files.
+- Planner, estimator, and pack flow now split oversize stereo WAV files into mono stems, keeping rows selectable and packaging the channel outputs automatically when they enable a ZIP plan.
 - Router shell now opts the React Router `RouterProvider` into the `v7_startTransition` future flag, eliminating the transition
   mode warning ahead of the v7 release.
 

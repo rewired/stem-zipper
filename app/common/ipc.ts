@@ -1,5 +1,6 @@
 import type { LocaleKey, TranslationKey } from './i18n';
 import type { EstimateFileKind } from './packing/estimator';
+import type { AudioCodec } from './types';
 
 export type {
   PackingEstimatorMethod,
@@ -40,6 +41,10 @@ export interface FileEntry {
   sizeBytes: number;
   kind: EstimateFileKind;
   stereo?: boolean;
+  codec?: AudioCodec;
+  num_channels?: number;
+  suggest_split_mono?: boolean;
+  header_bytes?: number;
 }
 
 export interface AnalyzeResponse {
@@ -71,6 +76,7 @@ export interface PackRequest {
   packMetadata: PackMetadata;
   method?: PackMethod;
   splitStereoThresholdMb?: number;
+  splitStereoFiles?: string[];
 }
 
 export type PackState = 'preparing' | 'packing' | 'finalizing' | 'done' | 'error';

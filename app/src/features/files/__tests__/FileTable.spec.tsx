@@ -58,6 +58,7 @@ describe('FileTable', () => {
         masterIndeterminate={false}
         masterDisabled={false}
         formatTooltip={(reason) => reason}
+        splitMonoHint="Split"
       />
     );
 
@@ -93,6 +94,7 @@ describe('FileTable', () => {
         masterIndeterminate={false}
         masterDisabled={false}
         formatTooltip={(reason) => `Reason: ${reason}`}
+        splitMonoHint="Split"
       />
     );
 

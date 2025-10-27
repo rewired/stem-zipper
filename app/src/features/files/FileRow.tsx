@@ -13,6 +13,7 @@ interface FileRowProps {
   onToggle: (fileId: string) => void;
   selectLabel: string;
   formatTooltip: (reason: string) => string;
+  splitMonoHint: string;
 }
 
 export function FileRow({
@@ -24,10 +25,12 @@ export function FileRow({
   renderEstimate,
   onToggle,
   selectLabel,
-  formatTooltip
+  formatTooltip,
+  splitMonoHint
 }: FileRowProps) {
   const tooltip = file.estimate?.reason ? formatTooltip(file.estimate.reason) : undefined;
   const rowClass = clsx('hover:bg-slate-800/50', !file.selectable && 'opacity-50');
+  const checkboxTitle = file.suggest_split_mono ? splitMonoHint : undefined;
 
   return (
     <tr className={rowClass} key={file.id} aria-disabled={!file.selectable}>
@@ -40,6 +43,7 @@ export function FileRow({
             onChange={() => onToggle(file.id)}
             disabled={!file.selectable}
             aria-label={`${selectLabel} ${file.name}`}
+            title={checkboxTitle}
           />
         </div>
       </td>

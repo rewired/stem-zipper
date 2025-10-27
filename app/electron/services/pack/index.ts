@@ -13,6 +13,7 @@ import {
 import { createProgressReporter } from './progress';
 import type { PackOptions, PackStrategy, ProgressEvent, SizedFile, StrategyResult } from './types';
 import { splitStereoWav, UnsupportedWavError } from './splitStereo';
+import { probeAudio } from '../audioProbe';
 
 type StrategyLoader = () => Promise<PackStrategy>;
 
@@ -31,58 +32,6 @@ function resolveAction(sizeBytes: number, extension: string, maxSizeBytes: numbe
     return extension === '.wav' ? 'split_mono' : 'split_zip';
   }
   return 'normal';
-}
-
-async function isLikelyStereoWav(file: SizedFile): Promise<boolean> {
-  let handle: fs.promises.FileHandle | null = null;
-  try {
-    handle = await fs.promises.open(file.path, 'r');
-    const riffHeader = Buffer.alloc(12);
-    const riffRead = await handle.read(riffHeader, 0, 12, 0);
-    if (riffRead.bytesRead < 12) {
-      return false;
-    }
-    if (riffHeader.toString('ascii', 0, 4) !== 'RIFF' || riffHeader.toString('ascii', 8, 12) !== 'WAVE') {
-      return false;
-    }
-
-    let offset = 12;
-    const chunkHeader = Buffer.alloc(8);
-
-    while (offset + 8 <= file.size) {
-      const headerRead = await handle.read(chunkHeader, 0, 8, offset);
-      if (headerRead.bytesRead < 8) {
-        break;
-      }
-      const chunkId = chunkHeader.toString('ascii', 0, 4);
-      const chunkSize = chunkHeader.readUInt32LE(4);
-      if (chunkId === 'fmt ') {
-        const fmtBuffer = Buffer.alloc(4);
-        const fmtRead = await handle.read(fmtBuffer, 0, 4, offset + 8);
-        if (fmtRead.bytesRead < 4) {
-          return false;
-        }
-        const channels = fmtBuffer.readUInt16LE(2);
-        return channels >= 2;
-      }
-      const paddedSize = chunkSize + (chunkSize % 2);
-      if (paddedSize <= 0) {
-        break;
-      }
-      offset += 8 + paddedSize;
-    }
-  } catch (error) {
-    console.warn('Failed to inspect WAV header for stereo flag', file.path, error);
-  } finally {
-    if (handle) {
-      try {
-        await handle.close();
-      } catch (closeError) {
-        console.warn('Failed to close WAV handle after inspection', file.path, closeError);
-      }
-    }
-  }
-  return false;
 }
 
 async function resolveSizedFiles(paths: string[], fallbackDir: string): Promise<SizedFile[]> {
@@ -114,8 +63,26 @@ export async function analyzeFolder(folderPath: string, maxSizeMb: number): Prom
   const entries: FileEntry[] = await Promise.all(
     sizedFiles.map(async (file) => {
       const action = resolveAction(file.size, file.extension, maxSizeBytes);
-      const shouldInspectStereo = file.extension === '.wav' && file.size > maxSizeBytes;
-      const stereo = shouldInspectStereo && (await isLikelyStereoWav(file)) ? true : undefined;
+      const shouldInspect = file.extension === '.wav';
+      let stereo: boolean | undefined;
+      let codec: FileEntry['codec'];
+      let numChannels: number | undefined;
+      let headerBytes: number | undefined;
+      if (shouldInspect) {
+        try {
+          const probe = await probeAudio(file.path);
+          codec = probe.codec;
+          if (typeof probe.num_channels === 'number') {
+            numChannels = probe.num_channels;
+            stereo = probe.num_channels >= 2 ? true : probe.num_channels === 1 ? false : undefined;
+          }
+          if (typeof probe.header_bytes === 'number') {
+            headerBytes = probe.header_bytes;
+          }
+        } catch (error) {
+          console.warn('Audio probe failed during analysis', file.path, error);
+        }
+      }
       const kind: EstimateFileKind = sniffFileKind(file);
       return {
         name: path.basename(file.path),
@@ -124,7 +91,10 @@ export async function analyzeFolder(folderPath: string, maxSizeMb: number): Prom
         path: file.path,
         sizeBytes: file.size,
         kind,
-        stereo
+        stereo,
+        codec,
+        num_channels: numChannels,
+        header_bytes: headerBytes
       };
     })
   );
@@ -146,6 +116,10 @@ export async function pack({ options, onProgress, emitStatus }: PackExecutionOpt
   }
   const strategy = await loadStrategy(options.method);
   const progress = createProgressReporter(onProgress);
+  const tempArtifacts = new Set<string>();
+  const registerTempFile = (filePath: string) => {
+    tempArtifacts.add(filePath);
+  };
 
   const emitToast = emitStatus
     ? (toast: PackToast) => {
@@ -153,15 +127,26 @@ export async function pack({ options, onProgress, emitStatus }: PackExecutionOpt
       }
     : undefined;
 
-  const result = await strategy({
-    files,
-    options,
-    progress,
-    extras: [],
-    emitToast
-  });
+  try {
+    const result = await strategy({
+      files,
+      options,
+      progress,
+      extras: [],
+      emitToast,
+      registerTempFile
+    });
 
-  return result;
+    return result;
+  } finally {
+    await Promise.all(
+      Array.from(tempArtifacts).map((artifact) =>
+        fs.promises
+          .rm(artifact, { recursive: true, force: true })
+          .catch((error) => console.warn('Failed to clean up temp artifact', artifact, error))
+      )
+    );
+  }
 }
 
 function randomSizeMb(min: number, max: number): number {

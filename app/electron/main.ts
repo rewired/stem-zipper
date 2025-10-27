@@ -258,7 +258,8 @@ function registerIpcHandlers(): void {
           files: Array.isArray(args.files) ? args.files : [],
           locale,
           metadata: normalizedMetadata,
-          splitStereoThresholdMB: args.splitStereoThresholdMb
+          splitStereoThresholdMB: args.splitStereoThresholdMb,
+          splitStereoFiles: Array.isArray(args.splitStereoFiles) ? args.splitStereoFiles : undefined
         },
         onProgress: (progress) => {
           event.sender.send(IPC_CHANNELS.PACK_PROGRESS, progress);

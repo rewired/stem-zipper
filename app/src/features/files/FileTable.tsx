@@ -24,6 +24,7 @@ interface FileTableProps {
   masterIndeterminate: boolean;
   masterDisabled: boolean;
   formatTooltip: (reason: string) => string;
+  splitMonoHint: string;
 }
 
 export function FileTable({
@@ -46,7 +47,8 @@ export function FileTable({
   masterChecked,
   masterIndeterminate,
   masterDisabled,
-  formatTooltip
+  formatTooltip,
+  splitMonoHint
 }: FileTableProps) {
   const masterCheckboxRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
@@ -135,6 +137,7 @@ export function FileTable({
               onToggle={onToggleRow}
               selectLabel={selectLabel}
               formatTooltip={formatTooltip}
+              splitMonoHint={splitMonoHint}
             />
           ))}
         </tbody>

@@ -8,6 +8,7 @@ interface FileBadgeProps {
   tooltip?: string;
   icon?: 'warning' | 'info';
   variant?: FileBadgeVariant;
+  ariaLabel?: string;
 }
 
 const variantStyles: Record<FileBadgeVariant, string> = {
@@ -20,8 +21,8 @@ const iconStyles: Record<FileBadgeVariant, string> = {
   info: 'text-sky-300'
 };
 
-export function FileBadge({ label, tooltip, icon, variant = 'warning' }: FileBadgeProps) {
-  const accessibleLabel = tooltip ?? label;
+export function FileBadge({ label, tooltip, icon, variant = 'warning', ariaLabel }: FileBadgeProps) {
+  const accessibleLabel = ariaLabel ?? tooltip ?? label;
   const resolvedTooltip = tooltip ?? label;
   const resolvedIcon = icon ?? (variant === 'info' ? 'info' : 'warning');
 

@@ -99,6 +99,18 @@ export function AppShell() {
     () => tNS('pack', 'badge_try_7z_volumes', undefined, locale),
     [locale]
   );
+  const splitMonoLabel = useMemo(
+    () => tNS('pack', 'badge_split_mono', undefined, locale),
+    [locale]
+  );
+  const splitMonoHint = useMemo(
+    () => tNS('pack', 'hint_split_mono_feasible', undefined, locale),
+    [locale]
+  );
+  const splitMonoAria = useMemo(
+    () => tNS('pack', 'aria_label_badge_split_mono', undefined, locale),
+    [locale]
+  );
 
   const packLabel = useMemo(
     () => tNS('app', 'btn_pack_now', undefined, locale),
@@ -108,11 +120,20 @@ export function AppShell() {
   const renderFileBadges = useCallback(
     (file: FileRow) => {
       const flags = badges.get(file.path);
-      if (!flags) {
-        return null;
-      }
       const elements: JSX.Element[] = [];
-      if (flags.noZipGain) {
+      if (file.suggest_split_mono) {
+        elements.push(
+          <FileBadge
+            key="split-mono"
+            label={splitMonoLabel}
+            tooltip={splitMonoHint}
+            variant="info"
+            icon="info"
+            ariaLabel={splitMonoAria}
+          />
+        );
+      }
+      if (flags?.noZipGain) {
         elements.push(
           <FileBadge
             key="no-zip-gain"
@@ -123,7 +144,7 @@ export function AppShell() {
           />
         );
       }
-      if (flags.consider7zVolumes) {
+      if (flags?.consider7zVolumes) {
         elements.push(<FileBadge key="consider-7z" label={considerVolumesLabel} />);
       }
       if (elements.length === 0) {
@@ -131,7 +152,15 @@ export function AppShell() {
       }
       return <span className="flex flex-wrap justify-end gap-1">{elements}</span>;
     },
-    [badges, considerVolumesLabel, noZipGainHint, noZipGainLabel]
+    [
+      badges,
+      considerVolumesLabel,
+      noZipGainHint,
+      noZipGainLabel,
+      splitMonoAria,
+      splitMonoHint,
+      splitMonoLabel
+    ]
   );
 
   const handleToggleRow = useCallback(
@@ -374,6 +403,7 @@ export function AppShell() {
             masterIndeterminate={masterIndeterminate}
             masterDisabled={masterDisabled}
             formatTooltip={formatTooltipReason}
+            splitMonoHint={splitMonoHint}
           />
         </div>
         <div className="sticky bottom-0 z-30 border-t border-slate-800 bg-slate-950/90 px-8 py-4 backdrop-blur">

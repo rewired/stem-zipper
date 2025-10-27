@@ -52,6 +52,7 @@ export interface PackOptions {
   locale: LocaleKey;
   metadata: NormalizedPackMetadata;
   splitStereoThresholdMB?: number;
+  splitStereoFiles?: string[];
 }
 
 export interface StrategyResult {
@@ -64,6 +65,7 @@ export interface PackStrategyContext {
   progress: ProgressReporter;
   extras: ExtraArchiveEntry[];
   emitToast?: (toast: PackToast) => void;
+  registerTempFile: (filePath: string) => void;
 }
 
 export type PackStrategy = (context: PackStrategyContext) => Promise<StrategyResult>;
