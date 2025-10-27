@@ -56,10 +56,14 @@ describe('splitStereoWav backpressure handling', () => {
     await fs.promises.writeFile(wavPath, createStereoWavBuffer(4096, 44_100, 16));
 
     const originalCreateWriteStream = fs.createWriteStream;
+    type CreateWriteStreamParams = Parameters<typeof originalCreateWriteStream>;
     const maxDrainListeners = new Map<string, number>();
 
     const createSpy = vi.spyOn(fs, 'createWriteStream').mockImplementation((target, options) => {
-      const stream = originalCreateWriteStream(target as fs.PathLike, options as fs.WriteStreamOptions);
+      const stream = originalCreateWriteStream(
+        target as CreateWriteStreamParams[0],
+        options as CreateWriteStreamParams[1]
+      );
       let maxListeners = 0;
 
       const updateMaxListeners = () => {
