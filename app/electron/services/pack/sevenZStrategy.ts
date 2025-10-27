@@ -3,7 +3,7 @@ import path from 'node:path';
 import { resolve7zBinary } from './binaries';
 import { createMetadataEntries, STAMP_FILENAME } from './metadata';
 import { expandFiles } from './expandFiles';
-import type { PackStrategy } from './types';
+import type { PackStrategy, SizedFile } from './types';
 
 function clampVolumeSize(value: number): number {
   if (!Number.isFinite(value) || value <= 0) {
@@ -70,6 +70,63 @@ async function cleanupExtras(paths: string[]): Promise<void> {
   );
 }
 
+function isErrnoException(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && typeof (error as NodeJS.ErrnoException).code === 'string';
+}
+
+async function stageFileForArchive(
+  file: SizedFile,
+  outputDir: string,
+  registerTempFile: (filePath: string) => void
+): Promise<string> {
+  const baseName = path.basename(file.path);
+  if (path.dirname(file.path) === outputDir) {
+    return baseName;
+  }
+
+  const targetPath = path.join(outputDir, baseName);
+  const targetExists = await fs.promises
+    .access(targetPath)
+    .then(() => true)
+    .catch(() => false);
+
+  if (targetExists) {
+    console.warn('Refusing to overwrite existing file while staging for 7z', targetPath);
+    throw new Error('error_7z_spawn_failed');
+  }
+
+  try {
+    await fs.promises.rename(file.path, targetPath);
+  } catch (error) {
+    if (isErrnoException(error) && error.code === 'EXDEV') {
+      await fs.promises.copyFile(file.path, targetPath, fs.constants.COPYFILE_EXCL);
+      await fs.promises.unlink(file.path).catch((unlinkError) => {
+        if (isErrnoException(unlinkError) && unlinkError.code !== 'ENOENT') {
+          console.warn('Failed to remove staged source after copy', file.path, unlinkError);
+        }
+      });
+    } else {
+      throw error;
+    }
+  }
+
+  registerTempFile(targetPath);
+  return path.basename(targetPath);
+}
+
+async function stageFilesForArchive(
+  files: SizedFile[],
+  outputDir: string,
+  registerTempFile: (filePath: string) => void
+): Promise<string[]> {
+  const staged: string[] = [];
+  for (const file of files) {
+    const stagedName = await stageFileForArchive(file, outputDir, registerTempFile);
+    staged.push(stagedName);
+  }
+  return staged;
+}
+
 export const sevenZSplitStrategy: PackStrategy = async (context) => {
   if (context.files.length === 0) {
     throw new Error('pack_error_no_files');
@@ -94,20 +151,7 @@ export const sevenZSplitStrategy: PackStrategy = async (context) => {
   await removeExistingArchives(context.options.outputDir);
   const writtenExtras = await writeExtras(context.options.outputDir, [...context.extras, ...extras], stamp);
 
-  const filesToPack = [...expanded.map((file) => path.basename(file.path)), ...writtenExtras.map((filePath) => path.basename(filePath))];
   const volumeSize = clampVolumeSize(context.options.maxArchiveSizeMB);
-  const args = [
-    'a',
-    '-t7z',
-    '-mx=5',
-    '-mmt=on',
-    '-bd',
-    '-bsp1',
-    '-y',
-    `-v${volumeSize}m`,
-    archivePath,
-    ...filesToPack
-  ];
 
   context.progress.start({ total: 1, message: 'pack_progress_preparing' });
   context.progress.tick({ state: 'preparing', percent: 100 });
@@ -117,6 +161,27 @@ export const sevenZSplitStrategy: PackStrategy = async (context) => {
 
   try {
     const binary = resolve7zBinary();
+    const stagedFiles = await stageFilesForArchive(
+      expanded,
+      context.options.outputDir,
+      context.registerTempFile
+    );
+    const filesToPack = [
+      ...stagedFiles,
+      ...writtenExtras.map((filePath) => path.basename(filePath))
+    ];
+    const args = [
+      'a',
+      '-t7z',
+      '-mx=5',
+      '-mmt=on',
+      '-bd',
+      '-bsp1',
+      '-y',
+      `-v${volumeSize}m`,
+      archivePath,
+      ...filesToPack
+    ];
     const { execa } = await import('execa');
     const subprocess = execa(binary, args, { cwd: context.options.outputDir });
     if (subprocess.stdout) {
