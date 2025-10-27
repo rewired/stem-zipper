@@ -25,6 +25,26 @@ function parseProgressLine(line: string): number | null {
   return Math.max(0, Math.min(percent, 100));
 }
 
+async function removeExistingArchives(outputDir: string): Promise<void> {
+  try {
+    const entries = await fs.promises.readdir(outputDir, { withFileTypes: true });
+    const staleArchives = entries.filter(
+      (entry) => entry.isFile() && /^stems\.7z(\.\d{3})?$/i.test(entry.name)
+    );
+    await Promise.all(
+      staleArchives.map((entry) =>
+        fs.promises
+          .unlink(path.join(outputDir, entry.name))
+          .catch((error) =>
+            console.warn('Failed to remove existing 7z archive before packing', entry.name, error)
+          )
+      )
+    );
+  } catch (error) {
+    console.warn('Failed to scan for existing 7z archives before packing', outputDir, error);
+  }
+}
+
 async function writeExtras(
   outputDir: string,
   entries: { name: string; content: string | Buffer }[],
@@ -72,6 +92,7 @@ export const sevenZSplitStrategy: PackStrategy = async (context) => {
 
   const packedAt = new Date().toISOString();
   const { extras, stamp } = createMetadataEntries(context.options.metadata, context.options.locale, packedAt);
+  await removeExistingArchives(context.options.outputDir);
   const writtenExtras = await writeExtras(context.options.outputDir, [...context.extras, ...extras], stamp);
 
   const filesToPack = [...expanded.map((file) => path.basename(file.path)), ...writtenExtras.map((filePath) => path.basename(filePath))];
@@ -83,6 +104,7 @@ export const sevenZSplitStrategy: PackStrategy = async (context) => {
     '-mmt=on',
     '-bd',
     '-bsp1',
+    '-y',
     `-v${volumeSize}m`,
     archivePath,
     ...filesToPack
