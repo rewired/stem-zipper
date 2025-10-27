@@ -66,7 +66,8 @@ export const sevenZSplitStrategy: PackStrategy = async (context) => {
     maxSizeBytes,
     splitThresholdBytes,
     progress: context.progress,
-    emitToast: context.emitToast
+    emitToast: context.emitToast,
+    registerTempFile: context.registerTempFile
   });
 
   const packedAt = new Date().toISOString();

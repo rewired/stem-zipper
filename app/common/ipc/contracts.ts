@@ -1,4 +1,5 @@
 import type { EstimateFileKind } from '../packing/estimator';
+import type { AudioCodec } from '../types';
 
 export type PackingEstimatorMethod = 'zip' | '7z';
 
@@ -7,6 +8,9 @@ export interface PackingPlanFileInput {
   sizeBytes: number;
   kind?: EstimateFileKind;
   stereo?: boolean;
+  codec?: AudioCodec;
+  num_channels?: number;
+  header_bytes?: number;
 }
 
 export interface PackingPlanEntry {
@@ -15,6 +19,14 @@ export interface PackingPlanEntry {
   archiveLabel: string;
   allowed: boolean;
   reason?: string;
+  suggestSplitMono?: boolean;
+  splitTargets?: PackingPlanSplitTarget[];
+}
+
+export interface PackingPlanSplitTarget {
+  channel: 'L' | 'R';
+  archiveIndex: number;
+  archiveLabel: string;
 }
 
 export interface PackingPlanRequest {

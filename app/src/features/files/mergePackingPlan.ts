@@ -30,22 +30,22 @@ export function mergePackingPlan(
     const intended = resolveIntendedSelection(file);
 
     if (!entry) {
-      if (isZip) {
-        return {
-          ...file,
-          userIntendedSelected: intended,
-          selected: intended,
-          estimate: file.estimate ? { ...file.estimate, reason: file.estimate.reason } : file.estimate
-        };
-      }
+      const nextEstimate = file.estimate
+        ? {
+            archiveIndex: file.estimate.archiveIndex,
+            archiveLabel: file.estimate.archiveLabel,
+            reason: file.estimate.reason,
+            splitTargets: file.estimate.splitTargets,
+            suggestSplitMono: file.estimate.suggestSplitMono
+          }
+        : undefined;
       return {
         ...file,
-        selectable: true,
+        selectable: isZip ? file.selectable : true,
         selected: intended,
         userIntendedSelected: intended,
-        estimate: file.estimate
-          ? { archiveIndex: file.estimate.archiveIndex, archiveLabel: file.estimate.archiveLabel }
-          : undefined
+        estimate: nextEstimate,
+        suggest_split_mono: file.suggest_split_mono
       };
     }
 
@@ -60,7 +60,8 @@ export function mergePackingPlan(
             archiveIndex: entry.archiveIndex,
             archiveLabel: entry.archiveLabel,
             reason: zipDisallowedReason
-          }
+          },
+          suggest_split_mono: entry.suggestSplitMono ? true : undefined
         };
       }
       return {
@@ -70,8 +71,15 @@ export function mergePackingPlan(
         userIntendedSelected: intended,
         estimate: {
           archiveIndex: entry.archiveIndex,
-          archiveLabel: entry.archiveLabel
-        }
+          archiveLabel: entry.archiveLabel,
+          splitTargets: entry.splitTargets?.map((target) => ({
+            archiveIndex: target.archiveIndex,
+            archiveLabel: target.archiveLabel,
+            channel: target.channel
+          })),
+          suggestSplitMono: entry.suggestSplitMono ?? false
+        },
+        suggest_split_mono: entry.suggestSplitMono ? true : undefined
       };
     }
 
@@ -83,7 +91,8 @@ export function mergePackingPlan(
       estimate: {
         archiveIndex: entry.archiveIndex,
         archiveLabel: entry.archiveLabel
-      }
+      },
+      suggest_split_mono: entry.suggestSplitMono ? true : file.suggest_split_mono
     };
   });
 }

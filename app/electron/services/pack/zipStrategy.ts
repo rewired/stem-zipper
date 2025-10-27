@@ -57,6 +57,7 @@ async function collectGroups(context: PackStrategyContext): Promise<SizedFile[][
   const grouped = groupFilesByExtension(files);
   const orderedExtensions = Array.from(grouped.keys()).sort();
   const collections: SizedFile[][] = [];
+  const forcedSplitSet = options.splitStereoFiles ? new Set(options.splitStereoFiles) : undefined;
 
   for (const extension of orderedExtensions) {
     const filesForExtension = grouped.get(extension);
@@ -65,7 +66,9 @@ async function collectGroups(context: PackStrategyContext): Promise<SizedFile[][
       maxSizeBytes,
       splitThresholdBytes,
       progress,
-      emitToast
+      emitToast,
+      registerTempFile: context.registerTempFile,
+      forceSplit: forcedSplitSet
     });
     const packed = bestFitPack(expanded, maxSizeBytes);
     collections.push(...packed);

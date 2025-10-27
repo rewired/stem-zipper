@@ -1,10 +1,13 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { WaveFile } from 'wavefile';
+import { once } from 'node:events';
+import { probeAudio } from '../audioProbe';
 import type { SizedFile } from './types';
 
 const WAV_FORMAT_PCM = 1;
 const WAV_FORMAT_IEEE_FLOAT = 3;
+const DEFAULT_HEADER_BYTES = 44;
 
 export class UnsupportedWavError extends Error {
   constructor(message: string) {
@@ -13,80 +16,144 @@ export class UnsupportedWavError extends Error {
   }
 }
 
-async function getSizedFile(filePath: string): Promise<SizedFile> {
-  const stats = await fs.promises.stat(filePath);
-  const extension = path.extname(filePath).toLowerCase();
-  if (extension !== '.wav') {
-    throw new UnsupportedWavError(`Split stereo output has unexpected extension: ${extension}`);
-  }
-  return { path: filePath, size: stats.size, extension };
+function createMonoHeader(audioFormat: number, sampleRate: number, bitsPerSample: number, dataSize: number): Buffer {
+  const bytesPerSample = Math.ceil(bitsPerSample / 8);
+  const blockAlign = bytesPerSample;
+  const byteRate = sampleRate * blockAlign;
+  const header = Buffer.alloc(DEFAULT_HEADER_BYTES);
+  header.write('RIFF', 0, 'ascii');
+  header.writeUInt32LE(36 + dataSize, 4);
+  header.write('WAVE', 8, 'ascii');
+  header.write('fmt ', 12, 'ascii');
+  header.writeUInt32LE(16, 16);
+  header.writeUInt16LE(audioFormat, 20);
+  header.writeUInt16LE(1, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(byteRate, 28);
+  header.writeUInt16LE(blockAlign, 32);
+  header.writeUInt16LE(bitsPerSample, 34);
+  header.write('data', 36, 'ascii');
+  header.writeUInt32LE(dataSize, 40);
+  return header;
 }
 
-export async function splitStereoWav(filePath: string): Promise<SizedFile[]> {
-  const buffer = await fs.promises.readFile(filePath);
-  const wav = new WaveFile(buffer);
-  const fmt = wav.fmt as { audioFormat?: number; numChannels?: number; sampleRate?: number } | undefined;
-  const numChannels = fmt?.numChannels;
-  const audioFormat = fmt?.audioFormat;
-
-  if (numChannels !== 2) {
-    throw new UnsupportedWavError(`Expected stereo WAV but found channels=${numChannels ?? 'unknown'}`);
+async function ensureStreamClosed(stream: fs.WriteStream): Promise<void> {
+  if (stream.closed) {
+    return;
   }
+  stream.end();
+  await once(stream, 'close');
+}
 
-  if (audioFormat !== WAV_FORMAT_PCM && audioFormat !== WAV_FORMAT_IEEE_FLOAT) {
-    throw new UnsupportedWavError(`Unsupported WAV audio format: ${audioFormat ?? 'unknown'}`);
+export async function splitStereoWav(
+  filePath: string,
+  registerTemp?: (artifactPath: string) => void
+): Promise<SizedFile[]> {
+  const stats = await fs.promises.stat(filePath);
+  const probe = await probeAudio(filePath);
+
+  if (probe.codec !== 'wav_pcm' && probe.codec !== 'wav_float') {
+    throw new UnsupportedWavError(`Unsupported WAV codec: ${probe.codec}`);
   }
-
-  const sampler = (wav as unknown as {
-    getSamples?: (interleaved: false, OutputObject: { new (...args: unknown[]): Float64Array }) => Float64Array[];
-  }).getSamples;
-
-  if (typeof sampler !== 'function') {
-    throw new UnsupportedWavError('WaveFile#getSamples is not available');
+  if (probe.num_channels !== 2) {
+    throw new UnsupportedWavError(`Expected stereo WAV but found channels=${probe.num_channels ?? 'unknown'}`);
   }
-
-  const channels = sampler.call(wav, false, Float64Array);
-
-  if (!Array.isArray(channels) || channels.length < 2) {
-    throw new UnsupportedWavError('WaveFile#getSamples did not return stereo channels');
+  const sampleRate = probe.sample_rate;
+  if (typeof sampleRate !== 'number' || sampleRate <= 0) {
+    throw new UnsupportedWavError('Missing sample rate in WAV header');
   }
-
-  const [leftSamples, rightSamples] = channels;
-  if (!leftSamples || !rightSamples) {
-    throw new UnsupportedWavError('Stereo channels are missing sample data');
+  const bitsPerSample = probe.bit_depth;
+  if (typeof bitsPerSample !== 'number' || bitsPerSample <= 0) {
+    throw new UnsupportedWavError('Missing bit depth in WAV header');
   }
+  const bytesPerSample = Math.ceil(bitsPerSample / 8);
+  const dataOffset = typeof probe.data_offset === 'number' ? probe.data_offset : DEFAULT_HEADER_BYTES;
+  const headerBytes = typeof probe.header_bytes === 'number' ? probe.header_bytes : DEFAULT_HEADER_BYTES;
+  const dataBytes = Math.max(0, stats.size - headerBytes);
+  const frameSize = bytesPerSample * 2;
+  const frameCount = Math.floor(dataBytes / frameSize);
+  if (frameCount === 0) {
+    throw new UnsupportedWavError('WAV payload is too small to split');
+  }
+  const monoDataSize = frameCount * bytesPerSample;
 
-  const sampleRate = fmt?.sampleRate ?? 44100;
-  const bitDepthCode = (typeof wav.bitDepth === 'string' && wav.bitDepth) || '16';
-  const { dir, name, ext } = path.parse(filePath);
-  const leftPath = path.join(dir, `${name}_L${ext}`);
-  const rightPath = path.join(dir, `${name}_R${ext}`);
-  const created: string[] = [];
+  const audioFormat = probe.codec === 'wav_float' ? WAV_FORMAT_IEEE_FLOAT : WAV_FORMAT_PCM;
+  const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'stem-zipper-split-'));
+  const { name } = path.parse(filePath);
+  const leftPath = path.join(tempDir, `${name}-L.wav`);
+  const rightPath = path.join(tempDir, `${name}-R.wav`);
+  const createdArtifacts = [leftPath, rightPath, tempDir];
 
   try {
-    const left = new WaveFile();
-    left.fromScratch(1, sampleRate, bitDepthCode, [leftSamples]);
-    await fs.promises.writeFile(leftPath, left.toBuffer());
-    created.push(leftPath);
+    const leftStream = fs.createWriteStream(leftPath);
+    const rightStream = fs.createWriteStream(rightPath);
+    leftStream.write(createMonoHeader(audioFormat, sampleRate, bitsPerSample, monoDataSize));
+    rightStream.write(createMonoHeader(audioFormat, sampleRate, bitsPerSample, monoDataSize));
 
-    const right = new WaveFile();
-    right.fromScratch(1, sampleRate, bitDepthCode, [rightSamples]);
-    await fs.promises.writeFile(rightPath, right.toBuffer());
-    created.push(rightPath);
+    const readStream = fs.createReadStream(filePath, {
+      start: dataOffset,
+      end: dataOffset + frameCount * frameSize - 1
+    });
 
-    await fs.promises.unlink(filePath);
+    await new Promise<void>((resolve, reject) => {
+      let remainder = Buffer.alloc(0);
+      const handleError = (error: Error) => {
+        readStream.destroy();
+        leftStream.destroy();
+        rightStream.destroy();
+        reject(error);
+      };
+
+      readStream.on('data', (chunk) => {
+        const combined = remainder.length > 0 ? Buffer.concat([remainder, chunk]) : chunk;
+        const usableLength = Math.floor(combined.length / frameSize) * frameSize;
+        remainder = combined.subarray(usableLength);
+        for (let offset = 0; offset < usableLength; offset += frameSize) {
+          const leftSample = combined.subarray(offset, offset + bytesPerSample);
+          const rightSample = combined.subarray(offset + bytesPerSample, offset + frameSize);
+          if (!leftStream.write(leftSample) || !rightStream.write(rightSample)) {
+            readStream.pause();
+            const resume = () => {
+              if (!leftStream.writableNeedDrain && !rightStream.writableNeedDrain) {
+                readStream.resume();
+                leftStream.off('drain', resume);
+                rightStream.off('drain', resume);
+              }
+            };
+            leftStream.on('drain', resume);
+            rightStream.on('drain', resume);
+          }
+        }
+      });
+
+      readStream.on('end', () => {
+        if (remainder.length > 0) {
+          console.warn('Dropping incomplete WAV frame during split', filePath);
+        }
+        Promise.all([ensureStreamClosed(leftStream), ensureStreamClosed(rightStream)])
+          .then(() => resolve())
+          .catch(reject);
+      });
+
+      readStream.on('error', handleError);
+      leftStream.on('error', handleError);
+      rightStream.on('error', handleError);
+    });
+
+    const [leftStats, rightStats] = await Promise.all([fs.promises.stat(leftPath), fs.promises.stat(rightPath)]);
+    if (registerTemp) {
+      for (const artifact of createdArtifacts) {
+        registerTemp(artifact);
+      }
+    }
+    return [
+      { path: leftPath, size: leftStats.size, extension: '.wav' },
+      { path: rightPath, size: rightStats.size, extension: '.wav' }
+    ];
   } catch (error) {
-    await Promise.all(
-      created.map((outputPath) =>
-        fs.promises
-          .unlink(outputPath)
-          .catch((unlinkError) =>
-            console.warn('Failed to clean up partial WAV split output', outputPath, unlinkError)
-          )
-      )
-    );
+    await fs.promises.rm(tempDir, { recursive: true, force: true }).catch((cleanupError) => {
+      console.warn('Failed to clean up temp WAV split directory', tempDir, cleanupError);
+    });
     throw error;
   }
-
-  return Promise.all([getSizedFile(leftPath), getSizedFile(rightPath)]);
 }

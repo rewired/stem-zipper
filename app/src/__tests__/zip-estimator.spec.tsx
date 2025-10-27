@@ -75,6 +75,7 @@ function TestHarness({ files, maxSizeMb }: HarnessProps) {
       masterIndeterminate={false}
       masterDisabled={false}
       formatTooltip={(reason) => reason}
+      splitMonoHint="Split"
     />
   );
 }

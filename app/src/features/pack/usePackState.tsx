@@ -294,13 +294,18 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      const splitMonoFiles = files
+        .filter((file) => file.selectable && file.selected && file.suggest_split_mono)
+        .map((file) => file.path);
+
       await window.electronAPI.startPack({
         folderPath,
         maxSizeMb: maxSize,
         locale,
         packMetadata: metadata,
         method: packMethod,
-        files: selectedFiles
+        files: selectedFiles,
+        splitStereoFiles: splitMonoFiles.length > 0 ? splitMonoFiles : undefined
       });
       await analyze(folderPath, maxSize);
     } catch (error: unknown) {
@@ -505,7 +510,10 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
   const filesPlanSignature = useMemo(
     () =>
       files
-        .map((file, index) => `${index}:${file.path}:${file.sizeBytes}`)
+        .map(
+          (file, index) =>
+            `${index}:${file.path}:${file.sizeBytes}:${file.codec ?? 'unknown'}:${file.num_channels ?? 'na'}:${file.stereo ?? 'na'}`
+        )
         .join('|'),
     [files]
   );
@@ -666,7 +674,15 @@ export function PackStateProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const requestFiles = files.map((file) => ({ path: file.path, sizeBytes: file.sizeBytes }));
+    const requestFiles = files.map((file) => ({
+      path: file.path,
+      sizeBytes: file.sizeBytes,
+      kind: file.kind,
+      stereo: file.stereo,
+      codec: file.codec,
+      num_channels: file.num_channels,
+      header_bytes: file.header_bytes
+    }));
     const request: PackingPlanRequest = {
       method,
       maxArchiveSizeMb: normalizedSize,

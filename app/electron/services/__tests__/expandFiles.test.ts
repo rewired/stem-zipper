@@ -23,7 +23,7 @@ afterEach(() => {
 describe('expandFiles', () => {
   it('splits stereo WAV files when the probe confirms stereo', async () => {
     const file = makeSizedFile('/audio/stereo.wav', 10_000_000);
-    probeAudioMock.mockResolvedValue({ kind: 'wav', stereo: true });
+    probeAudioMock.mockResolvedValue({ codec: 'wav_pcm', num_channels: 2, size_bytes: file.size, ext: '.wav', path: file.path });
     const splitResult: SizedFile[] = [
       { path: '/audio/stereo_L.wav', size: 5_000_000, extension: '.wav' },
       { path: '/audio/stereo_R.wav', size: 5_000_000, extension: '.wav' }
@@ -48,7 +48,7 @@ describe('expandFiles', () => {
 
   it('skips splitting when the probe indicates a non-WAV payload', async () => {
     const file = makeSizedFile('/audio/fake.wav', 8_000_000);
-    probeAudioMock.mockResolvedValue({ kind: 'mp3' });
+    probeAudioMock.mockResolvedValue({ codec: 'mp3', size_bytes: file.size, ext: '.wav', path: file.path });
     const splitter = vi.fn();
     const emitToast = vi.fn();
 
@@ -71,7 +71,13 @@ describe('expandFiles', () => {
 
   it('skips splitting when WaveFile reports an unsupported layout', async () => {
     const file = makeSizedFile('/audio/mono.wav', 9_000_000);
-    probeAudioMock.mockResolvedValue({ kind: 'wav', stereo: true });
+    probeAudioMock.mockResolvedValue({
+      codec: 'wav_pcm',
+      num_channels: 2,
+      size_bytes: file.size,
+      ext: '.wav',
+      path: file.path
+    });
     const splitter = vi.fn().mockRejectedValue(new UnsupportedWavError('channels=1'));
     const emitToast = vi.fn();
 
@@ -92,7 +98,13 @@ describe('expandFiles', () => {
 
   it('skips the file entirely when splitting throws an unexpected error', async () => {
     const file = makeSizedFile('/audio/broken.wav', 9_000_000);
-    probeAudioMock.mockResolvedValue({ kind: 'wav', stereo: true });
+    probeAudioMock.mockResolvedValue({
+      codec: 'wav_pcm',
+      num_channels: 2,
+      size_bytes: file.size,
+      ext: '.wav',
+      path: file.path
+    });
     const splitter = vi.fn().mockRejectedValue(new Error('filesystem offline'));
     const emitToast = vi.fn();
 
@@ -108,6 +120,35 @@ describe('expandFiles', () => {
         level: 'warning',
         messageKey: 'pack_warn_file_skipped',
         params: { file: formatPathForDisplay(file.path) }
+      })
+    );
+  });
+
+  it('emits a split-mono failure toast when a forced split fails', async () => {
+    const file = makeSizedFile('/audio/forced.wav', 9_000_000);
+    probeAudioMock.mockResolvedValue({
+      codec: 'wav_pcm',
+      num_channels: 2,
+      size_bytes: file.size,
+      ext: '.wav',
+      path: file.path
+    });
+    const splitter = vi.fn().mockRejectedValue(new Error('disk unavailable'));
+    const emitToast = vi.fn();
+
+    const result = await expandFiles([file], {
+      maxSizeBytes: 50 * 1024 * 1024,
+      emitToast,
+      splitter,
+      forceSplit: new Set([file.path])
+    });
+
+    expect(result).toEqual([]);
+    expect(emitToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'warning',
+        messageKey: 'warn_split_mono_failed',
+        params: { name: formatPathForDisplay(file.path) }
       })
     );
   });
