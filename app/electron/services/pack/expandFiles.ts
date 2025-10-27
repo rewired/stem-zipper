@@ -238,11 +238,11 @@ export async function expandFiles(files: SizedFile[], options: ExpandFilesOption
 
   const notifyError = (file: SizedFile, error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
-    console.warn('Skipping file due to split failure', { file: file.path, error: message });
+    console.warn('Split failed; packaging original file instead', { file: file.path, error: message });
     options.emitToast?.({
       id: `split-error:${file.path}`,
       level: 'warning',
-      messageKey: 'pack_warn_file_skipped',
+      messageKey: 'pack_warn_split_fallback',
       params: { file: formatPathForDisplay(file.path) }
     });
   };
@@ -281,8 +281,10 @@ export async function expandFiles(files: SizedFile[], options: ExpandFilesOption
             messageKey: 'warn_split_mono_failed',
             params: { name: formatPathForDisplay(file.path) }
           });
+          expanded.push(file);
         } else {
           notifyError(file, error);
+          expanded.push(file);
         }
       } finally {
         processed += 1;
