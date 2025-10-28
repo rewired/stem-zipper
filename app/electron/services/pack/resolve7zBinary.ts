@@ -35,9 +35,12 @@ async function ensureExecutablePermissions(filePath: string): Promise<void> {
   try {
     await fs.promises.chmod(filePath, 0o755);
   } catch (error) {
-    if (isErrnoException(error) && IGNORED_CHMOD_ERROR_CODES.has(error.code)) {
-      logDebug('Skipping chmod on read-only or permission-restricted filesystem', filePath, error.code);
-      return;
+    if (isErrnoException(error)) {
+      const { code } = error;
+      if (code && IGNORED_CHMOD_ERROR_CODES.has(code)) {
+        logDebug('Skipping chmod on read-only or permission-restricted filesystem', filePath, code);
+        return;
+      }
     }
     console.warn('Failed to adjust 7z binary permissions', filePath, error);
   }
