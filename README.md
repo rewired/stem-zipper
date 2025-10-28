@@ -3,6 +3,7 @@
 Stem ZIPper is now delivered as an Electron application that combines a Vite powered React + TypeScript renderer with a modern desktop runtime. The tool keeps the original mission of preparing sample packs for platforms such as [ccmixter.org](https://ccmixter.org) by analysing folders full of audio files, splitting stereo WAV files if necessary and producing optimally filled ZIP archives.
 
 [![stem-zipper version](https://img.shields.io/github/v/release/rewired/stem-zipper)](https://github.com/rewired/stem-zipper/releases/latest)
+[![CI](https://github.com/rewired/stem-zipper/actions/workflows/ci.yml/badge.svg)](https://github.com/rewired/stem-zipper/actions/workflows/ci.yml)
 
 ---
 
