@@ -2,11 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
-
-### Fixed
-- Electron packaging chmod guard now tolerates missing errno codes, restoring TypeScript builds on platforms that omit the value.
-
 ## [1.0.2]
 
 ### Added
@@ -41,6 +36,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 ### Fixed
+- Electron packaging chmod guard now tolerates missing errno codes, restoring TypeScript builds on platforms that omit the value.
 - Electron 7z resolver now enforces executable permissions on every platform and
   treats Windows-specific `chmod` errors as non-fatal, keeping binary resolution
   consistent for development and packaged builds.
