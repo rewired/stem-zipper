@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- Electron packaging chmod guard now tolerates missing errno codes, restoring TypeScript builds on platforms that omit the value.
+
 ## [1.0.2]
 
 ### Added
